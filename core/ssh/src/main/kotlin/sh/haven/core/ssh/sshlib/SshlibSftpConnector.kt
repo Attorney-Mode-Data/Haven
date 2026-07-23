@@ -66,14 +66,32 @@ internal object SshlibSftpConnector {
         config: ConnectionConfig,
         hostKeyVerifier: HostKeyVerifier,
         connectTimeoutMs: Long = CONNECT_TIMEOUT_MS,
+    ): SshlibClient = dialAndAuth(
+        config,
+        TrustedOnlyVerifier(hostKeyVerifier, config.host, config.port),
+        connectTimeoutMs,
+    )
+
+    /**
+     * As [dialAndAuth], but with the sshlib-level host-key gate supplied
+     * directly so a caller can apply a different trust policy. The SFTP path
+     * uses the fail-closed [TrustedOnlyVerifier] above (trust was already
+     * established by the interactive JSch connect that preceded it);
+     * [SshlibConnection] has no such predecessor, so it passes a gate that
+     * captures the key and hands it back for Haven's normal TOFU prompt —
+     * the same accept-then-verify order the JSch engine uses.
+     */
+    suspend fun dialAndAuth(
+        config: ConnectionConfig,
+        hostKeyGate: org.connectbot.sshlib.HostKeyVerifier,
+        connectTimeoutMs: Long = CONNECT_TIMEOUT_MS,
     ): SshlibClient {
         val host = SshClient.resolveHost(config.host, config.addressFamily)
-        val trustGate = TrustedOnlyVerifier(hostKeyVerifier, config.host, config.port)
         val client = SshlibClient(
             org.connectbot.sshlib.SshClientConfig {
                 this.host = host
                 this.port = config.port
-                this.hostKeyVerifier = trustGate
+                this.hostKeyVerifier = hostKeyGate
                 // Rekey thresholds are sshlib's defaults (1 GiB / 1 h) again.
                 // 0.3.1 had client-initiated rekey broken both ways — a
                 // byte-limit rekey mid-transfer killed the channel, an interval

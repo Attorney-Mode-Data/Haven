@@ -79,9 +79,9 @@ interface SshConnection : Closeable {
      * it's an SSH `exec` request for that command (the RemoteCommand path, e.g.
      * `tmux new -A -s work`), so it runs before shell-startup files instead of
      * racing them. [requestPty] allocates a PTY (required by tmux; ignored for a
-     * plain shell). Only the JSch engine implements the exec path today — a
-     * sshlib-backed shell engine is future work (#58; gated on sshlib maturity,
-     * cbssh#231).
+     * plain shell). Both engines implement this: the experimental sshlib engine
+     * gained the exec path once sshlib 0.4.0 surfaced exit status (#58,
+     * connectbot/cbssh#232).
      */
     fun openTerminalChannel(
         remoteCommand: String?,

@@ -21,6 +21,14 @@ internal object SshlibShell {
         term: String,
         cols: Int,
         rows: Int,
+        /**
+         * Whether closing this channel also drops the SSH connection. True for
+         * a dedicated shell dial (the connection exists only for this shell);
+         * false when the shell rides a shared whole-connection
+         * ([SshlibConnection]), where closing one terminal tab must not take
+         * the profile's other channels and forwards with it.
+         */
+        ownsClient: Boolean = true,
     ): ShellChannel {
         val input = ReceiveChannelInputStream(session.stdout)
         val output = SuspendWriteOutputStream { session.write(it) }
@@ -32,15 +40,32 @@ internal object SshlibShell {
             },
             disconnectFn = {
                 runCatching { session.close() }
-                runCatching { runBlocking { client.disconnect() } }
+                if (ownsClient) runCatching { runBlocking { client.disconnect() } }
             },
             connectedProbe = { session.isOpen },
             closedProbe = { !session.isOpen },
-            // sshlib exit-status is not in the released jar (upstreamed as
-            // cbssh#232); until it ships, an interactive shell reports -1
-            // ("unknown"), matching JSch before the server sends exit-status.
-            exitStatusProbe = { -1 },
+            // Real exit status since sshlib 0.4.0 (Haven's cbssh#232). The probe
+            // is synchronous, so read the Deferred only once it has completed —
+            // before the server sends exit-status this reports -1 ("unknown"),
+            // exactly as JSch does.
+            exitStatusProbe = { completedExitStatus(session) },
         )
+    }
+
+    /**
+     * The session's exit status if the server has already reported one, else
+     * -1. Non-suspending by design: [ShellChannel]'s probe is synchronous, so
+     * an in-flight session must answer "unknown" rather than block a caller.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun completedExitStatus(session: SshSession): Int {
+        val exit = session.exitInfo
+        if (!exit.isCompleted) return -1
+        return when (val value = runCatching { exit.getCompleted() }.getOrNull()) {
+            is org.connectbot.sshlib.SessionExit.Status -> value.code.toInt()
+            // Signal-terminated carries no numeric status — see SshlibExec.
+            else -> -1
+        }
     }
 
     /** Open a session channel, request a PTY, and start a shell. */

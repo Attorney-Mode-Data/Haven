@@ -10,10 +10,19 @@ package sh.haven.core.ssh
  * directive can never change engines silently.
  */
 enum class SshEngine {
-    /** mwiede JSch fork — the default engine. */
+    /** mwiede JSch fork — the default engine for every profile that has not opted in. */
     JSCH,
 
-    /** org.connectbot.sshlib (ssh-proto) — experimental, SFTP only for now. */
+    /**
+     * org.connectbot.sshlib (ssh-proto) — **experimental, opt-in**.
+     *
+     * Carries a whole connection: terminal (shell and RemoteCommand exec), one-shot
+     * exec, SFTP, and local/remote/dynamic port forwarding over one sshlib transport.
+     * It deliberately REFUSES what it cannot do — jump-host or proxied dials, FIDO2
+     * hardware keys, OpenSSH certificates, and multi-factor chains — so an opted-in
+     * profile fails loudly rather than silently behaving differently; move such
+     * profiles back to [JSCH].
+     */
     SSHLIB,
 }
 

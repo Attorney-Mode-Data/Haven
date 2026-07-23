@@ -203,7 +203,7 @@ Edit fields on an existing connection profile (load → change → save). Pass p
 - `smbSshProfileId` (string) — SMB only: SSH profile id to tunnel through. Empty string clears.
 - `spiceSshForward` (boolean) — SPICE only: tunnel through a saved SSH profile (set spiceSshProfileId).
 - `spiceSshProfileId` (string) — SPICE only: SSH profile id to tunnel through. Empty string clears.
-- `sshOptions` (string) — SSH only: replace the profile's ssh_config-style option lines (e.g. 'HavenSshEngine sshlib' toggles the #58 SFTP engine). Empty string clears. Ignored on non-SSH profiles (USB-serial packs its line format here).
+- `sshOptions` (string) — SSH only: replace the profile's ssh_config-style option lines (e.g. 'HavenSshEngine sshlib' opts this profile into the EXPERIMENTAL sshlib engine for the whole connection — terminal, exec, SFTP and tunnels; it refuses jump/proxy, FIDO2, OpenSSH certs and MFA chains). Empty string clears. Ignored on non-SSH profiles (USB-serial packs its line format here).
 - `useMosh` (boolean) — SSH only: use Mosh on top of the SSH bootstrap.
 - `username` (string) — New username (SSH/SMB).
 - `vncSshForward` (boolean) — VNC only: tunnel through a saved SSH profile (set vncSshProfileId).

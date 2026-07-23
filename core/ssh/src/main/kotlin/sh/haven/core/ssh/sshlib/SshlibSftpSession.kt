@@ -32,6 +32,14 @@ import java.io.OutputStream
 internal class SshlibSftpSession(
     private val client: SshlibClient,
     private val sftp: SftpClient,
+    /**
+     * Whether closing this session also drops the SSH connection under it.
+     * True for the dedicated SFTP dial (phase 1) where the session IS the
+     * connection; false when the subsystem rides a shared whole-connection
+     * ([SshlibConnection]), where closing a file browser must not kill the
+     * user's terminal and port forwards.
+     */
+    private val ownsClient: Boolean = true,
 ) : SftpSession {
 
     @Volatile
@@ -207,7 +215,9 @@ internal class SshlibSftpSession(
 
     override fun close() {
         try { sftp.close() } catch (_: Exception) { /* best effort */ }
-        try { runBlocking { client.disconnect() } } catch (_: Exception) { /* best effort */ }
+        if (ownsClient) {
+            try { runBlocking { client.disconnect() } } catch (_: Exception) { /* best effort */ }
+        }
     }
 
     private fun skipFully(input: InputStream, count: Long) {

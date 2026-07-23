@@ -352,7 +352,9 @@ class SshSessionManager @Inject constructor(
         if (config.sshEngine == SshEngine.SSHLIB) {
             engineLog(
                 _sessions.value[sessionId]?.profileId ?: return,
-                "engine=sshlib: SFTP only in this build — terminal/tunnels via JSch",
+                "engine=sshlib (experimental): whole connection — terminal, exec, SFTP and " +
+                    "tunnels over sshlib. Jump/proxy, FIDO2, OpenSSH certs and MFA chains are " +
+                    "refused on this engine; switch the profile back to JSch for those.",
             )
         }
     }

@@ -3,21 +3,23 @@ package sh.haven.core.ssh
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import sh.haven.core.ssh.sshlib.SshlibConnection
 
 /**
  * Phase-4 seam (#58): the factory is the single construction point for a
- * profile's live [SshConnection]. In this phase both engines still build a
- * JSch connection — a sshlib-toggled profile runs its shell/exec/forwards
- * over JSch and only routes SFTP to sshlib (phase 1). This pins that
- * invariant so a future whole-connection sshlib impl is a deliberate change
- * to the SSHLIB branch, not an accident.
+ * profile's live [SshConnection]. Each engine now builds its own connection —
+ * the SSHLIB branch returns a real whole-connection sshlib impl rather than the
+ * JSch stand-in it used to (exec, the last missing block, landed with sshlib
+ * 0.4.0). These pin that the opt-in actually reaches sshlib AND that a profile
+ * which has NOT opted in still gets JSch, so the experimental engine can never
+ * become the default by accident — that flip is a deliberate future change.
  */
 class SshConnectionFactoryTest {
 
     @Test
-    fun `both engines currently build a JSch connection`() {
+    fun `each engine builds its own connection type`() {
         assertTrue(SshConnectionFactory.create(SshEngine.JSCH) is SshClient)
-        assertTrue(SshConnectionFactory.create(SshEngine.SSHLIB) is SshClient)
+        assertTrue(SshConnectionFactory.create(SshEngine.SSHLIB) is SshlibConnection)
     }
 
     @Test
@@ -27,12 +29,22 @@ class SshConnectionFactoryTest {
             host = "h", username = "u",
             sshOptions = ConnectionConfig.parseSshOptions("HavenSshEngine sshlib"),
         )
-        // Both concrete today; the point is the overload reads the directive
-        // without throwing and would branch here once sshlib whole-connection lands.
-        assertTrue(SshConnectionFactory.create(jschCfg) is SshConnection)
-        assertTrue(SshConnectionFactory.create(sshlibCfg) is SshConnection)
         assertSame(SshEngine.JSCH, jschCfg.sshEngine)
         assertSame(SshEngine.SSHLIB, sshlibCfg.sshEngine)
+        // The directive is what routes the build — no directive means JSch.
+        assertTrue(SshConnectionFactory.create(jschCfg) is SshClient)
+        assertTrue(SshConnectionFactory.create(sshlibCfg) is SshlibConnection)
+    }
+
+    @Test
+    fun `JSch stays the default for anything that has not opted in`() {
+        for (options in listOf(null, "", "ServerAliveInterval 30", "HavenSshEngine jsch", "HavenSshEngine bogus")) {
+            assertSame("engine for options=<$options>", SshEngine.JSCH, sshEngineFromOptionsText(options))
+            assertTrue(
+                "connection for options=<$options>",
+                SshConnectionFactory.create(sshEngineFromOptionsText(options)) is SshClient,
+            )
+        }
     }
 
     @Test
