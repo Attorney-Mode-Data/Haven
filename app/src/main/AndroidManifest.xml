@@ -79,6 +79,19 @@
             </intent-filter>
         </activity>
 
+        <!-- One-shot resurrector for the restart_app MCP verb. Runs in its own
+             process (:restart) so it can kill the main process — applying a
+             staged self-update — and relaunch the app while itself foreground,
+             clearing the background-activity-launch block that defeats a post-
+             kill AlarmManager relaunch. Not exported; no launcher entry. -->
+        <activity
+            android:name=".RestartActivity"
+            android:process=":restart"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- Tasker / Locale / MacroDroid plugin: "Run command on a Haven
              server" (#367). The edit activity is the config screen the host
              opens when adding the action; the receiver fires when the macro

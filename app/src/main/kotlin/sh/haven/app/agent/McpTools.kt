@@ -1158,6 +1158,13 @@ internal class McpTools(
             },
         ) { args -> swipeHavenUi(args) },
 
+        "restart_app" to ToolHandler(
+            description = "Restart Haven's own process — kill it and relaunch the app. The missing rung of the self-hosting loop: install_apk_from_backend stages a self-update, but the running process is held alive by Haven's persistent foreground service, so the new APK only takes effect on a process restart (previously only a manual Force-stop could do it). Call this right after get_app_info shows lastInstall.ok but the version hasn't changed. The MCP server lives in this process, so the link DROPS on the kill and the call returns just before it — the client must reconnect (/mcp reconnect), then re-check get_app_info for the new version. Also useful to recover a wedged UI. No-op-safe: it only relaunches Haven's own launcher activity. Returns { restarting:true }.",
+            inputSchema = emptyObjectSchema(),
+            consentLevel = ConsentLevel.EVERY_CALL,
+            summarise = { _ -> "Restart the Haven app? (applies a pending update; the MCP link drops and must reconnect)" },
+        ) { _ -> restartApp() },
+
         "create_standing_policy" to ToolHandler(
             description = "Propose a Tier-3 STANDING POLICY: a scoped, rate-capped, expiring grant that lets THIS client call the listed tools without a per-call consent prompt. The user's tap on this tool's consent sheet IS the installation — the sheet spells out the full scope. Use it when a workflow needs many consented calls in a row (e.g. a tap_haven_ui/swipe_haven_ui drive-and-verify loop) so the user grants the loop once instead of per tap. toolNames must be existing tools; some can never be covered (the policy tools themselves, install_apk_*, unpair_mcp_client). argConstraints (optional) pins arguments: every key given must exactly equal the call's argument (e.g. {\"profileId\":\"<id>\"} scopes the grant to one connection). Covered calls are still written to the audit log; the rate ceiling makes extra calls fall back to normal prompts; the policy expires on its own and can be revoked any time from Haven's Agent activity screen or via revoke_standing_policy. Returns { id, expiresAt }.",
             inputSchema = objectSchema {
@@ -6827,6 +6834,31 @@ internal class McpTools(
                 put("delivered", false)
                 put("reason", result.reason)
             }
+        }
+    }
+
+    /**
+     * Kill and relaunch Haven's own process (the self-update rung of the
+     * self-hosting loop — the persistent foreground service otherwise keeps a
+     * staged update from taking effect). Delegates to [sh.haven.app.RestartActivity],
+     * a separate-process resurrector that kills the main process and starts the
+     * launcher while itself foreground; that foreground start is what clears the
+     * background-activity-launch block which silently defeats a post-kill
+     * AlarmManager relaunch. The in-process MCP server dies with the kill, so the
+     * caller must reconnect afterwards.
+     */
+    private fun restartApp(): JSONObject {
+        // Fail before committing to a kill if there's nothing to relaunch.
+        context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?: throw McpError(-32603, "No launcher activity to relaunch ${context.packageName}")
+        context.startActivity(sh.haven.app.RestartActivity.launchIntent(context))
+        return JSONObject().apply {
+            put("restarting", true)
+            put(
+                "message",
+                "Haven is restarting (~1s) via a resurrector process. The MCP link drops on the kill — " +
+                    "reconnect, then get_app_info to confirm the new version. A staged self-update takes effect on the relaunch.",
+            )
         }
     }
 

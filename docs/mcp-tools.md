@@ -41,7 +41,7 @@ Tools are grouped into sections by what they touch, and each tool is collapsed �
 expand one for its description and arguments. The tag after each name is its
 consent level:
 
-- **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (67 tools).
+- **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (68 tools).
 - **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (49 tools).
 - **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (82 tools).
 
@@ -57,7 +57,7 @@ consent level:
 - [**USB & host-device brokers**](#sec-usb) — 17 tools
 - [**Security — SSH keys, host keys, TOTP & age**](#sec-security) — 14 tools
 - [**Agent ↔ you (attention & self-drive)**](#sec-agent-you) — 12 tools
-- [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 13 tools
+- [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 14 tools
 
 <a id="sec-connections"></a>
 
@@ -2055,7 +2055,7 @@ Inject a tap (or, with holdMs > 0, a press-and-hold) into HAVEN'S OWN UI at wind
 
 <a id="sec-agent-endpoint"></a>
 
-## Agent endpoint, device & diagnostics (13)
+## Agent endpoint, device & diagnostics (14)
 
 Pairing, standing policies, app info/update, preferences, and device diagnostics.
 
@@ -2145,6 +2145,13 @@ Read recent Android system log lines via Shizuku, so the agent can observe forei
 - `packageName` (string) — Filter to this app only. Resolved to '--uid <uid>' via 'pm list packages -U'. Errors out if the package is not installed.
 - `pid` (integer) — Filter to this process pid only. Maps to logcat --pid <pid>. Use when you already have the pid (e.g. from a previous capture or pgrep).
 - `since` (string) — Only return lines after this point. Pass a logcat timestamp ('MM-DD HH:MM:SS.SSS') or an epoch-ms integer. Maps to logcat -T.
+
+</details>
+
+<details markdown="1">
+<summary><code>restart_app</code> · asks every call</summary>
+
+Restart Haven's own process — kill it and relaunch the app. The missing rung of the self-hosting loop: install_apk_from_backend stages a self-update, but the running process is held alive by Haven's persistent foreground service, so the new APK only takes effect on a process restart (previously only a manual Force-stop could do it). Call this right after get_app_info shows lastInstall.ok but the version hasn't changed. The MCP server lives in this process, so the link DROPS on the kill and the call returns just before it — the client must reconnect (/mcp reconnect), then re-check get_app_info for the new version. Also useful to recover a wedged UI. No-op-safe: it only relaunches Haven's own launcher activity. Returns { restarting:true }.
 
 </details>
 
