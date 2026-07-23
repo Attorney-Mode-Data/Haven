@@ -97,6 +97,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
@@ -1183,6 +1187,9 @@ private fun ToolbarKeyButton(
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var didRepeat by remember { mutableStateOf(false) }
+    // Aliased so the semantics `onClick` DSL below can invoke the key's action
+    // without colliding with the receiver's own `onClick` builder.
+    val onClickAction = onClick
 
     LaunchedEffect(isPressed, repeating) {
         if (isPressed && repeating) {
@@ -1207,6 +1214,16 @@ private fun ToolbarKeyButton(
                     Modifier.widthIn(min = LocalToolbarMinKeyWidth.current)
                 }
             )
+            // Expose the key as an actionable button in the semantics tree. The
+            // touch path below is a bare pointerInteropFilter (for press-and-hold
+            // repeat), which leaves the key clickable:false — so TalkBack can't
+            // activate it and neither can node-based drivers (the MCP self-hosting
+            // loop). A merged onClick action makes the key operable both ways
+            // without adding a competing gesture detector.
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                onClick { onClickAction(); true }
+            }
             .pointerInteropFilter { motionEvent ->
                 when (motionEvent.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {

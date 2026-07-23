@@ -224,6 +224,18 @@ class HavenUiBridge @Inject constructor(
     suspend fun dispatchTap(x: Int, y: Int, holdMs: Long): InjectResult =
         withContext(Dispatchers.Main.immediate) {
             val (view, lx, ly) = injectTarget(x, y) ?: return@withContext injectionRefusal()
+            // A plain tap prefers the OnClick action of the semantics node under
+            // the point. That drives controls a synthetic MotionEvent doesn't
+            // reach — accessory-toolbar keys (a bare pointerInteropFilter with no
+            // clickable) and nested sub-panel toggles — and is robust to window
+            // offsets because it hit-tests the very bounds dumpUi reports. A
+            // long-press (holdMs > 0) needs a genuinely held gesture, and a tap
+            // with no actionable node under it (terminal cursor placement, a
+            // custom drag handle) has nothing to invoke, so both keep the
+            // MotionEvent path.
+            if (holdMs <= 0 && performSemanticsClickAt(view, lx, ly)) {
+                return@withContext InjectResult.Delivered
+            }
             val downTime = SystemClock.uptimeMillis()
             dispatch(view, downTime, downTime, MotionEvent.ACTION_DOWN, lx, ly)
             if (holdMs > 0) delay(holdMs)
@@ -311,6 +323,56 @@ class HavenUiBridge @Inject constructor(
         } finally {
             ev.recycle()
         }
+    }
+
+    /**
+     * If an enabled semantics node with an OnClick action sits under
+     * [target]-window-local point ([x],[y]), invoke that action and return true.
+     *
+     * This is the reliable "activate the control here" primitive — the same
+     * mechanism an accessibility service uses. It drives controls whose touch
+     * handling a synthetic [MotionEvent] does NOT reach: the accessory keyboard
+     * toolbar keys (a bare `pointerInteropFilter` with no `clickable`, so the
+     * injected DOWN/UP never became a click) and toggles nested in an expanded
+     * settings panel. Because it hit-tests `boundsInWindow` — the exact bounds
+     * [dumpUi] reports — it is immune to any window-offset drift between the dump
+     * space and the touch space.
+     *
+     * Scoped to the single window [injectTarget] already resolved as topmost at
+     * the point, so it can never reach a control *under* a covering dialog (the
+     * MotionEvent path has the same reach). Picks the smallest-area matching node
+     * so a leaf control wins over an enclosing clickable container. Returns false
+     * when nothing actionable is under the point, so the caller falls back to a
+     * real MotionEvent tap. Main-thread only (callers already are).
+     */
+    private fun performSemanticsClickAt(target: View, x: Int, y: Int): Boolean {
+        val cv = findComposeView(target) ?: return false
+        val owner = reflectGetter(cv, "getSemanticsOwner") as? SemanticsOwner ?: return false
+        val root = (reflectGetter(owner, "getUnmergedRootSemanticsNode") as? SemanticsNode)
+            ?: (reflectGetter(owner, "getRootSemanticsNode") as? SemanticsNode)
+            ?: return false
+        var best: SemanticsNode? = null
+        var bestArea = Long.MAX_VALUE
+        val stack = ArrayDeque<SemanticsNode>()
+        stack.addLast(root)
+        while (stack.isNotEmpty()) {
+            val node = stack.removeLast()
+            val b = node.boundsInWindow
+            if (x >= b.left && x < b.right && y >= b.top && y < b.bottom &&
+                node.config.contains(SemanticsActions.OnClick) &&
+                !node.config.contains(SemanticsProperties.Disabled)
+            ) {
+                val area = ((b.right - b.left).toLong()) * ((b.bottom - b.top).toLong())
+                if (area <= bestArea) {
+                    bestArea = area
+                    best = node
+                }
+            }
+            for (child in node.children) stack.addLast(child)
+        }
+        val action = best?.config?.getOrNull(SemanticsActions.OnClick)?.action ?: return false
+        action.invoke()
+        return true
     }
 
     /** Outcome of [captureScreen]. */
