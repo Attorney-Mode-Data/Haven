@@ -278,6 +278,53 @@ class SshlibCapabilitySpikeTest {
     }
 
     @Test
+    fun `GAP sequential session channels collide on remote channel reuse — flips when upstream fixes`() {
+        // Found device-testing the #58 experimental whole-connection engine
+        // against a real OpenSSH server: the first exec succeeds, a later one
+        // dies with IllegalStateException "Remote channel N is already
+        // registered", and the failure takes the WHOLE connection down (the
+        // session disconnects and Haven starts reconnecting) — not just that
+        // exec. sshlib registers a channel under the server's remote number but
+        // does not release it on close, so the moment the server legitimately
+        // reuses that number the client rejects its own channel.
+        //
+        // Any long-lived connection running more than one exec is exposed, which
+        // is why the sshlib engine stays experimental/opt-in.
+        // Reported upstream as connectbot/cbssh#238.
+        val server = newServer()
+        val client = sshlibClient { host = "127.0.0.1"; port = server.port }
+        assertTrue(connectAndAuth(client) is ConnectResult.Success)
+        val outcome = runCatching {
+            runBlocking {
+                repeat(12) { attempt ->
+                    val session = client.openSession()
+                        ?: error("openSession returned null on attempt $attempt")
+                    session.requestExec("true")
+                    session.close()
+                }
+            }
+        }
+        assertTrue(
+            "sequential session channels now open cleanly — upstream fixed channel " +
+                "deregistration; remove this GAP probe and re-verify multi-exec sessions (#58)",
+            outcome.isFailure,
+        )
+        // Pin the SYMPTOM too, so this probe and the upstream report cannot
+        // drift apart (and so an unrelated failure can't masquerade as the bug).
+        // It surfaces differently per server, which is worth recording: against
+        // this MINA rig the second openSession simply returns null, while
+        // against a real OpenSSH server it throws "Remote channel N is already
+        // registered" AND tears the whole connection down.
+        val error = outcome.exceptionOrNull()
+        val text = "${error?.javaClass?.simpleName}: ${error?.message}"
+        assertTrue(
+            "unexpected failure mode — expected a second-session-channel failure, got $text",
+            text.contains("already registered", ignoreCase = true) ||
+                text.contains("openSession returned null", ignoreCase = true),
+        )
+    }
+
+    @Test
     fun `PASS interval rekey leaves an idle session usable`() {
         // Was a GAP on 0.3.1: after interval-triggered rekeys on an idle session
         // the next SFTP op suspended forever — a hang with nothing surfaced to
