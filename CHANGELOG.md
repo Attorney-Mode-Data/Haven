@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.4
+
+⌨️ **Terminal: the floating text input's selection toolbar now appears** — selecting text inside the floating text input box (v5.82.0) showed the selection handles but never the Copy / Cut / Paste / Select-all toolbar, so there was no way to act on a selection. The box is a focusable popup with no real DecorView, and Compose 1.11's new text-context-menu path silently no-ops there. Haven now renders the menu inside the popup's own window, so the toolbar shows and works. (#444, thanks kanazawahere)
+
+⛶ **Terminal: the fullscreen button can be moved to any corner** — the ⛶ button that toggles terminal fullscreen was pinned to the top-right, where it could sit over content. Long-press and drag it, and it snaps to whichever corner you release it nearest; the choice is remembered per app. (#445, thanks PurpleMyst)
+
 ## v5.83.3
 
 📁 **Files: the folder picker on the Local tab is no longer a trap** — the built-in "Local" Files tab showed "Upload folder" and "Upload file" buttons that couldn't work there (uploads target a connected remote, so on Local they just failed with "Not connected"). Worse, "Upload folder" sat right next to "Add folder location" and opened the same Android folder picker — so picking, say, your Termux home to *browse* it easily went through the wrong button and did nothing. Those upload buttons are now hidden on the Local tab, leaving "Add folder location" as the clear way to add a folder to browse. (#415, thanks timerloggedout-spec)
