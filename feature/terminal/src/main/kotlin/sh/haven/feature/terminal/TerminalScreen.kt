@@ -86,6 +86,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -149,6 +153,8 @@ fun TerminalScreen(
     toolbarUniformGrid: Boolean = false,
     editModeControlsPlacement: sh.haven.core.data.preferences.EditModeControlsPlacement = sh.haven.core.data.preferences.EditModeControlsPlacement.LEFT,
     desktopKeyPlacement: sh.haven.core.data.preferences.DesktopKeyPlacement = sh.haven.core.data.preferences.DesktopKeyPlacement.LEFT,
+    fullscreenButtonCorner: sh.haven.core.data.preferences.FullscreenButtonCorner = sh.haven.core.data.preferences.FullscreenButtonCorner.DEFAULT,
+    onFullscreenButtonCornerChange: (sh.haven.core.data.preferences.FullscreenButtonCorner) -> Unit = {},
     toolbarMinKeyWidth: Int = sh.haven.core.data.preferences.UserPreferencesRepository.DEFAULT_TOOLBAR_MIN_BUTTON_WIDTH,
     showSearchButton: Boolean = false,
     showCopyOutputButton: Boolean = false,
@@ -1246,13 +1252,44 @@ fun TerminalScreen(
                             modifier = Modifier.align(Alignment.TopCenter),
                         )
 
-                        // Fullscreen toggle (#138). Small low-opacity overlay
-                        // top-right; the TopCenter slot is taken by the
-                        // disconnect banner so they never collide.
+                        // Fullscreen toggle (#138). Small low-opacity overlay in
+                        // a corner (default top-right; the TopCenter slot is the
+                        // disconnect banner's, so they never collide). Tap toggles
+                        // fullscreen; hold-drag moves it to another corner, snapping
+                        // to whichever it's released nearest and remembering it (#445).
+                        var fsDragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                        var fsButtonCoords by remember {
+                            mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null)
+                        }
                         IconButton(
                             onClick = { fullscreen = !fullscreen },
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
+                                .align(fullscreenButtonCorner.toComposeAlignment())
+                                .offset { androidx.compose.ui.unit.IntOffset(fsDragOffset.x.toInt(), fsDragOffset.y.toInt()) }
+                                .onGloballyPositioned { fsButtonCoords = it }
+                                .pointerInput(Unit) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDrag = { change, delta ->
+                                            change.consume()
+                                            fsDragOffset += delta
+                                        },
+                                        onDragEnd = {
+                                            val coords = fsButtonCoords
+                                            val parent = coords?.parentLayoutCoordinates
+                                            if (coords != null && parent != null) {
+                                                val c = coords.boundsInParent().center
+                                                onFullscreenButtonCornerChange(
+                                                    sh.haven.core.data.preferences.FullscreenButtonCorner.nearest(
+                                                        c.x, c.y,
+                                                        parent.size.width.toFloat(),
+                                                        parent.size.height.toFloat(),
+                                                    ),
+                                                )
+                                            }
+                                            fsDragOffset = androidx.compose.ui.geometry.Offset.Zero
+                                        },
+                                    )
+                                }
                                 .padding(2.dp)
                                 .size(32.dp),
                         ) {
@@ -1527,6 +1564,14 @@ private fun handleLayoutAwareKeyEvent(
  */
 internal fun bracketPasteWrap(text: CharSequence, bracketPasteMode: Boolean): String =
     if (bracketPasteMode) "\u001b[200~$text\u001b[201~" else text.toString()
+
+/** Box alignment for the fullscreen button's persisted corner (#445). */
+private fun sh.haven.core.data.preferences.FullscreenButtonCorner.toComposeAlignment(): Alignment = when (this) {
+    sh.haven.core.data.preferences.FullscreenButtonCorner.TOP_END -> Alignment.TopEnd
+    sh.haven.core.data.preferences.FullscreenButtonCorner.TOP_START -> Alignment.TopStart
+    sh.haven.core.data.preferences.FullscreenButtonCorner.BOTTOM_END -> Alignment.BottomEnd
+    sh.haven.core.data.preferences.FullscreenButtonCorner.BOTTOM_START -> Alignment.BottomStart
+}
 
 /** Keys that termlib maps to VTermKey codes — let termlib handle these directly. */
 private fun isSpecialTerminalKey(keyCode: Int): Boolean {

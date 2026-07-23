@@ -67,6 +67,7 @@ class UserPreferencesRepository @Inject constructor(
     private val toolbarUniformGridKey = booleanPreferencesKey("toolbar_uniform_grid")
     private val editModeControlsPlacementKey = stringPreferencesKey("edit_mode_controls_placement")
     private val desktopKeyPlacementKey = stringPreferencesKey("desktop_key_placement")
+    private val fullscreenButtonCornerKey = stringPreferencesKey("fullscreen_button_corner")
     private val sessionCommandOverrideKey = stringPreferencesKey("session_command_override")
     private val sftpSortModeKey = stringPreferencesKey("sftp_sort_mode")
     private val lockTimeoutKey = stringPreferencesKey("lock_timeout")
@@ -1499,6 +1500,18 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setDesktopKeyPlacement(placement: DesktopKeyPlacement) {
         dataStore.edit { prefs ->
             prefs[desktopKeyPlacementKey] = placement.id
+        }
+    }
+
+    /** Corner of the terminal view holding the fullscreen toggle (#445). */
+    val fullscreenButtonCorner: Flow<FullscreenButtonCorner> = dataStore.data.map { prefs ->
+        prefs[fullscreenButtonCornerKey]?.let { FullscreenButtonCorner.fromId(it) }
+            ?: FullscreenButtonCorner.DEFAULT
+    }
+
+    suspend fun setFullscreenButtonCorner(corner: FullscreenButtonCorner) {
+        dataStore.edit { prefs ->
+            prefs[fullscreenButtonCornerKey] = corner.id
         }
     }
 

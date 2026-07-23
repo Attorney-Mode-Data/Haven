@@ -423,6 +423,8 @@ fun HavenNavHost(
         .collectAsState(initial = sh.haven.core.data.preferences.EditModeControlsPlacement.LEFT)
     val desktopKeyPlacement by preferencesRepository.desktopKeyPlacement
         .collectAsState(initial = sh.haven.core.data.preferences.DesktopKeyPlacement.LEFT)
+    val fullscreenButtonCorner by preferencesRepository.fullscreenButtonCorner
+        .collectAsState(initial = sh.haven.core.data.preferences.FullscreenButtonCorner.DEFAULT)
     val toolbarMinKeyWidth by preferencesRepository.toolbarMinButtonWidth
         .collectAsState(initial = sh.haven.core.data.preferences.UserPreferencesRepository.DEFAULT_TOOLBAR_MIN_BUTTON_WIDTH)
     val showSearchButton by preferencesRepository.showSearchButton
@@ -646,6 +648,10 @@ fun HavenNavHost(
                         toolbarUniformGrid = toolbarUniformGrid,
                         editModeControlsPlacement = editModeControlsPlacement,
                         desktopKeyPlacement = desktopKeyPlacement,
+                        fullscreenButtonCorner = fullscreenButtonCorner,
+                        onFullscreenButtonCornerChange = {
+                            coroutineScope.launch { preferencesRepository.setFullscreenButtonCorner(it) }
+                        },
                         toolbarMinKeyWidth = toolbarMinKeyWidth,
                         showSearchButton = showSearchButton,
                         showCopyOutputButton = showCopyOutputButton,

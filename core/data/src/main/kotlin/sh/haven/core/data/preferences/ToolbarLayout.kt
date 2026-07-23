@@ -87,6 +87,42 @@ enum class DesktopKeyPlacement(val id: String) {
     }
 }
 
+/**
+ * Which corner of the terminal view the fullscreen toggle sits in (#445).
+ * The button is hold-to-dragged and snaps to whichever corner it's released
+ * nearest; this persists that choice. `TOP_END` is the default (its original
+ * fixed position). `START`/`END` are layout-direction-aware (LTR: start=left).
+ */
+enum class FullscreenButtonCorner(val id: String) {
+    TOP_END("top_end"),
+    TOP_START("top_start"),
+    BOTTOM_END("bottom_end"),
+    BOTTOM_START("bottom_start");
+
+    companion object {
+        val DEFAULT = TOP_END
+
+        fun fromId(id: String): FullscreenButtonCorner? = entries.find { it.id == id }
+
+        /**
+         * The corner nearest to a point in a [width]×[height] box: the point's
+         * half decides top/bottom and start/end. `centerX < width/2` is the
+         * start (leading) half in LTR. Pure — unit-tested, no Compose types, so
+         * the snap-on-drop math is verifiable without a device.
+         */
+        fun nearest(centerX: Float, centerY: Float, width: Float, height: Float): FullscreenButtonCorner {
+            val start = centerX < width / 2f
+            val top = centerY < height / 2f
+            return when {
+                top && start -> TOP_START
+                top && !start -> TOP_END
+                !top && start -> BOTTOM_START
+                else -> BOTTOM_END
+            }
+        }
+    }
+}
+
 data class MacroPreset(val label: String, val send: String, val description: String)
 
 val MACRO_PRESETS = listOf(
