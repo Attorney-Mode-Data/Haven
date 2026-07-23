@@ -74,13 +74,13 @@ internal object SshlibSftpConnector {
                 this.host = host
                 this.port = config.port
                 this.hostKeyVerifier = trustGate
-                // sshlib 0.3.1 client-initiated rekey is broken both ways: a
-                // byte-limit rekey mid-transfer kills the channel, an interval
-                // rekey wedges an idle session (SshlibCapabilitySpikeTest GAP
-                // probes). Push both thresholds out of practical reach until
-                // the upstream fix ships; the probes flip when it does.
-                rekeyIntervalMs = Long.MAX_VALUE / 2
-                rekeyBytesLimit = Long.MAX_VALUE / 2
+                // Rekey thresholds are sshlib's defaults (1 GiB / 1 h) again.
+                // 0.3.1 had client-initiated rekey broken both ways — a
+                // byte-limit rekey mid-transfer killed the channel, an interval
+                // rekey wedged an idle session (connectbot/cbssh#231) — so both
+                // were pushed out of reach. 0.4.0 fixes it (strict-KEX packet
+                // numbering); the SshlibCapabilitySpikeTest probes flipped, so
+                // the mitigation is gone and keys rotate normally again.
             },
         )
         try {
