@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.7
+
+♿ **Terminal: the keyboard-toolbar keys are now proper accessibility targets** — the configurable toolbar keys (Esc, Paste, the arrows, symbols and custom keys) were drawn with a low-level touch handler for press-and-hold key repeat that never exposed a "click" action. So screen readers like TalkBack couldn't activate them, and Haven's own agent-driving/self-hosting loop couldn't tap them either. They now expose a standard button action — keeping the press-and-hold repeat — so assistive tech and automated UI checks can operate every key. (accessibility / self-hosting loop)
+
+🤖 **Agent API: `restart_app` finishes the self-update loop** — an agent can already stream a new build to the device (`install_apk_from_backend`), but Haven's persistent foreground service kept the old process alive, so the update only took effect after a manual Force-stop. The new `restart_app` verb kills and relaunches Haven's own process to apply a staged update (the MCP link drops on restart and reconnects), removing the last manual step from remote install-and-verify.
+
 ## v5.83.4
 
 ⌨️ **Terminal: the floating text input's selection toolbar now appears** — selecting text inside the floating text input box (v5.82.0) showed the selection handles but never the Copy / Cut / Paste / Select-all toolbar, so there was no way to act on a selection. The box is a focusable popup with no real DecorView, and Compose 1.11's new text-context-menu path silently no-ops there. Haven now renders the menu inside the popup's own window, so the toolbar shows and works. (#444, thanks kanazawahere)
