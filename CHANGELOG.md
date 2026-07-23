@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.8
+
+🔐 **SSH: session keys rotate again on the sshlib engine** — Haven's second SSH engine had both of its rekey thresholds pinned to effectively "never", because client-initiated rekeying was broken upstream in sshlib 0.3.1: a byte-limit rekey killed an in-flight transfer, and an interval rekey silently wedged an idle session. Haven reported it (connectbot/cbssh#231) and it's fixed in sshlib 0.4.0, so that workaround is gone and connections re-key on the normal schedule (1 GiB / 1 hour) again.
+
+🧪 **SSH: sshlib is now a full engine, opt-in and experimental** — putting `HavenSshEngine sshlib` in a profile's SSH Options now runs that profile's *whole* connection on sshlib — terminal, remote-command, one-shot commands, SFTP and port forwarding — instead of only its SFTP. JSch remains the default for every profile that doesn't opt in. The engine deliberately refuses what it can't do yet — jump hosts and proxies, FIDO2 security keys, OpenSSH certificates and multi-factor chains — with a clear error rather than quietly behaving differently, so move those profiles back to JSch. (#58)
+
 ## v5.83.7
 
 ♿ **Terminal: the keyboard-toolbar keys are now proper accessibility targets** — the configurable toolbar keys (Esc, Paste, the arrows, symbols and custom keys) were drawn with a low-level touch handler for press-and-hold key repeat that never exposed a "click" action. So screen readers like TalkBack couldn't activate them, and Haven's own agent-driving/self-hosting loop couldn't tap them either. They now expose a standard button action — keeping the press-and-hold repeat — so assistive tech and automated UI checks can operate every key. (accessibility / self-hosting loop)
