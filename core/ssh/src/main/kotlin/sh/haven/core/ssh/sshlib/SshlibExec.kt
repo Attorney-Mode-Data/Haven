@@ -41,7 +41,9 @@ internal object SshlibExec {
 
     suspend fun exec(client: SshlibClient, command: String, timeoutMs: Long?): ExecResult {
         val session = client.openSession()
-            ?: throw SshIoException("sshlib: server refused a session channel for exec")
+            ?: throw SshIoException(
+                "sshlib: server refused a session channel for exec. $SSHLIB_CHANNEL_LIMITATION",
+            )
         try {
             if (!session.requestExec(command)) {
                 throw SshIoException("sshlib: server rejected exec request: ${command.take(64)}")

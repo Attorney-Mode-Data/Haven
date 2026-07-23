@@ -354,7 +354,9 @@ class SshSessionManager @Inject constructor(
                 _sessions.value[sessionId]?.profileId ?: return,
                 "engine=sshlib (experimental): whole connection — terminal, exec, SFTP and " +
                     "tunnels over sshlib. Jump/proxy, FIDO2, OpenSSH certs and MFA chains are " +
-                    "refused on this engine; switch the profile back to JSch for those.",
+                    "refused on this engine; switch the profile back to JSch for those. Known " +
+                    "limitation: a second command channel on one connection can be refused and " +
+                    "drop the connection — https://github.com/connectbot/cbssh/issues/238",
             )
         }
     }

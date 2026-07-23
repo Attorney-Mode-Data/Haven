@@ -19,6 +19,20 @@ import sh.haven.core.ssh.sftp.SftpSession
 import java.util.Base64
 
 /**
+ * Appended to the error a user actually sees when the known upstream
+ * channel-registry bug bites, so the failure carries its own explanation and a
+ * way out instead of looking like a random disconnect. sshlib registers a
+ * channel under the server's remote number without releasing it on close, so a
+ * later channel that the server assigns the same number to is rejected — and
+ * the whole connection goes down with it.
+ */
+internal const val SSHLIB_CHANNEL_LIMITATION =
+    "This is a known limitation of the experimental sshlib engine: a second command channel on " +
+        "one connection can be refused and take the connection down with it — tracked upstream at " +
+        "https://github.com/connectbot/cbssh/issues/238. Switch this profile's SSH engine back to " +
+        "JSch (remove 'HavenSshEngine sshlib' from its SSH Options) if it keeps happening."
+
+/**
  * A whole connection on the sshlib engine (#58) — the **experimental** opt-in
  * alternative to the JSch [sh.haven.core.ssh.SshClient].
  *
@@ -147,7 +161,7 @@ internal class SshlibConnection : SshConnection {
     ): ShellChannel = runBlocking {
         val connected = requireClient()
         val session = connected.openSession()
-            ?: throw SshIoException("sshlib: server refused a session channel")
+            ?: throw SshIoException("sshlib: server refused a session channel. $SSHLIB_CHANNEL_LIMITATION")
         try {
             if (remoteCommand.isNullOrBlank()) {
                 SshlibShell.requestShell(session, term, cols, rows)
