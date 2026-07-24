@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.9
+
+🌐 **Local Linux: the guest's DNS is configurable, and now follows your network by default** — the Linux guest's `/etc/resolv.conf` was hardcoded to public name servers (Google + Cloudflare). On a network that only allows DNS to its own resolver — common on corporate and guest Wi-Fi — that fails *silently*: installing a desktop like Xfce simply hangs during background setup, with nothing pointing at DNS until you open a shell in the container. You can now pick **Network (DHCP)** — the new default, and the only option that works on every network — **Public (Google + Cloudflare)** for the old behaviour, or **Custom** name servers, under Desktop → Options & mounts → Guest DNS. It is rewritten on every guest launch, so changing it takes effect without reinstalling the distro, and it is also settable from the agent API — handy precisely when DNS is what's broken. (#446, thanks itskenny0)
+
 ## v5.83.8
 
 🔐 **SSH: session keys rotate again on the sshlib engine** — Haven's second SSH engine had both of its rekey thresholds pinned to effectively "never", because client-initiated rekeying was broken upstream in sshlib 0.3.1: a byte-limit rekey killed an in-flight transfer, and an interval rekey silently wedged an idle session. Haven reported it (connectbot/cbssh#231) and it's fixed in sshlib 0.4.0, so that workaround is gone and connections re-key on the normal schedule (1 GiB / 1 hour) again.
