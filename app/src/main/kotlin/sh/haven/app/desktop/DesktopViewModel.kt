@@ -152,6 +152,20 @@ class DesktopViewModel @Inject constructor(
         prootManager.setBindAndroidSystem(enabled)
     }
 
+    /** #446: which resolvers the local guest's /etc/resolv.conf gets. Pass-through. */
+    val dnsMode: StateFlow<sh.haven.core.local.ProotDnsMode> get() = prootManager.dnsModeFlow
+
+    fun setDnsMode(mode: sh.haven.core.local.ProotDnsMode) {
+        prootManager.setDnsMode(mode)
+    }
+
+    /** #446: custom nameservers, used when [dnsMode] is CUSTOM. Pass-through. */
+    val dnsServers: StateFlow<String> get() = prootManager.dnsServersFlow
+
+    fun setDnsServers(servers: String) {
+        prootManager.setDnsServers(servers)
+    }
+
     /**
      * Local-shell open requests keyed by the resolved profile id. Collected
      * by HavenNavHost (which is always composed, unlike TerminalScreen) so

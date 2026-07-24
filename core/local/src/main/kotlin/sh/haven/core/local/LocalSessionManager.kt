@@ -267,11 +267,10 @@ class LocalSessionManager @Inject constructor(
             // PRoot with the target distro's rootfs
             val rootfsDir = prootManager.rootfsDirFor(targetDistro)
 
-            // Ensure resolv.conf exists (Android doesn't have /etc/resolv.conf)
-            val resolvConf = java.io.File(rootfsDir, "etc/resolv.conf")
-            if (!resolvConf.exists() || resolvConf.length() == 0L) {
-                resolvConf.writeText("nameserver 8.8.8.8\nnameserver 1.1.1.1\n")
-            }
+            // Android has no /etc/resolv.conf, so Haven owns the guest's. Rewrite it
+            // on every launch from the configured DNS mode (#446) so changing the
+            // setting takes effect without reinstalling the distro.
+            prootManager.applyResolvConf(rootfsDir)
             val cmd = prootBinary
             // Append a session-manager wrapper if the user picked one
             // (tmux/zellij/screen/byobu). The wrapper falls back to a

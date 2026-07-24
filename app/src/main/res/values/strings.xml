@@ -96,6 +96,15 @@
     <string name="app_desktop_remap_ports_description">Lets guest services listen on privileged ports (&lt;1024): a service on port N becomes reachable at N+2000 (e.g. 80 → 2080). Android blocks the app from binding low ports directly. Off by default; affects every privileged port, including a guest sshd.</string>
     <string name="app_desktop_share_storage_title">Share device storage with guest</string>
     <string name="app_desktop_share_storage_description">Mounts your shared storage into the guest at /storage and /sdcard so it can reach your files. Turn off to keep your photos and downloads hidden from the local Linux environment.</string>
+    <!-- Guest DNS (#446): the hardcoded public resolvers failed silently on
+         networks that only allow their own resolver. -->
+    <string name="app_desktop_dns_title">Guest DNS</string>
+    <string name="app_desktop_dns_description">Which name servers the local Linux guest uses. If package installs hang on this network, it may block public DNS \u2014 use the network\'s own resolver.</string>
+    <string name="app_desktop_dns_mode_system">Network (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">Public (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">Custom</string>
+    <string name="app_desktop_dns_custom_label">Name servers</string>
+    <string name="app_desktop_dns_custom_hint">e.g. 10.0.0.53, 1.1.1.1</string>
     <string name="app_desktop_bind_android_system_title">Expose Android system to guest</string>
     <string name="app_desktop_bind_android_system_description">Mounts Android\'s read-only /system, /vendor, /apex and related partitions into the guest so it can run Android\'s own native binaries (e.g. getprop, toybox). Off by default: this exposes device and vendor internals to the local Linux environment.</string>
     <!-- Desktop manager: custom bind mounts (#301) -->

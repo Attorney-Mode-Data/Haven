@@ -41,6 +41,8 @@ private const val PREF_MIRROR_REGION = "mirror_region"
 private const val PREF_REMAP_LOW_PORTS = "remap_low_ports"
 private const val PREF_SHARE_STORAGE = "share_storage_with_guest"
 private const val PREF_BIND_ANDROID_SYSTEM = "bind_android_system"
+private const val PREF_DNS_MODE = "proot_dns_mode"
+private const val PREF_DNS_SERVERS = "proot_dns_servers"
 
 /** Per-distro custom bind mounts (#301). Key suffix is the distro id. */
 private const val PREF_CUSTOM_BINDS_PREFIX = "custom_binds_"
@@ -458,6 +460,45 @@ class ProotManager @Inject constructor(
         prefs.edit().putBoolean(PREF_BIND_ANDROID_SYSTEM, enabled).apply()
         _bindAndroidSystem.value = enabled
     }
+
+    private val _dnsMode = MutableStateFlow(ProotDnsMode.fromId(prefs.getString(PREF_DNS_MODE, null)))
+
+    /**
+     * #446: which resolvers go into the guest's `/etc/resolv.conf`. Android has none,
+     * so Haven writes the file; it used to hardcode public servers, which fails
+     * *silently* wherever outbound port 53 is restricted to the network's own resolver
+     * — package installs simply hang. Defaults to [ProotDnsMode.SYSTEM], the only
+     * choice that works on every network.
+     */
+    val dnsModeFlow: StateFlow<ProotDnsMode> = _dnsMode.asStateFlow()
+    val dnsMode: ProotDnsMode get() = _dnsMode.value
+
+    fun setDnsMode(mode: ProotDnsMode) {
+        if (mode == _dnsMode.value) return
+        prefs.edit().putString(PREF_DNS_MODE, mode.id).apply()
+        _dnsMode.value = mode
+    }
+
+    private val _dnsServers = MutableStateFlow(prefs.getString(PREF_DNS_SERVERS, "").orEmpty())
+
+    /** Custom nameservers (comma/space separated IP literals) used when [dnsMode] is CUSTOM. */
+    val dnsServersFlow: StateFlow<String> = _dnsServers.asStateFlow()
+    val dnsServers: String get() = _dnsServers.value
+
+    fun setDnsServers(servers: String) {
+        val trimmed = servers.trim()
+        if (trimmed == _dnsServers.value) return
+        prefs.edit().putString(PREF_DNS_SERVERS, trimmed).apply()
+        _dnsServers.value = trimmed
+    }
+
+    /**
+     * Write `etc/resolv.conf` under [rootfsDir] from the current DNS setting, returning
+     * the servers used. Called on every guest launch as well as at install time, so
+     * changing the setting takes effect without reinstalling the distro.
+     */
+    fun applyResolvConf(rootfsDir: File): List<String> =
+        ProotDns.write(rootfsDir, context, dnsMode, dnsServers)
 
     /**
      * Android system partitions exposed by [bindAndroidSystem]. `/apex` carries the
@@ -1255,7 +1296,7 @@ class ProotManager @Inject constructor(
                 }
                 if (isUrl) tarball.delete()
 
-                File(targetDir, "etc/resolv.conf").writeText("nameserver 8.8.8.8\nnameserver 1.1.1.1\n")
+                applyResolvConf(targetDir)
                 seedRootHome(targetDir)
 
                 // #325: record the rootfs ELF arch so a foreign-arch import
@@ -1514,10 +1555,10 @@ class ProotManager @Inject constructor(
                 tarball.delete()
                 Log.d(TAG, "[extract ${distro.id}] done dir=${targetDir.absolutePath}")
 
-                // Android doesn't have /etc/resolv.conf — write one with public DNS
-                val resolvConf = File(targetDir, "etc/resolv.conf")
-                resolvConf.writeText("nameserver 8.8.8.8\nnameserver 1.1.1.1\n")
-                Log.d(TAG, "[extract ${distro.id}] wrote resolv.conf")
+                // Android has no /etc/resolv.conf, so write one from the user's DNS
+                // setting (#446) rather than hardcoding public resolvers.
+                val dnsServers = applyResolvConf(targetDir)
+                Log.d(TAG, "[extract ${distro.id}] wrote resolv.conf: $dnsServers")
 
                 // Drop a generic shell profile and a welcome README into
                 // /root/. These are vendor-neutral — they explain what the

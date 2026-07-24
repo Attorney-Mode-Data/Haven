@@ -1557,9 +1557,58 @@
      }
     },
     {
+     "name": "app_desktop_dns_title",
+     "en": "Guest DNS",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "app_desktop_dns_description",
+     "en": "Which name servers the local Linux guest uses. If package installs hang on this network, it may block public DNS \\u2014 use the network\\'s own resolver.",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "app_desktop_dns_mode_system",
+     "en": "Network (DHCP)",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "app_desktop_dns_mode_public",
+     "en": "Public (Google + Cloudflare)",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "app_desktop_dns_mode_custom",
+     "en": "Custom",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "app_desktop_dns_custom_label",
+     "en": "Name servers",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "app_desktop_dns_custom_hint",
+     "en": "e.g. 10.0.0.53, 1.1.1.1",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "app_desktop_bind_android_system_title",
      "en": "Expose Android system to guest",
-     "comment": "Desktop manager: package mirror (#263)",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
      "t": {
       "ar": "إتاحة نظام Android للضيف",
@@ -1578,7 +1627,7 @@
     {
      "name": "app_desktop_bind_android_system_description",
      "en": "Mounts Android\\'s read-only /system, /vendor, /apex and related partitions into the guest so it can run Android\\'s own native binaries (e.g. getprop, toybox). Off by default: this exposes device and vendor internals to the local Linux environment.",
-     "comment": "Desktop manager: package mirror (#263)",
+     "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
      "t": {
       "ar": "يركّب أقسام Android للقراءة فقط /system و /vendor و /apex وما يتصل بها داخل الضيف ليتمكن من تشغيل ثنائيات Android الأصلية (مثل getprop و toybox). معطّل افتراضيًا: هذا يكشف دواخل الجهاز والمصنّع لبيئة Linux المحلية.",

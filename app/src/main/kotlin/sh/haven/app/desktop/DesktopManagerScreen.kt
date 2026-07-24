@@ -75,6 +75,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import sh.haven.core.local.DesktopManager
+import sh.haven.core.local.ProotDnsMode
 import sh.haven.core.local.ProotManager
 import sh.haven.core.local.SystemVmManager
 import sh.haven.core.local.proot.Compatibility
@@ -114,6 +115,8 @@ fun DesktopManagerScreen(viewModel: DesktopViewModel = hiltViewModel()) {
     val usbDrivePicker by viewModel.usbDrivePicker.collectAsState()
     val isRootfsReady = rootfsSetupState is ProotManager.SetupState.Ready
     val mirrorRegion by viewModel.mirrorRegion.collectAsState()
+    val dnsMode by viewModel.dnsMode.collectAsState()
+    val dnsServers by viewModel.dnsServers.collectAsState()
     val remapLowPorts by viewModel.remapLowPorts.collectAsState()
     val shareStorageWithGuest by viewModel.shareStorageWithGuest.collectAsState()
     val bindAndroidSystem by viewModel.bindAndroidSystem.collectAsState()
@@ -157,6 +160,10 @@ fun DesktopManagerScreen(viewModel: DesktopViewModel = hiltViewModel()) {
             isRootfsReady = isRootfsReady,
             mirrorRegion = mirrorRegion,
             onSetMirrorRegion = { viewModel.setMirrorRegion(it) },
+            dnsMode = dnsMode,
+            onSetDnsMode = { viewModel.setDnsMode(it) },
+            dnsServers = dnsServers,
+            onSetDnsServers = { viewModel.setDnsServers(it) },
             remapLowPorts = remapLowPorts,
             onSetRemapLowPorts = { viewModel.setRemapLowPorts(it) },
             shareStorageWithGuest = shareStorageWithGuest,
@@ -875,6 +882,85 @@ private fun MirrorRegionRow(region: MirrorRegion, onSelect: (MirrorRegion) -> Un
     }
 }
 
+/**
+ * Guest DNS selection (#446). Android has no /etc/resolv.conf, so Haven writes the
+ * guest's; it used to hardcode public resolvers, which fails *silently* on networks
+ * that only route DNS to their own resolver - installs just hang with no clue why.
+ */
+@Composable
+private fun GuestDnsRow(
+    mode: ProotDnsMode,
+    servers: String,
+    onSelectMode: (ProotDnsMode) -> Unit,
+    onServersChange: (String) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Text(
+        stringResource(AppR.string.app_desktop_dns_title),
+        style = MaterialTheme.typography.titleSmall,
+    )
+    Spacer(Modifier.height(2.dp))
+    Text(
+        stringResource(AppR.string.app_desktop_dns_description),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(4.dp))
+    Box {
+        AssistChip(
+            onClick = { open = true },
+            label = { Text(dnsModeLabel(mode)) },
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+            },
+        )
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            ProotDnsMode.entries.forEach { candidate ->
+                DropdownMenuItem(
+                    text = { Text(dnsModeLabel(candidate)) },
+                    leadingIcon = if (candidate == mode) {
+                        {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        onSelectMode(candidate)
+                        open = false
+                    },
+                )
+            }
+        }
+    }
+    if (mode == ProotDnsMode.CUSTOM) {
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = servers,
+            onValueChange = onServersChange,
+            label = { Text(stringResource(AppR.string.app_desktop_dns_custom_label)) },
+            placeholder = { Text(stringResource(AppR.string.app_desktop_dns_custom_hint)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun dnsModeLabel(mode: ProotDnsMode): String = when (mode) {
+    ProotDnsMode.SYSTEM -> stringResource(AppR.string.app_desktop_dns_mode_system)
+    ProotDnsMode.PUBLIC -> stringResource(AppR.string.app_desktop_dns_mode_public)
+    ProotDnsMode.CUSTOM -> stringResource(AppR.string.app_desktop_dns_mode_custom)
+}
+
 /** A title + description + Switch row, styled like [MirrorRegionRow]. */
 @Composable
 private fun BindingToggleRow(
@@ -916,6 +1002,10 @@ private fun DesktopManagerSection(
     isRootfsReady: Boolean,
     mirrorRegion: MirrorRegion,
     onSetMirrorRegion: (MirrorRegion) -> Unit,
+    dnsMode: ProotDnsMode,
+    onSetDnsMode: (ProotDnsMode) -> Unit,
+    dnsServers: String,
+    onSetDnsServers: (String) -> Unit,
     remapLowPorts: Boolean,
     onSetRemapLowPorts: (Boolean) -> Unit,
     shareStorageWithGuest: Boolean,
@@ -1298,6 +1388,13 @@ private fun DesktopManagerSection(
                         MirrorRegionRow(region = mirrorRegion, onSelect = onSetMirrorRegion)
                         Spacer(Modifier.height(8.dp))
                     }
+                    GuestDnsRow(
+                        mode = dnsMode,
+                        servers = dnsServers,
+                        onSelectMode = onSetDnsMode,
+                        onServersChange = onSetDnsServers,
+                    )
+                    Spacer(Modifier.height(8.dp))
                     BindingToggleRow(
                         title = stringResource(AppR.string.app_desktop_remap_ports_title),
                         description = stringResource(AppR.string.app_desktop_remap_ports_description),
