@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): nicht verbunden — öffne %1$s zum Aktivieren</string>
     <string name="settings_remote_clipboard_title">Entfernte Zwischenablage synchronisieren</string>
     <string name="settings_remote_clipboard_subtitle">Erlaubt einem entfernten Desktop (VNC), in die Zwischenablage des Geräts zu kopieren. Standardmäßig aus.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: Progressive Upgrade-Kacheln dekodieren (experimentell)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">Füllt die schwarzen Rechtecke, die auf manchen Windows-RDP-Desktops auftreten, durch Dekodieren von RemoteFX-Progressive-Verfeinerungskacheln. Experimentell (#418) — wenn das Bild schlechter aussieht, deaktivieren Sie dies</string>
+    <string name="settings_rdp_avc_title">RDP: H.264/AVC420-Dekodierung</string>
+    <string name="settings_rdp_avc_subtitle">Standardmäßig aktiviert. Dekodiert H.264-Grafik, damit Server, die nur H.264 sprechen — insbesondere KRDP (KDEs RDP-Server) — statt eines schwarzen Bildschirms korrekt dargestellt werden; hardwaredekodiert auf dem Gerät über MediaCodec. Deaktivieren, wenn ein Windows- oder xrdp-Desktop falsch dargestellt wird (#425)</string>
 </resources>

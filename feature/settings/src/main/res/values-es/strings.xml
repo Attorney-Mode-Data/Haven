@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): no conectado — abre %1$s para activarlo</string>
     <string name="settings_remote_clipboard_title">Sincronizar portapapeles remoto</string>
     <string name="settings_remote_clipboard_subtitle">Permite que un escritorio remoto (VNC) copie al portapapeles del dispositivo. Desactivado por defecto.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: decodificar mosaicos de mejora progresiva (experimental)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">Rellena los cuadros negros que aparecen en algunos escritorios RDP de Windows decodificando los mosaicos de refinamiento RemoteFX-Progressive. Experimental (#418): si la imagen se ve peor, desactiva esto</string>
+    <string name="settings_rdp_avc_title">RDP: decodificación H.264/AVC420</string>
+    <string name="settings_rdp_avc_subtitle">Activado de forma predeterminada. Decodifica gráficos H.264 para que los servidores que solo hablan H.264 —en especial KRDP (el servidor RDP de KDE)— se muestren en lugar de una pantalla negra; decodificación por hardware en el dispositivo mediante MediaCodec. Desactívalo si un escritorio de Windows o xrdp se muestra mal (#425)</string>
 </resources>

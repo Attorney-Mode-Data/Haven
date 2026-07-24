@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH) : non connecté — ouvrez %1$s pour l\'activer</string>
     <string name="settings_remote_clipboard_title">Synchroniser le presse-papiers distant</string>
     <string name="settings_remote_clipboard_subtitle">Autorise un bureau distant (VNC) à copier dans le presse-papiers de l\'appareil. Désactivé par défaut.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP : décoder les tuiles de mise à niveau progressive (expérimental)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">Comble les carrés noirs visibles sur certains bureaux RDP Windows en décodant les tuiles d\'affinage RemoteFX-Progressive. Expérimental (#418) — si l\'image se dégrade, désactivez cette option</string>
+    <string name="settings_rdp_avc_title">RDP : décodage H.264/AVC420</string>
+    <string name="settings_rdp_avc_subtitle">Activé par défaut. Décode les graphismes H.264 afin que les serveurs ne parlant que H.264 — notamment KRDP (le serveur RDP de KDE) — s\'affichent au lieu d\'un écran noir ; décodage matériel sur l\'appareil via MediaCodec. Désactivez si un bureau Windows ou xrdp s\'affiche mal (#425)</string>
 </resources>

@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): 未接続 — 有効にするには %1$s を開いてください</string>
     <string name="settings_remote_clipboard_title">リモートのクリップボードを同期</string>
     <string name="settings_remote_clipboard_subtitle">リモートデスクトップ (VNC) がデバイスのクリップボードにコピーできるようにします。既定ではオフです。</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP：プログレッシブアップグレードタイルをデコード（実験的）</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive の精細化タイルをデコードして、一部の Windows RDP デスクトップで見られる黒い四角を埋めます。実験的機能（#418）——画面がかえって悪化する場合はオフにしてください</string>
+    <string name="settings_rdp_avc_title">RDP：H.264/AVC420 デコード</string>
+    <string name="settings_rdp_avc_subtitle">既定でオン。H.264 グラフィックスをデコードし、H.264 のみに対応するサーバー——特に KRDP（KDE の RDP サーバー）——が黒画面ではなく正しく表示されるようにします。デバイス上で MediaCodec によりハードウェアデコードされます。Windows や xrdp のデスクトップが正しく表示されない場合はオフにしてください（#425）</string>
 </resources>

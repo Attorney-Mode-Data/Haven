@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): не подключено — откройте %1$s, чтобы включить</string>
     <string name="settings_remote_clipboard_title">Синхронизировать удалённый буфер обмена</string>
     <string name="settings_remote_clipboard_subtitle">Разрешить удалённому рабочему столу (VNC) копировать в буфер обмена устройства. По умолчанию выключено.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: декодирование плиток прогрессивного обновления (экспериментально)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">Заполняет чёрные квадраты, появляющиеся на некоторых рабочих столах Windows RDP, декодируя уточняющие плитки RemoteFX-Progressive. Экспериментально (#418) — если изображение стало хуже, отключите это</string>
+    <string name="settings_rdp_avc_title">RDP: декодирование H.264/AVC420</string>
+    <string name="settings_rdp_avc_subtitle">Включено по умолчанию. Декодирует графику H.264, чтобы серверы, поддерживающие только H.264 — в частности KRDP (RDP-сервер KDE) — отображались вместо чёрного экрана; аппаратное декодирование на устройстве через MediaCodec. Отключите, если рабочий стол Windows или xrdp отображается неправильно (#425)</string>
 </resources>

@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): 연결 안 됨 — 사용하려면 %1$s을(를) 여세요</string>
     <string name="settings_remote_clipboard_title">원격 클립보드 동기화</string>
     <string name="settings_remote_clipboard_subtitle">원격 데스크톱(VNC)이 기기 클립보드에 복사하도록 허용합니다. 기본값은 꺼짐입니다.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: 프로그레시브 업그레이드 타일 디코딩(실험적)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive 정밀화 타일을 디코딩하여 일부 Windows RDP 데스크톱에서 나타나는 검은 사각형을 채웁니다. 실험적 기능(#418) — 화면이 오히려 나빠지면 이 옵션을 끄세요</string>
+    <string name="settings_rdp_avc_title">RDP: H.264/AVC420 디코딩</string>
+    <string name="settings_rdp_avc_subtitle">기본적으로 켜져 있습니다. H.264 그래픽을 디코딩하여 H.264만 지원하는 서버 — 특히 KRDP(KDE의 RDP 서버) — 가 검은 화면 대신 정상적으로 표시되도록 합니다. 기기에서 MediaCodec으로 하드웨어 디코딩됩니다. Windows나 xrdp 데스크톱이 잘못 표시되면 끄세요(#425)</string>
 </resources>

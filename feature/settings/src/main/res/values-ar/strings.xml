@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): غير متصل — افتح %1$s للتفعيل</string>
     <string name="settings_remote_clipboard_title">مزامنة حافظة الجهاز البعيد</string>
     <string name="settings_remote_clipboard_subtitle">السماح لسطح مكتب بعيد (VNC) بالنسخ إلى حافظة الجهاز. مُعطّل افتراضيًا.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: فك ترميز مربّعات الترقية التدريجية (تجريبي)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">يملأ المربّعات السوداء التي تظهر في بعض أسطح مكتب RDP على Windows عبر فك ترميز مربّعات التحسين RemoteFX-Progressive. تجريبي (#418) — إذا بدت الصورة أسوأ، فأوقف هذا الخيار</string>
+    <string name="settings_rdp_avc_title">RDP: فك ترميز H.264/AVC420</string>
+    <string name="settings_rdp_avc_subtitle">مُفعّل افتراضيًا. يفك ترميز رسوميات H.264 كي تظهر الخوادم التي تدعم H.264 فقط — وخاصةً KRDP (خادم RDP من KDE) — بدلًا من شاشة سوداء؛ ويجري فك الترميز بالعتاد على الجهاز عبر MediaCodec. أوقفه إذا ظهر سطح مكتب Windows أو xrdp بشكل غير صحيح (#425)</string>
 </resources>

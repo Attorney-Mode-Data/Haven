@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): সংযুক্ত নয় — চালু করতে %1$s খুলুন</string>
     <string name="settings_remote_clipboard_title">রিমোট ক্লিপবোর্ড সিঙ্ক করুন</string>
     <string name="settings_remote_clipboard_subtitle">একটি রিমোট ডেস্কটপ (VNC) কে ডিভাইসের ক্লিপবোর্ডে কপি করতে দিন। ডিফল্টভাবে বন্ধ।</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: প্রোগ্রেসিভ আপগ্রেড টাইল ডিকোড করুন (পরীক্ষামূলক)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive পরিমার্জন টাইল ডিকোড করে কিছু Windows RDP ডেস্কটপে দেখা কালো বর্গগুলি পূরণ করে। পরীক্ষামূলক (#418) — ছবি আরও খারাপ দেখালে এটি বন্ধ করুন</string>
+    <string name="settings_rdp_avc_title">RDP: H.264/AVC420 ডিকোডিং</string>
+    <string name="settings_rdp_avc_subtitle">ডিফল্টভাবে চালু। H.264 গ্রাফিক্স ডিকোড করে যাতে শুধুমাত্র H.264 সমর্থনকারী সার্ভার — বিশেষত KRDP (KDE-র RDP সার্ভার) — কালো স্ক্রিনের বদলে সঠিকভাবে দেখা যায়; ডিভাইসে MediaCodec-এর মাধ্যমে হার্ডওয়্যার ডিকোড করা হয়। কোনো Windows বা xrdp ডেস্কটপ ভুলভাবে দেখালে বন্ধ করুন (#425)</string>
 </resources>

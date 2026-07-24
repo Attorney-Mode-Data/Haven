@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): कनेक्टेड नहीं — सक्षम करने के लिए %1$s खोलें</string>
     <string name="settings_remote_clipboard_title">रिमोट क्लिपबोर्ड सिंक करें</string>
     <string name="settings_remote_clipboard_subtitle">किसी रिमोट डेस्कटॉप (VNC) को डिवाइस क्लिपबोर्ड में कॉपी करने दें। डिफ़ॉल्ट रूप से बंद।</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: प्रोग्रेसिव अपग्रेड टाइल डिकोड करें (प्रयोगात्मक)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive रिफाइनमेंट टाइलों को डिकोड करके कुछ Windows RDP डेस्कटॉप पर दिखने वाले काले वर्गों को भरता है। प्रयोगात्मक (#418) — यदि तस्वीर और खराब दिखे, तो इसे बंद कर दें</string>
+    <string name="settings_rdp_avc_title">RDP: H.264/AVC420 डिकोडिंग</string>
+    <string name="settings_rdp_avc_subtitle">डिफ़ॉल्ट रूप से चालू। H.264 ग्राफ़िक्स को डिकोड करता है ताकि केवल H.264 बोलने वाले सर्वर — विशेष रूप से KRDP (KDE का RDP सर्वर) — काली स्क्रीन के बजाय सही ढंग से दिखें; डिवाइस पर MediaCodec के ज़रिए हार्डवेयर-डिकोड किया जाता है। यदि कोई Windows या xrdp डेस्कटॉप गलत दिखे तो बंद कर दें (#425)</string>
 </resources>

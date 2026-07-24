@@ -24320,28 +24320,76 @@
      "en": "RDP: decode progressive upgrade tiles (experimental)",
      "comment": "Logging section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "RDP: فك ترميز مربّعات الترقية التدريجية (تجريبي)",
+      "bn": "RDP: প্রোগ্রেসিভ আপগ্রেড টাইল ডিকোড করুন (পরীক্ষামূলক)",
+      "de": "RDP: Progressive Upgrade-Kacheln dekodieren (experimentell)",
+      "es": "RDP: decodificar mosaicos de mejora progresiva (experimental)",
+      "fr": "RDP : décoder les tuiles de mise à niveau progressive (expérimental)",
+      "hi": "RDP: प्रोग्रेसिव अपग्रेड टाइल डिकोड करें (प्रयोगात्मक)",
+      "ja": "RDP：プログレッシブアップグレードタイルをデコード（実験的）",
+      "ko": "RDP: 프로그레시브 업그레이드 타일 디코딩(실험적)",
+      "pt": "RDP: decodificar blocos de atualização progressiva (experimental)",
+      "ru": "RDP: декодирование плиток прогрессивного обновления (экспериментально)",
+      "zh": "RDP：解码渐进式升级图块（实验性）"
+     }
     },
     {
      "name": "settings_rdp_progressive_upgrade_subtitle",
      "en": "Fills the black squares seen on some Windows RDP desktops by decoding RemoteFX-Progressive refinement tiles. Experimental (#418) — if the picture looks worse, turn this off",
      "comment": "Logging section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "يملأ المربّعات السوداء التي تظهر في بعض أسطح مكتب RDP على Windows عبر فك ترميز مربّعات التحسين RemoteFX-Progressive. تجريبي (#418) — إذا بدت الصورة أسوأ، فأوقف هذا الخيار",
+      "bn": "RemoteFX-Progressive পরিমার্জন টাইল ডিকোড করে কিছু Windows RDP ডেস্কটপে দেখা কালো বর্গগুলি পূরণ করে। পরীক্ষামূলক (#418) — ছবি আরও খারাপ দেখালে এটি বন্ধ করুন",
+      "de": "Füllt die schwarzen Rechtecke, die auf manchen Windows-RDP-Desktops auftreten, durch Dekodieren von RemoteFX-Progressive-Verfeinerungskacheln. Experimentell (#418) — wenn das Bild schlechter aussieht, deaktivieren Sie dies",
+      "es": "Rellena los cuadros negros que aparecen en algunos escritorios RDP de Windows decodificando los mosaicos de refinamiento RemoteFX-Progressive. Experimental (#418): si la imagen se ve peor, desactiva esto",
+      "fr": "Comble les carrés noirs visibles sur certains bureaux RDP Windows en décodant les tuiles d\\'affinage RemoteFX-Progressive. Expérimental (#418) — si l\\'image se dégrade, désactivez cette option",
+      "hi": "RemoteFX-Progressive रिफाइनमेंट टाइलों को डिकोड करके कुछ Windows RDP डेस्कटॉप पर दिखने वाले काले वर्गों को भरता है। प्रयोगात्मक (#418) — यदि तस्वीर और खराब दिखे, तो इसे बंद कर दें",
+      "ja": "RemoteFX-Progressive の精細化タイルをデコードして、一部の Windows RDP デスクトップで見られる黒い四角を埋めます。実験的機能（#418）——画面がかえって悪化する場合はオフにしてください",
+      "ko": "RemoteFX-Progressive 정밀화 타일을 디코딩하여 일부 Windows RDP 데스크톱에서 나타나는 검은 사각형을 채웁니다. 실험적 기능(#418) — 화면이 오히려 나빠지면 이 옵션을 끄세요",
+      "pt": "Preenche os quadrados pretos que aparecem em alguns desktops RDP do Windows decodificando os blocos de refinamento RemoteFX-Progressive. Experimental (#418) — se a imagem piorar, desative isto",
+      "ru": "Заполняет чёрные квадраты, появляющиеся на некоторых рабочих столах Windows RDP, декодируя уточняющие плитки RemoteFX-Progressive. Экспериментально (#418) — если изображение стало хуже, отключите это",
+      "zh": "通过解码 RemoteFX-Progressive 精细化图块，填补某些 Windows RDP 桌面上出现的黑块。实验性功能（#418）——如果画面反而变差，请关闭此项"
+     }
     },
     {
      "name": "settings_rdp_avc_title",
      "en": "RDP: H.264/AVC420 decoding",
      "comment": "Logging section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "RDP: فك ترميز H.264/AVC420",
+      "bn": "RDP: H.264/AVC420 ডিকোডিং",
+      "de": "RDP: H.264/AVC420-Dekodierung",
+      "es": "RDP: decodificación H.264/AVC420",
+      "fr": "RDP : décodage H.264/AVC420",
+      "hi": "RDP: H.264/AVC420 डिकोडिंग",
+      "ja": "RDP：H.264/AVC420 デコード",
+      "ko": "RDP: H.264/AVC420 디코딩",
+      "pt": "RDP: decodificação H.264/AVC420",
+      "ru": "RDP: декодирование H.264/AVC420",
+      "zh": "RDP：H.264/AVC420 解码"
+     }
     },
     {
      "name": "settings_rdp_avc_subtitle",
      "en": "On by default. Decodes H.264 graphics so servers that only speak H.264 — notably KRDP (KDE\\'s RDP server) — render instead of a black screen; hardware-decoded on-device via MediaCodec. Turn off if a Windows or xrdp desktop renders wrong (#425)",
      "comment": "Logging section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "مُفعّل افتراضيًا. يفك ترميز رسوميات H.264 كي تظهر الخوادم التي تدعم H.264 فقط — وخاصةً KRDP (خادم RDP من KDE) — بدلًا من شاشة سوداء؛ ويجري فك الترميز بالعتاد على الجهاز عبر MediaCodec. أوقفه إذا ظهر سطح مكتب Windows أو xrdp بشكل غير صحيح (#425)",
+      "bn": "ডিফল্টভাবে চালু। H.264 গ্রাফিক্স ডিকোড করে যাতে শুধুমাত্র H.264 সমর্থনকারী সার্ভার — বিশেষত KRDP (KDE-র RDP সার্ভার) — কালো স্ক্রিনের বদলে সঠিকভাবে দেখা যায়; ডিভাইসে MediaCodec-এর মাধ্যমে হার্ডওয়্যার ডিকোড করা হয়। কোনো Windows বা xrdp ডেস্কটপ ভুলভাবে দেখালে বন্ধ করুন (#425)",
+      "de": "Standardmäßig aktiviert. Dekodiert H.264-Grafik, damit Server, die nur H.264 sprechen — insbesondere KRDP (KDEs RDP-Server) — statt eines schwarzen Bildschirms korrekt dargestellt werden; hardwaredekodiert auf dem Gerät über MediaCodec. Deaktivieren, wenn ein Windows- oder xrdp-Desktop falsch dargestellt wird (#425)",
+      "es": "Activado de forma predeterminada. Decodifica gráficos H.264 para que los servidores que solo hablan H.264 —en especial KRDP (el servidor RDP de KDE)— se muestren en lugar de una pantalla negra; decodificación por hardware en el dispositivo mediante MediaCodec. Desactívalo si un escritorio de Windows o xrdp se muestra mal (#425)",
+      "fr": "Activé par défaut. Décode les graphismes H.264 afin que les serveurs ne parlant que H.264 — notamment KRDP (le serveur RDP de KDE) — s\\'affichent au lieu d\\'un écran noir ; décodage matériel sur l\\'appareil via MediaCodec. Désactivez si un bureau Windows ou xrdp s\\'affiche mal (#425)",
+      "hi": "डिफ़ॉल्ट रूप से चालू। H.264 ग्राफ़िक्स को डिकोड करता है ताकि केवल H.264 बोलने वाले सर्वर — विशेष रूप से KRDP (KDE का RDP सर्वर) — काली स्क्रीन के बजाय सही ढंग से दिखें; डिवाइस पर MediaCodec के ज़रिए हार्डवेयर-डिकोड किया जाता है। यदि कोई Windows या xrdp डेस्कटॉप गलत दिखे तो बंद कर दें (#425)",
+      "ja": "既定でオン。H.264 グラフィックスをデコードし、H.264 のみに対応するサーバー——特に KRDP（KDE の RDP サーバー）——が黒画面ではなく正しく表示されるようにします。デバイス上で MediaCodec によりハードウェアデコードされます。Windows や xrdp のデスクトップが正しく表示されない場合はオフにしてください（#425）",
+      "ko": "기본적으로 켜져 있습니다. H.264 그래픽을 디코딩하여 H.264만 지원하는 서버 — 특히 KRDP(KDE의 RDP 서버) — 가 검은 화면 대신 정상적으로 표시되도록 합니다. 기기에서 MediaCodec으로 하드웨어 디코딩됩니다. Windows나 xrdp 데스크톱이 잘못 표시되면 끄세요(#425)",
+      "pt": "Ativado por padrão. Decodifica gráficos H.264 para que servidores que só falam H.264 — em especial o KRDP (o servidor RDP do KDE) — sejam exibidos em vez de uma tela preta; decodificação por hardware no dispositivo via MediaCodec. Desative se um desktop Windows ou xrdp for exibido incorretamente (#425)",
+      "ru": "Включено по умолчанию. Декодирует графику H.264, чтобы серверы, поддерживающие только H.264 — в частности KRDP (RDP-сервер KDE) — отображались вместо чёрного экрана; аппаратное декодирование на устройстве через MediaCodec. Отключите, если рабочий стол Windows или xrdp отображается неправильно (#425)",
+      "zh": "默认开启。解码 H.264 图像，使仅支持 H.264 的服务器——尤其是 KRDP（KDE 的 RDP 服务器）——能正常显示而非黑屏；在设备上通过 MediaCodec 硬件解码。如果 Windows 或 xrdp 桌面显示异常，请关闭（#425）"
+     }
     },
     {
      "name": "settings_session_persistence_title",

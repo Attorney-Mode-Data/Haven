@@ -443,4 +443,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near (SSH): não conectado — abra %1$s para ativar</string>
     <string name="settings_remote_clipboard_title">Sincronizar área de transferência remota</string>
     <string name="settings_remote_clipboard_subtitle">Permite que uma área de trabalho remota (VNC) copie para a área de transferência do dispositivo. Desativado por padrão.</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP: decodificar blocos de atualização progressiva (experimental)</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">Preenche os quadrados pretos que aparecem em alguns desktops RDP do Windows decodificando os blocos de refinamento RemoteFX-Progressive. Experimental (#418) — se a imagem piorar, desative isto</string>
+    <string name="settings_rdp_avc_title">RDP: decodificação H.264/AVC420</string>
+    <string name="settings_rdp_avc_subtitle">Ativado por padrão. Decodifica gráficos H.264 para que servidores que só falam H.264 — em especial o KRDP (o servidor RDP do KDE) — sejam exibidos em vez de uma tela preta; decodificação por hardware no dispositivo via MediaCodec. Desative se um desktop Windows ou xrdp for exibido incorretamente (#425)</string>
 </resources>

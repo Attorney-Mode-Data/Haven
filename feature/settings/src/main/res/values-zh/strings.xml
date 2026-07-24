@@ -442,4 +442,8 @@
     <string name="settings_reverse_tunnel_status_inactive">Near（SSH）：未连接 — 打开 %1$s 以启用</string>
     <string name="settings_remote_clipboard_title">同步远程剪贴板</string>
     <string name="settings_remote_clipboard_subtitle">允许远程桌面 (VNC) 复制内容到设备剪贴板。默认关闭。</string>
+    <string name="settings_rdp_progressive_upgrade_title">RDP：解码渐进式升级图块（实验性）</string>
+    <string name="settings_rdp_progressive_upgrade_subtitle">通过解码 RemoteFX-Progressive 精细化图块，填补某些 Windows RDP 桌面上出现的黑块。实验性功能（#418）——如果画面反而变差，请关闭此项</string>
+    <string name="settings_rdp_avc_title">RDP：H.264/AVC420 解码</string>
+    <string name="settings_rdp_avc_subtitle">默认开启。解码 H.264 图像，使仅支持 H.264 的服务器——尤其是 KRDP（KDE 的 RDP 服务器）——能正常显示而非黑屏；在设备上通过 MediaCodec 硬件解码。如果 Windows 或 xrdp 桌面显示异常，请关闭（#425）</string>
 </resources>
