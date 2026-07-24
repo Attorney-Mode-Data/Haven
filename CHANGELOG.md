@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.10
+
+🌐 **Local Linux: the guest DNS setting now also covers package installs** — v5.83.9 made the guest's name servers configurable, but only refreshed `/etc/resolv.conf` when a *terminal* session started or a distro was installed. Installing a desktop (or anything else run inside the guest) goes down a different path, so on an existing distro those commands could still use the stale file — which is exactly the "installing Xfce silently hangs" case the setting was added to fix. Every command run in the guest now refreshes the resolver first. (#446)
+
 ## v5.83.9
 
 🌐 **Local Linux: the guest's DNS is configurable, and now follows your network by default** — the Linux guest's `/etc/resolv.conf` was hardcoded to public name servers (Google + Cloudflare). On a network that only allows DNS to its own resolver — common on corporate and guest Wi-Fi — that fails *silently*: installing a desktop like Xfce simply hangs during background setup, with nothing pointing at DNS until you open a shell in the container. You can now pick **Network (DHCP)** — the new default, and the only option that works on every network — **Public (Google + Cloudflare)** for the old behaviour, or **Custom** name servers, under Desktop → Options & mounts → Guest DNS. It is rewritten on every guest launch, so changing it takes effect without reinstalling the distro, and it is also settable from the agent API — handy precisely when DNS is what's broken. (#446, thanks itskenny0)

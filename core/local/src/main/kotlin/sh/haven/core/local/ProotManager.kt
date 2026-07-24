@@ -2242,6 +2242,11 @@ class ProotManager @Inject constructor(
      */
     fun startCommandInProot(command: String): Process {
         val prootBin = prootBinary ?: throw IllegalStateException("PRoot not available")
+        // Refresh the guest resolver before every guest command (#446). This is the
+        // path package installs run through — the exact thing that hangs when
+        // resolv.conf points at resolvers the network won't route to — so it must
+        // reflect the current DNS setting, not whatever was written at install time.
+        applyResolvConf(activeRootfsDir)
         val loaderPath = File(context.applicationInfo.nativeLibraryDir, "libproot_loader.so").absolutePath
         // Mirror termux/proot-distro v4.29.0's `run_proot_cmd` invocation
         // (distro-plugins runner). Empirically that's the proven pattern
