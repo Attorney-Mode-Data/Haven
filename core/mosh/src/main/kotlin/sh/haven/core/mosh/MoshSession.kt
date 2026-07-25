@@ -46,6 +46,13 @@ class MoshSession(
      */
     private val socketProvider: UdpSocketProvider =
         UdpSocketProvider { AndroidUdpAdapter() },
+    /**
+     * Reports whether the device has a usable network, so the transport can
+     * tell a roaming session apart from one the server no longer has (#421).
+     * Defaults to "assume online"; [MoshSessionManager] supplies the real
+     * ConnectivityManager-backed check.
+     */
+    private val networkAvailable: () -> Boolean = { true },
 ) : Closeable {
 
     @Volatile
@@ -118,6 +125,7 @@ class MoshSession(
             initialCols = initialCols,
             initialRows = initialRows,
             socketProvider = socketProvider,
+            networkAvailable = networkAvailable,
         )
         transport = t
         t.start(scope)

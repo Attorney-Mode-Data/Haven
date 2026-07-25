@@ -986,7 +986,34 @@ class ConnectionsViewModel @Inject constructor(
                 )
             }
         }
+        // #421: a mosh session that died unexpectedly (transport declared it
+        // dead while online, or a fatal local error) gets ONE silent reconnect
+        // — the same bootstrap the user's manual close-and-reconnect runs, and
+        // which works immediately where the transport's own retries never
+        // recover. Deliberately one attempt per death: connectMoshSilent marks
+        // the session ERROR if it fails, and reconnectingMoshProfiles stops a
+        // failure from re-entering here and spinning.
+        moshSessionManager.onSessionDied = { profileId ->
+            if (reconnectingMoshProfiles.add(profileId)) {
+                viewModelScope.launch {
+                    try {
+                        val profile = repository.getById(profileId)
+                        if (profile != null && profile.isMosh) {
+                            Log.d(TAG, "Mosh session for ${profile.label} died — reconnecting once (#421)")
+                            connectMoshSilent(profile)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Mosh auto-reconnect failed for $profileId: ${e.message}", e)
+                    } finally {
+                        reconnectingMoshProfiles.remove(profileId)
+                    }
+                }
+            }
+        }
     }
+
+    /** Profiles with an in-flight #421 auto-reconnect, so a death can't re-enter. */
+    private val reconnectingMoshProfiles = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     /** SSH client + host kept alive during mosh session picker (for mosh-server exec). */
     private var moshPendingClient: SshClient? = null

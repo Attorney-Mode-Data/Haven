@@ -31,6 +31,35 @@ class MoshSessionManager @Inject constructor(
     @ApplicationContext private val context: android.content.Context,
 ) {
 
+    /**
+     * Invoked with the profile id when a session ends *unexpectedly* — the
+     * transport declared it dead while the device had a network (#421), or hit
+     * a fatal local error. A clean server shutdown (the shell exited) never
+     * fires this. The feature layer wires it to a single silent reconnect
+     * attempt; there is deliberately no retry loop, so a reconnect that itself
+     * fails leaves the session in ERROR rather than spinning.
+     */
+    var onSessionDied: ((profileId: String) -> Unit)? = null
+
+    /**
+     * Whether the device currently has a network that is validated for internet
+     * access. Used to gate the transport's #421 dead-session escalation, so a
+     * genuinely offline phone still resumes its session on return (the #92
+     * regression) and only an online-but-silent session is given up on.
+     */
+    internal fun hasNetwork(): Boolean = try {
+        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+        val caps = cm?.activeNetwork?.let { cm.getNetworkCapabilities(it) }
+        caps != null &&
+            caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    } catch (e: Exception) {
+        // Treat an unreadable connectivity state as "offline" so we fall back to
+        // the conservative never-give-up behaviour rather than killing a session.
+        Log.w(TAG, "Could not read connectivity state: ${e.message}")
+        false
+    }
+
     data class SessionState(
         val sessionId: String,
         val profileId: String,
@@ -159,21 +188,25 @@ class MoshSessionManager @Inject constructor(
             moshKey = session.moshKey,
             onDataReceived = onDataReceived,
             onDisconnected = { cleanExit ->
-                // The transport never gives up on network silence — it
-                // retries with the same (port, key) until connectivity
-                // returns and SSP re-syncs, so outages of any length
-                // never reach this callback. It fires only when the
-                // server announced shutdown (shell exited, clean=true)
-                // or the transport hit a fatal local error (clean=false).
-                // Either way the session is over; DISCONNECTED removes
-                // the tab.
+                // The transport rides out network silence — it retries with the
+                // same (port, key) until connectivity returns and SSP re-syncs,
+                // so an outage of any length does not reach this callback. It
+                // fires when the server announced shutdown (shell exited,
+                // clean=true), when the transport hit a fatal local error, or
+                // when it declared the session dead because we were online and
+                // silent for a long time (#421 — both clean=false).
                 Log.d(TAG, "Mosh session $sessionId disconnected — " +
                     "clean=$cleanExit, server=${session.serverIp}:${session.moshPort}")
                 updateStatus(sessionId, SessionState.Status.DISCONNECTED)
+                // A clean exit means the user's shell ended — reconnecting
+                // would resurrect a session they deliberately closed. Only the
+                // unexpected endings get a reconnect attempt.
+                if (!cleanExit) onSessionDied?.invoke(session.profileId)
             },
             verboseBuffer = session.verboseBuffer,
             socketProvider = session.socketProvider
                 ?: UdpSocketProvider { sh.haven.mosh.network.AndroidUdpAdapter() },
+            networkAvailable = ::hasNetwork,
         )
 
         _sessions.update { map ->
