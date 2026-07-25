@@ -1525,6 +1525,7 @@ internal class McpTools(
                 string("smbSshProfileId", "SMB only: SSH profile id to tunnel through. Empty string clears.")
                 boolean("spiceSshForward", "SPICE only: tunnel through a saved SSH profile (set spiceSshProfileId).")
                 string("spiceSshProfileId", "SPICE only: SSH profile id to tunnel through. Empty string clears.")
+                string("moshServerCommand", "Mosh only: override the command Haven runs over SSH to start mosh-server (default 'mosh-server new -s -c 256 …'). It must print a 'MOSH CONNECT <port> <key>' line, which Haven parses to find the session — so a wrapper can point Haven at a different port (e.g. scripts/mosh-fault-rig.py bootstrap, which puts a fault-injecting relay in front). Empty string restores the default.")
                 string("usbForwardVidPid", "SSH only: VID:PID of a phone-attached USB device (e.g. '1050:0406' — see list_usb_devices) to auto-export over USB/IP whenever this profile connects. Haven opens the device, starts the usbip server on loopback, adds the remote forward, and runs `usbip attach` on the host, re-attaching after a tunnel drop. Empty string clears (no auto-forward).")
             },
             consentLevel = ConsentLevel.EVERY_CALL,
@@ -2011,6 +2012,7 @@ internal class McpTools(
         }
         if (p.useEternalTerminal) put("useEternalTerminal", true)
         if (!p.usbForwardVidPid.isNullOrBlank()) put("usbForwardVidPid", p.usbForwardVidPid)
+        if (!p.moshServerCommand.isNullOrBlank()) put("moshServerCommand", p.moshServerCommand)
         // VNC-specific fields
         if (p.vncPort != null) put("vncPort", p.vncPort)
         if (!p.vncUsername.isNullOrEmpty()) put("vncUsername", p.vncUsername)
@@ -5656,6 +5658,7 @@ internal class McpTools(
             smbSshProfileId = str("smbSshProfileId", existing.smbSshProfileId),
             spiceSshForward = bool("spiceSshForward", existing.spiceSshForward),
             spiceSshProfileId = str("spiceSshProfileId", existing.spiceSshProfileId),
+            moshServerCommand = str("moshServerCommand", existing.moshServerCommand),
             usbForwardVidPid = if (existing.connectionType == "SSH") {
                 str("usbForwardVidPid", existing.usbForwardVidPid)
             } else {

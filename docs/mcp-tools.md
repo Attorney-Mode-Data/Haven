@@ -193,6 +193,7 @@ Edit fields on an existing connection profile (load → change → save). Pass p
 - `jumpProfileId` (string) — SSH only: id of the SSH profile to jump through (ssh -J). The target host is dialled from the jump host, so it may be an address only the jump can reach. Empty string clears.
 - `keyId` (string) — SSH only: id of a saved key (list_ssh_keys). Empty string clears.
 - `label` (string) — New user-facing label.
+- `moshServerCommand` (string) — Mosh only: override the command Haven runs over SSH to start mosh-server (default 'mosh-server new -s -c 256 …'). It must print a 'MOSH CONNECT <port> <key>' line, which Haven parses to find the session — so a wrapper can point Haven at a different port (e.g. scripts/mosh-fault-rig.py bootstrap, which puts a fault-injecting relay in front). Empty string restores the default.
 - `password` (string) — New password (stored encrypted). Mapped to the profile's transport (SSH/VNC/RDP/SMB). Pass an empty string to clear it.
 - `port` (integer) — New TCP port.
 - `rdpSshForward` (boolean) — RDP only: tunnel through a saved SSH profile (set rdpSshProfileId).
