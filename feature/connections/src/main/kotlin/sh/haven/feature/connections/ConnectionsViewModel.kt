@@ -83,6 +83,58 @@ import javax.inject.Inject
 private const val TAG = "ConnectionsVM"
 
 /**
+ * Consecutive #421 auto-reconnects allowed before Haven stops trying. Each one
+ * costs an SSH connect and a new mosh-server on the host, so an unreachable
+ * server must not be retried forever — after this the session stays down and
+ * the user reconnects when they know the server is back.
+ */
+internal const val MOSH_RECONNECT_MAX_ATTEMPTS = 3
+
+/** Linear backoff between those attempts (0s, 30s, 60s). */
+internal const val MOSH_RECONNECT_BACKOFF_MS = 30_000L
+
+/**
+ * Quiet period after which a profile's attempt counter resets. Longer than the
+ * escalation threshold plus a couple of backoffs, so a session that genuinely
+ * came back and ran for a while is treated as recovered rather than as another
+ * failure in the same streak.
+ */
+internal const val MOSH_RECONNECT_RESET_MS = 10 * 60_000L
+
+/** Outcome of the #421 reconnect policy: whether to retry, and after how long. */
+internal data class MoshReconnectDecision(
+    val reconnect: Boolean,
+    val backoffMs: Long,
+    val attempt: Int,
+)
+
+/**
+ * Decide whether a died mosh session should be reconnected (#421).
+ *
+ * [attempts] is how many consecutive auto-reconnects this profile has already
+ * had, [lastAttemptMs] when the last one was. A streak older than
+ * [MOSH_RECONNECT_RESET_MS] is not a streak — the session recovered and later
+ * failed for its own reasons — so the count starts over. Pure so the give-up
+ * rule is tested directly: the whole point of this policy is that it *stops*,
+ * and a policy that silently never stops looks identical in a passing test.
+ */
+internal fun decideMoshReconnect(
+    attempts: Int,
+    lastAttemptMs: Long,
+    nowMs: Long,
+): MoshReconnectDecision {
+    val streak = if (nowMs - lastAttemptMs > MOSH_RECONNECT_RESET_MS) 0 else attempts
+    if (streak >= MOSH_RECONNECT_MAX_ATTEMPTS) {
+        return MoshReconnectDecision(reconnect = false, backoffMs = 0, attempt = streak)
+    }
+    return MoshReconnectDecision(
+        reconnect = true,
+        backoffMs = MOSH_RECONNECT_BACKOFF_MS * streak,
+        attempt = streak + 1,
+    )
+}
+
+/**
  * True when [profile] would offer an SSH key during auth: it has an explicit
  * key or a Key element in its auth chain, and keys aren't force-disabled.
  * Used to decide whether a jump-host connect may borrow the profile's saved
@@ -986,22 +1038,54 @@ class ConnectionsViewModel @Inject constructor(
                 )
             }
         }
-        // #421: a mosh session that died unexpectedly (transport declared it
-        // dead while online, or a fatal local error) gets ONE silent reconnect
-        // — the same bootstrap the user's manual close-and-reconnect runs, and
-        // which works immediately where the transport's own retries never
-        // recover. Deliberately one attempt per death: connectMoshSilent marks
-        // the session ERROR if it fails, and reconnectingMoshProfiles stops a
-        // failure from re-entering here and spinning.
-        moshSessionManager.onSessionDied = { profileId ->
+        // #421: a mosh session that died unexpectedly (transport declared it dead
+        // while online, or a fatal local error) is reconnected with the same
+        // bootstrap the user's manual close-and-reconnect runs, which recovers
+        // immediately where the transport's own retries never do.
+        //
+        // Bounded on purpose. One reconnect per death is not enough on its own:
+        // when the server side stays unreachable while the phone is online, the
+        // replacement session is dead too, escalates ~45s later, and reconnects
+        // again — a loop by succession rather than repetition, each cycle costing
+        // an SSH connect and a fresh mosh-server on the host. Device-verified with
+        // scripts/mosh-fault-rig.py. So: back off between attempts, give up after
+        // MOSH_RECONNECT_MAX_ATTEMPTS, and only re-arm once a session has actually
+        // survived (MOSH_RECONNECT_RESET_MS), which is what distinguishes a
+        // one-off stall from a server that is simply gone.
+        moshSessionManager.onSessionDied = { profileId, sessionId ->
+            // Drop the dead session rather than leaving it behind: every
+            // reconnect used to add a tab while the corpse lingered, so a few
+            // cycles left a pile of DISCONNECTED entries for one profile.
+            moshSessionManager.removeSession(sessionId)
             if (reconnectingMoshProfiles.add(profileId)) {
                 viewModelScope.launch {
                     try {
                         val profile = repository.getById(profileId)
-                        if (profile != null && profile.isMosh) {
-                            Log.d(TAG, "Mosh session for ${profile.label} died — reconnecting once (#421)")
-                            connectMoshSilent(profile)
+                        if (profile == null || !profile.isMosh) return@launch
+                        val now = System.currentTimeMillis()
+                        val state = moshReconnectState[profileId]
+                        val decision = decideMoshReconnect(
+                            attempts = state?.attempts ?: 0,
+                            lastAttemptMs = state?.lastAttemptMs ?: 0L,
+                            nowMs = now,
+                        )
+                        if (!decision.reconnect) {
+                            Log.w(
+                                TAG,
+                                "Mosh session for ${profile.label} died again after ${decision.attempt} " +
+                                    "reconnects — giving up, reconnect manually (#421)",
+                            )
+                            moshReconnectState[profileId] = MoshReconnectState(decision.attempt, now)
+                            return@launch
                         }
+                        if (decision.backoffMs > 0) {
+                            Log.d(TAG, "Mosh reconnect for ${profile.label} in ${decision.backoffMs}ms (attempt ${decision.attempt})")
+                            delay(decision.backoffMs)
+                        }
+                        moshReconnectState[profileId] =
+                            MoshReconnectState(decision.attempt, System.currentTimeMillis())
+                        Log.d(TAG, "Mosh session for ${profile.label} died — reconnecting (attempt ${decision.attempt}) (#421)")
+                        connectMoshSilent(profile)
                     } catch (e: Exception) {
                         Log.e(TAG, "Mosh auto-reconnect failed for $profileId: ${e.message}", e)
                     } finally {
@@ -1011,6 +1095,11 @@ class ConnectionsViewModel @Inject constructor(
             }
         }
     }
+
+    /** Consecutive #421 auto-reconnects for a profile, for the give-up rule. */
+    private data class MoshReconnectState(val attempts: Int, val lastAttemptMs: Long)
+
+    private val moshReconnectState = java.util.concurrent.ConcurrentHashMap<String, MoshReconnectState>()
 
     /** Profiles with an in-flight #421 auto-reconnect, so a death can't re-enter. */
     private val reconnectingMoshProfiles = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()

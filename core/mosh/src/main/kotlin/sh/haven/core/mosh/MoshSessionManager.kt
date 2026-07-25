@@ -39,7 +39,7 @@ class MoshSessionManager @Inject constructor(
      * attempt; there is deliberately no retry loop, so a reconnect that itself
      * fails leaves the session in ERROR rather than spinning.
      */
-    var onSessionDied: ((profileId: String) -> Unit)? = null
+    var onSessionDied: ((profileId: String, sessionId: String) -> Unit)? = null
 
     /**
      * Whether the device currently has a network that is validated for internet
@@ -201,7 +201,7 @@ class MoshSessionManager @Inject constructor(
                 // A clean exit means the user's shell ended — reconnecting
                 // would resurrect a session they deliberately closed. Only the
                 // unexpected endings get a reconnect attempt.
-                if (!cleanExit) onSessionDied?.invoke(session.profileId)
+                if (!cleanExit) onSessionDied?.invoke(session.profileId, sessionId)
             },
             verboseBuffer = session.verboseBuffer,
             socketProvider = session.socketProvider

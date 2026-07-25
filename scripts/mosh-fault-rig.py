@@ -111,10 +111,16 @@ def relay(upstream_port: int) -> None:
             )
 
 
-def start(quiet: bool = False) -> int:
+def start(quiet: bool = False, keep_mode: bool = False) -> int:
     os.makedirs(STATE_DIR, exist_ok=True)
-    with open(MODE_FILE, "w") as f:
-        f.write("pass")
+    # keep_mode matters for `bootstrap`: Haven re-runs the bootstrap command on
+    # every (re)connect, so resetting to "pass" there would let the client clear
+    # the very fault it is being tested against — the reconnect silently
+    # un-blackholes itself and the run looks like a pass. Explicit `start`
+    # still resets, so a fresh rig begins in a known state.
+    if not (keep_mode and os.path.exists(MODE_FILE)):
+        with open(MODE_FILE, "w") as f:
+            f.write("pass")
 
     # mosh-server prints: MOSH CONNECT <port> <key>
     # Bind mosh-server to loopback explicitly. With `-s` it binds the address
@@ -170,6 +176,15 @@ def start(quiet: bool = False) -> int:
     return 0
 
 
+def _relay_alive() -> bool:
+    try:
+        with open(PID_FILE) as f:
+            os.kill(int(f.read().strip()), 0)
+        return True
+    except Exception:
+        return False
+
+
 def bootstrap() -> int:
     """Start server+relay and print ONLY the MOSH CONNECT line Haven parses.
 
@@ -180,9 +195,14 @@ def bootstrap() -> int:
     Haven mosh session, so blackholing the relay silences a genuine session
     rather than a mock.
     """
-    rc = start(quiet=True)
-    if rc != 0:
-        return rc
+    # Reuse the running rig on a reconnect. Starting a second mosh-server and
+    # racing another relay onto the same port would leave the client talking to
+    # one server with the other's key — a rig artefact that reads as a client
+    # failure.
+    if not _relay_alive():
+        rc = start(quiet=True, keep_mode=True)
+        if rc != 0:
+            return rc
     with open(INFO_FILE) as f:
         info = dict(
             (k.strip(), v.strip())
