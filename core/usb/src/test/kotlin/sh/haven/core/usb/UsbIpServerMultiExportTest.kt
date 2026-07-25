@@ -39,6 +39,16 @@ class UsbIpServerMultiExportTest {
         return b
     }
 
+    /**
+     * Export on an ephemeral port instead of the real 3240. A dev machine that
+     * is actually using usbip (a live `usbip attach`, or Haven's own export
+     * forwarded over SSH) already holds 3240, and these tests would then fail
+     * with `BindException: Address already in use` through no fault of the code.
+     * Only the first export binds — later ones join the same socket and ignore
+     * the port — and [UsbIpServer.boundPort] reports whatever we actually got.
+     */
+    private fun export(deviceName: String): String = server.export(deviceName, port = 0)
+
     private fun sendImport(port: Int, busid: String): ImportReply {
         Socket().use { sock ->
             sock.connect(InetSocketAddress("127.0.0.1", port), 2000)
@@ -76,8 +86,8 @@ class UsbIpServerMultiExportTest {
         every { broker.rawDescriptors("/dev/bus/usb/001/002") } returns deviceDescriptor(idVendor = 0x1111, idProduct = 0x2222)
         every { broker.rawDescriptors("/dev/bus/usb/003/004") } returns deviceDescriptor(idVendor = 0x3333, idProduct = 0x4444)
 
-        val busid1 = server.export("/dev/bus/usb/001/002", port = 0)
-        val busid2 = server.export("/dev/bus/usb/003/004")
+        val busid1 = export("/dev/bus/usb/001/002")
+        val busid2 = export("/dev/bus/usb/003/004")
         assertEquals("1-2", busid1)
         assertEquals("3-4", busid2)
 
@@ -95,8 +105,8 @@ class UsbIpServerMultiExportTest {
         every { broker.rawDescriptors("/dev/bus/usb/001/002") } returns deviceDescriptor(idVendor = 0x1111, idProduct = 0x2222)
         every { broker.rawDescriptors("/dev/bus/usb/003/004") } returns deviceDescriptor(idVendor = 0x3333, idProduct = 0x4444)
 
-        val busid1 = server.export("/dev/bus/usb/001/002")
-        val busid2 = server.export("/dev/bus/usb/003/004")
+        val busid1 = export("/dev/bus/usb/001/002")
+        val busid2 = export("/dev/bus/usb/003/004")
         val port = server.boundPort!!
 
         server.unexport(busid1)
@@ -114,7 +124,7 @@ class UsbIpServerMultiExportTest {
     @Test
     fun `an unrequested busid is refused, not silently served`() {
         every { broker.rawDescriptors("/dev/bus/usb/001/002") } returns deviceDescriptor(idVendor = 0x1111, idProduct = 0x2222)
-        server.export("/dev/bus/usb/001/002")
+        export("/dev/bus/usb/001/002")
         val port = server.boundPort!!
 
         val reply = sendImport(port, "9-9")
