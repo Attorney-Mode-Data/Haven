@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.11
+
+🔑 **USB: a forwarded security key is usable on the remote host again, not just visible** — exporting a phone-attached YubiKey over USB/IP (Connection settings → USB forward device) produced a device that *enumerated* on the Linux host but never worked: no `hidraw` node appeared, so `ssh-keygen -t ed25519-sk`, `fido2-token` and browsers saw nothing, and the host's kernel log showed `usbhid: can't add hid device: -32`. The HID driver's first act is to read the report descriptor, which is an *interface*-addressed USB control request, and Android only routes those to an interface the app has claimed — Haven claimed interfaces for bulk transfers but never for control transfers, so that read stalled and the driver gave up. Haven now claims the addressed interface first. Verified end to end against a YubiKey 5 forwarded over an SSH tunnel: the key binds, and FIDO2 works with the touch happening on the phone. (Composite keys still expose FIDO only — the smartcard/CCID interface is deliberately withheld, because a host-side smartcard daemon polling it starves the FIDO side on Android's serialised USB access.)
+
+🤖 **Agent API: the USB auto-forward device is readable and settable** — `usbForwardVidPid`, the profile field that drives the whole export-and-attach-on-connect path, was invisible to the agent API: `list_connections` omitted it and `update_connection` had no parameter for it, so an agent could see a broken forward but not diagnose or repair it without the UI. Both now cover it, and a malformed value is rejected at edit time rather than silently never matching a device at connect.
+
 ## v5.83.10
 
 🌐 **Local Linux: the guest DNS setting now also covers package installs** — v5.83.9 made the guest's name servers configurable, but only refreshed `/etc/resolv.conf` when a *terminal* session started or a distro was installed. Installing a desktop (or anything else run inside the guest) goes down a different path, so on an existing distro those commands could still use the stale file — which is exactly the "installing Xfce silently hangs" case the setting was added to fix. Every command run in the guest now refreshes the resolver first. (#446)
