@@ -5,6 +5,14 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.13
+
+⌨️ **Terminal: selecting text in vim, less or plain tmux is responsive again** — v5.83.12 gave a press 900ms before it turns into a text selection, meant only for apps that ask for the mouse. It applied too widely: Haven also hooks the gestures of full-screen apps that take swipes as arrow keys but leave taps alone — vim, less, nano, a tmux session without mouse mode — and those got the longer hold too, so press-and-hold to select felt broken there for no benefit. The delay now follows the app's actual mouse-tracking state.
+
+🖱️ **Tapping a zellij tab is still being looked at** — the v5.83.12 fix has not resolved it for the reporter, so if a tap still opens the copy menu instead of clicking, that case is open and being worked on. Mouse-mode detection has been ruled out as the cause: zellij's startup sequence is now pinned by a test and Haven reads it correctly. (#435)
+
+🔌 **SSH: the experimental sshlib engine could silently lose a command's output** — running a one-shot remote command on the opt-in second SSH engine could return empty output for a command that had actually printed something. The underlying library hands output over an internal channel and discards anything still in flight when the connection closes the channel, which a short-lived command routinely triggers. Haven now starts reading both streams before the command is even sent. This only affects the experimental sshlib engine, not the default one. Reported upstream as connectbot/cbssh#245. (#448)
+
 ## v5.83.12
 
 🖱️ **Terminal: tapping a zellij or tmux tab clicks it again, instead of opening the copy menu** — with an app that asks for the mouse (zellij, tmux, htop…), a tap only reached the app if it was *quick*. Long-press starts Haven's own text selection so the visible select-and-Copy workflow works inside a multiplexer, but that meant a click had to beat the system long-press timeout of around 400–500ms — and aiming carefully at a small target like a zellij tab routinely takes longer, so the press turned into a selection and the app never saw the click. Fast, careless taps worked, which is exactly why this looked fine. A press now gets 900ms before it becomes a selection, but only while the app has mouse mode on: a careful tap clicks, a deliberate press-and-hold still opens the copy menu, and nothing changes outside mouse-mode apps. (#435, thanks paour)
