@@ -557,6 +557,72 @@ class SshlibCapabilitySpikeTest {
         )
     }
 
+    @Test
+    fun `GAP shell output is discarded when the reader attaches after CHANNEL_CLOSE — flips when upstream fixes`() {
+        // Same mechanism as #448 (connectbot/cbssh#245), on the shell path:
+        // SessionChannel hands stdout over a RENDEZVOUS channel fed by a pump,
+        // and closeResources() cancels that pump on CHANNEL_CLOSE, dropping
+        // whatever it still holds.
+        //
+        // Worse here than for exec. Haven requests the shell, THEN builds the
+        // blocking InputStream, and TerminalSession starts its reader thread
+        // later still — so nobody is parked on stdout for that whole span. A
+        // shell that writes and exits inside it loses EVERYTHING, not just a
+        // tail: a blank terminal instead of the error that explains why.
+        //
+        // Steady-state reading is safe, which is why this is narrow rather than
+        // catastrophic: the rendezvous applies backpressure, so a server cannot
+        // outrun a reader that is actually reading. Measured on loopback, the
+        // whole payload survives a reader attaching within ~20ms and is lost
+        // entirely by ~50ms.
+        val payload = "shell-output-that-must-not-vanish\n".repeat(20).toByteArray()
+        val server = newServer {
+            shellFactory = org.apache.sshd.server.shell.ShellFactory {
+                object : org.apache.sshd.server.command.Command {
+                    private var out: java.io.OutputStream? = null
+                    private var exit: org.apache.sshd.server.ExitCallback? = null
+                    override fun setInputStream(value: java.io.InputStream?) {}
+                    override fun setOutputStream(value: java.io.OutputStream?) { out = value }
+                    override fun setErrorStream(value: java.io.OutputStream?) {}
+                    override fun setExitCallback(value: org.apache.sshd.server.ExitCallback?) { exit = value }
+                    override fun start(channel: org.apache.sshd.server.channel.ChannelSession?, env: org.apache.sshd.server.Environment?) {
+                        Thread({
+                            runCatching { out!!.write(payload); out!!.flush(); exit!!.onExit(0) }
+                        }, "gap-shell").apply { isDaemon = true; start() }
+                    }
+                    override fun destroy(channel: org.apache.sshd.server.channel.ChannelSession?) {}
+                }
+            }
+        }
+        val client = sshlibClient {
+            host = "127.0.0.1"; port = server.port
+            autoDisconnectOnLastChannelClose = false
+        }
+        assertTrue(connectAndAuth(client) is ConnectResult.Success)
+
+        val received = runBlocking {
+            val session = client.openSession()!!
+            SshlibShell.requestShell(session, "xterm", 80, 24)
+            val input = ReceiveChannelInputStream(session.stdout)
+            Thread.sleep(750) // reader attaches late — the shell has already exited
+            val buf = java.io.ByteArrayOutputStream()
+            val chunk = ByteArray(4096)
+            while (true) {
+                val n = input.read(chunk, 0, chunk.size)
+                if (n < 0) break
+                buf.write(chunk, 0, n)
+            }
+            buf.size()
+        }
+
+        assertEquals(
+            "sshlib now drains buffered stdout before CHANNEL_CLOSE tears the pump down — " +
+                "the shell path is safe and this probe should become a PASS (#58, cbssh#245)",
+            0,
+            received,
+        )
+    }
+
     // ------------------------------------------------------------------
     // TransportFactory pluggability + jump chains (phase 7)
     // ------------------------------------------------------------------
