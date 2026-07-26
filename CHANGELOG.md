@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.15
+
+🔑 **Security keys: importing a resident SSH key over NFC works** — discovering keys already stored on a YubiKey asked you to tap the key first and *then* typed-in PIN second. You can't hold a key against the phone and type a PIN at the same time, so the key left the field while the dialog was up and the read died with Android's "Permission Denial: Tag … is out of date" — which reads like a bug in Haven's permissions rather than "the key moved". Generating a key worked, because that path already collected the PIN up front; only the import path didn't. It does now, so the whole exchange runs as one uninterrupted tap. Verified on a device: PIN entered before any tap, then tag detected to credentials listed in 2.3 seconds. (#449, thanks onatio22)
+
+💬 **Security keys: a key that moves away mid-read says so** — both of Android's wordings for that ("is out of date" and "Tag was lost") now become "hold it flat against the phone without moving it until the operation completes — this can take a few seconds". Enumerating resident keys walks every service registered on the key, so it isn't a touch-and-lift.
+
 ## v5.83.14
 
 🖱️ **Terminal: a tap no longer goes missing after the copy menu appears** — in an app that asks for the mouse (zellij, tmux, htop…), a tap that landed while Haven's text selection was showing was spent dismissing that selection and never reached the app. So once a selection appeared — say a press held slightly too long turned into one — the next tap did nothing visible, and you had to tap a second time before the app saw a click. That reads exactly like mouse reporting being broken. The click now belongs to the app: one tap dismisses the selection *and* is delivered. Outside mouse-mode apps nothing changes — a tap still just dismisses the selection.
