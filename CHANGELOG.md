@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.16
+
+🔎 **Agent API: you can now read the output of a session that has already ended** — when a connection ends the instant it starts (a remote command that returns, a shell the server refuses, a login that drops), the terminal tab closes and every way of reading it failed with "no registered terminal tab" — at exactly the moment its output is the only thing explaining why. Haven now keeps the final screen of the last few sessions to end, readable with `read_exited_session`, so "it connected and then vanished" can be diagnosed instead of guessed at. Kept in memory only, so it doesn't survive restarting Haven.
+
+⚙️ **Agent API: an SSH profile now reports which engine it uses** — `sshOptions` could be set when creating or editing a profile, including the directive that opts it into the experimental sshlib engine, but was never reported back. An agent could switch a profile's SSH engine and then have no way to confirm which one it was on, or why one profile behaved differently from another. `list_connections` now returns the profile's `sshOptions` along with a plain `sshEngine` of "jsch" or "sshlib".
+
 ## v5.83.15
 
 🔑 **Security keys: importing a resident SSH key over NFC works** — discovering keys already stored on a YubiKey asked you to tap the key first and *then* typed-in PIN second. You can't hold a key against the phone and type a PIN at the same time, so the key left the field while the dialog was up and the read died with Android's "Permission Denial: Tag … is out of date" — which reads like a bug in Haven's permissions rather than "the key moved". Generating a key worked, because that path already collected the PIN up front; only the import path didn't. It does now, so the whole exchange runs as one uninterrupted tap. Verified on a device: PIN entered before any tap, then tag detected to credentials listed in 2.3 seconds. (#449, thanks onatio22)
