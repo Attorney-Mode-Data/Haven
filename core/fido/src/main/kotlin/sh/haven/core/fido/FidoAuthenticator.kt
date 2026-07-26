@@ -1867,9 +1867,14 @@ internal fun findFidoCtapHidInterface(
 fun fidoFailureMessage(e: Throwable): String? {
     val raw = e.message.orEmpty()
     return when {
-        e is SecurityException && raw.contains("is out of date") ->
+        // Two different Android wordings for the same physical event — the key
+        // left the field. "is out of date" is a stale Tag handle (the tag was
+        // re-dispatched while we held the old one); "Tag was lost" is the field
+        // breaking mid-transceive. Neither tells the user what to do.
+        raw.contains("is out of date") || raw.contains("Tag was lost") ->
             "The security key moved out of range before Haven finished reading it. " +
-                "Hold it still against the phone until the operation completes, then try again."
+                "Hold it flat against the phone without moving it until the operation " +
+                "completes — this can take a few seconds — then try again."
         else -> null
     }
 }

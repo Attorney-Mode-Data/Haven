@@ -24,9 +24,21 @@ class FidoFailureMessageTest {
         assertNotNull("the #449 error must be recognised", msg)
         assertTrue(
             "should say what to do, not quote Android internals: $msg",
-            msg!!.contains("Hold it still"),
+            msg!!.contains("Hold it flat"),
         )
         assertTrue("should not leak the raw wording", !msg.contains("Permission Denial"))
+    }
+
+    /**
+     * The other wording for the same physical event, seen on-device while
+     * verifying the fix: the field breaks mid-transceive rather than the handle
+     * going stale. TagLostException carries this message.
+     */
+    @Test
+    fun `a tag lost mid-exchange gets the same explanation`() {
+        val msg = fidoFailureMessage(java.io.IOException("Tag was lost."))
+        assertNotNull("TagLostException's wording must be recognised too", msg)
+        assertTrue(msg!!.contains("Hold it flat"))
     }
 
     /** Anything else falls through so the caller keeps the raw detail. */
