@@ -618,9 +618,17 @@ class SshSessionManager @Inject constructor(
                 engineLog(session.profileId, "SFTP: sshlib engine (dedicated connection)")
                 return sftp
             }
+            // The dedicated dial is out, but the session's own connection may
+            // already BE sshlib (a whole SshlibConnection, jump/proxy included),
+            // in which case nothing falls back to JSch — say which it is rather
+            // than claiming JSch every time.
             engineLog(
                 session.profileId,
-                "SFTP: falling back to JSch — sshlib engine does not support $reason yet",
+                if (session.client is SshClient) {
+                    "SFTP: falling back to JSch — sshlib engine does not support $reason yet"
+                } else {
+                    "SFTP: on the session's sshlib connection — no dedicated dial ($reason)"
+                },
             )
         }
         return session.client.openSftpSession()

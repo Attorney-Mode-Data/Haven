@@ -49,10 +49,13 @@ internal const val SSHLIB_CHANNEL_LIMITATION =
  * so the channels share a transport the way the JSch engine's do.
  *
  * **Honest by construction.** Anything this engine cannot actually do is
- * refused at [connect] via [SshlibSftpConnector.unsupportedReason] (jump/proxy
- * dials, FIDO2 keys, OpenSSH certificates) rather than quietly doing something
- * else — a jump host reaches us as a [HavenProxy], so that gate also stops a
- * jump profile silently dialing direct.
+ * refused at [connect] via [SshlibSftpConnector.unsupportedReason] (FIDO2 keys,
+ * OpenSSH certificates) rather than quietly doing something else.
+ *
+ * Jump hosts, tunnels and SOCKS/HTTP proxies all arrive as a [HavenProxy] and
+ * ride a [JschProxyTransportFactory] — one adapter from JSch's `Proxy` to
+ * sshlib's `Transport`, so every tunnel type Haven builds works here without
+ * per-type code.
  *
  * Keyboard-interactive rounds (2FA prompts, TOTP auto-fill, and servers that
  * route "Password:" through KI) go through the same
@@ -84,8 +87,15 @@ internal class SshlibConnection : SshConnection {
 
     override val isConnected: Boolean get() = transportUp && client != null
 
-    /** Always false: proxied and jump dials are refused outright, so a live sshlib connection is direct. */
-    override val connectedViaProxy: Boolean = false
+    /**
+     * True when the live connection was dialed through a [HavenProxy] (tunnel,
+     * SOCKS/HTTP proxy, or a jump host). `SshSessionManager.dialSftp` reads this
+     * to keep the dedicated SFTP dial — which goes direct — off a tunnelled
+     * profile, so it has to be real, not a constant.
+     */
+    @Volatile
+    override var connectedViaProxy: Boolean = false
+        private set
 
     /** Always false: OpenSSH certificates are refused, so no host is CA-verified on this engine. */
     override val hostVerifiedByCa: Boolean = false
@@ -101,12 +111,9 @@ internal class SshlibConnection : SshConnection {
         trustedHostCaKeys: List<String>,
     ): KnownHostEntry? {
         disconnect()
-        SshlibSftpConnector.unsupportedReason(
-            config,
-            // A jump chain is handed to us as a proxy, so hasProxy covers both.
-            hasJump = false,
-            hasProxy = proxy != null,
-        )?.let { reason ->
+        // Jump and proxy dials are supported now: both arrive as a HavenProxy
+        // and ride a JschProxyTransportFactory, so neither is passed here.
+        SshlibSftpConnector.unsupportedReason(config)?.let { reason ->
             throw SshIoException(
                 "sshlib engine (experimental) does not support $reason — " +
                     "set this profile's SSH engine back to JSch",
@@ -127,9 +134,11 @@ internal class SshlibConnection : SshConnection {
                     autoSubmit = !confirmOtp,
                 )
             },
+            proxy = proxy,
         )
         client = connected
         forwarders = SshlibPortForwarders(connected)
+        connectedViaProxy = proxy != null
         transportUp = true
         return gate.seen
     }
@@ -255,6 +264,7 @@ internal class SshlibConnection : SshConnection {
         val connected = client
         client = null
         transportUp = false
+        connectedViaProxy = false
         runCatching { runBlocking { connected?.disconnect() } }
     }
 

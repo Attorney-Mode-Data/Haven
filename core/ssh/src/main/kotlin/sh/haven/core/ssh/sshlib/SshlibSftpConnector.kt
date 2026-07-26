@@ -9,6 +9,7 @@ import org.connectbot.sshlib.KeyboardInteractiveCallback
 import org.connectbot.sshlib.PublicKey
 import org.connectbot.sshlib.SshClient as SshlibClient
 import sh.haven.core.ssh.ConnectionConfig
+import sh.haven.core.ssh.HavenProxy
 import sh.haven.core.ssh.HostKeyResult
 import sh.haven.core.ssh.HostKeyVerifier
 import sh.haven.core.ssh.KeyboardInteractiveAnswerer
@@ -39,10 +40,18 @@ internal object SshlibSftpConnector {
      * (unencrypted or passphrase-carrying), or the try-any-key pool without
      * OpenSSH certificates.
      */
+    /**
+     * [hasJump] / [hasProxy] gate the DEDICATED SFTP dial only, and must keep
+     * doing so: that dial connects straight to `config.host` with no proxy, so
+     * running it for a tunnelled profile would bypass the tunnel and — with a
+     * private-range or duplicated hostname — could land on a different machine
+     * entirely. A whole [SshlibConnection] carries the proxy itself (see
+     * [JschProxyTransportFactory]) and so passes neither.
+     */
     fun unsupportedReason(
         config: ConnectionConfig,
-        hasJump: Boolean,
-        hasProxy: Boolean,
+        hasJump: Boolean = false,
+        hasProxy: Boolean = false,
     ): String? {
         if (hasJump) return "jump-host connections"
         if (hasProxy) return "proxied connections"
@@ -91,13 +100,25 @@ internal object SshlibSftpConnector {
         hostKeyGate: org.connectbot.sshlib.HostKeyVerifier,
         connectTimeoutMs: Long = CONNECT_TIMEOUT_MS,
         ki: KeyboardInteractiveAnswerer? = null,
+        proxy: HavenProxy? = null,
     ): SshlibClient {
-        val host = SshClient.resolveHost(config.host, config.addressFamily)
+        // A proxied dial must NOT resolve the target locally: the name is
+        // resolved at the far end of the tunnel (and for .onion cannot be
+        // resolved here at all) — the same rule the JSch engine follows.
+        val host = if (proxy != null) config.host else SshClient.resolveHost(config.host, config.addressFamily)
         val client = SshlibClient(
             org.connectbot.sshlib.SshClientConfig {
                 this.host = host
                 this.port = config.port
                 this.hostKeyVerifier = hostKeyGate
+                proxy?.let {
+                    this.transportFactory = JschProxyTransportFactory(
+                        proxy = it.jschProxy,
+                        host = host,
+                        port = config.port,
+                        connectTimeoutMs = connectTimeoutMs.toInt(),
+                    )
+                }
                 // Rekey thresholds are sshlib's defaults (1 GiB / 1 h) again.
                 // 0.3.1 had client-initiated rekey broken both ways — a
                 // byte-limit rekey mid-transfer killed the channel, an interval
