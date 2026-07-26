@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.17
+
+🖱️ **Terminal: two-finger scrolling works on OPPO/ColorOS keyboard touchpads** — on an OPPO Pad 3 Pro keyboard, two-finger scrolling did nothing in the terminal while it worked everywhere else on the tablet, and two previous attempts at this didn't help. wxjiee found why by capturing the raw input events on the affected tablet: ColorOS doesn't report that gesture as a scroll event at all. It sends a plain touch stream from the touchpad, flagged by Android as an official two-finger swipe, with every scroll value at zero — so the earlier fixes, which both waited for a scroll event, never ran. Haven now recognises that flagged gesture and scrolls from it, feeding tmux and vim wheel events as usual. A touchpad click-and-drag is flagged differently and is untouched, as are taps and press-and-hold text selection. Verified by wxjiee on the affected hardware, and checked here for no change to ordinary touchscreen use. (#419, patch by wxjiee)
+
 ## v5.83.16
 
 🔎 **Agent API: you can now read the output of a session that has already ended** — when a connection ends the instant it starts (a remote command that returns, a shell the server refuses, a login that drops), the terminal tab closes and every way of reading it failed with "no registered terminal tab" — at exactly the moment its output is the only thing explaining why. Haven now keeps the final screen of the last few sessions to end, readable with `read_exited_session`, so "it connected and then vanished" can be diagnosed instead of guessed at. Kept in memory only, so it doesn't survive restarting Haven.
