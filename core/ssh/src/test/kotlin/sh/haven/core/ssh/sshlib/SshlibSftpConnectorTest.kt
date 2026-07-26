@@ -61,8 +61,25 @@ class SshlibSftpConnectorTest {
         )
     }
 
+    /**
+     * Chains run as their sub-methods in order plus a keyboard-interactive
+     * follow-up, so a chain is supported exactly when every sub-method is.
+     */
     @Test
-    fun `multi-method chains fall back`() = assertNotNull(
-        reason(AuthMethod.Multi(listOf(AuthMethod.Password("p")))),
+    fun `multi-method chain of supported methods is supported`() = assertNull(
+        reason(
+            AuthMethod.Multi(
+                listOf(AuthMethod.PrivateKey(byteArrayOf(1)), AuthMethod.Password("p")),
+            ),
+        ),
+    )
+
+    @Test
+    fun `multi-method chain falls back when a sub-method does`() = assertNotNull(
+        reason(
+            AuthMethod.Multi(
+                listOf(AuthMethod.Password("p"), AuthMethod.FidoKey(skKeyData = byteArrayOf(1))),
+            ),
+        ),
     )
 }

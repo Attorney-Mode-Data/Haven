@@ -9,6 +9,7 @@ import sh.haven.core.fido.FidoAuthenticator
 import sh.haven.core.ssh.ConnectionConfig
 import sh.haven.core.ssh.ExecResult
 import sh.haven.core.ssh.HavenProxy
+import sh.haven.core.ssh.KeyboardInteractiveAnswerer
 import sh.haven.core.ssh.KeyboardInteractivePrompter
 import sh.haven.core.ssh.KnownHostEntry
 import sh.haven.core.ssh.ShellChannel
@@ -49,9 +50,14 @@ internal const val SSHLIB_CHANNEL_LIMITATION =
  *
  * **Honest by construction.** Anything this engine cannot actually do is
  * refused at [connect] via [SshlibSftpConnector.unsupportedReason] (jump/proxy
- * dials, FIDO2 keys, OpenSSH certificates, multi-factor chains) rather than
- * quietly doing something else — a jump host reaches us as a [HavenProxy], so
- * that gate also stops a jump profile silently dialing direct.
+ * dials, FIDO2 keys, OpenSSH certificates) rather than quietly doing something
+ * else — a jump host reaches us as a [HavenProxy], so that gate also stops a
+ * jump profile silently dialing direct.
+ *
+ * Keyboard-interactive rounds (2FA prompts, TOTP auto-fill, and servers that
+ * route "Password:" through KI) go through the same
+ * [sh.haven.core.ssh.KeyboardInteractiveAnswerer] the JSch engine uses, so both
+ * engines auto-answer and pre-fill by identical rules.
  *
  * **Host keys** follow the engine-neutral contract: the key is accepted and
  * returned from [connect] as a [KnownHostEntry] so the caller runs Haven's
@@ -108,7 +114,20 @@ internal class SshlibConnection : SshConnection {
         }
         preConnect?.invoke()
         val gate = CapturingHostKeyGate(config.host, config.port)
-        val connected = SshlibSftpConnector.dialAndAuth(config, gate, connectTimeoutMs.toLong())
+        val connected = SshlibSftpConnector.dialAndAuth(
+            config,
+            gate,
+            connectTimeoutMs.toLong(),
+            ki = keyboardInteractivePrompter?.let { prompter ->
+                KeyboardInteractiveAnswerer(
+                    destination = "${config.username}@${config.host}:${config.port}",
+                    prompter = prompter,
+                    fallbackPassword = savedPassword(config),
+                    totpCodeProvider = totpCodeProvider,
+                    autoSubmit = !confirmOtp,
+                )
+            },
+        )
         client = connected
         forwarders = SshlibPortForwarders(connected)
         transportUp = true
@@ -243,6 +262,21 @@ internal class SshlibConnection : SshConnection {
 
     private fun requireClient(): SshlibClient =
         client ?: throw IllegalStateException("sshlib: not connected")
+
+    /**
+     * The profile's stored password, so a single-prompt "Password:" KI round is
+     * answered without asking the user to retype it — the same courtesy the
+     * JSch engine's `fallbackKiPassword` does.
+     */
+    private fun savedPassword(config: ConnectionConfig): CharArray? {
+        val methods = when (val method = config.authMethod) {
+            is ConnectionConfig.AuthMethod.Multi -> method.methods
+            else -> listOf(method)
+        }
+        return methods.filterIsInstance<ConnectionConfig.AuthMethod.Password>()
+            .firstOrNull()
+            ?.password
+    }
 
     private fun requireForwarders(): SshlibPortForwarders =
         forwarders ?: throw IllegalStateException("sshlib: not connected")

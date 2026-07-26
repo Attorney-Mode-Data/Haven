@@ -1,6 +1,8 @@
 package sh.haven.core.ssh.sshlib
 
 import kotlinx.coroutines.withTimeout
+import org.connectbot.sshlib.AuthHandler
+import org.connectbot.sshlib.AuthPublicKey
 import org.connectbot.sshlib.AuthResult
 import org.connectbot.sshlib.ConnectResult
 import org.connectbot.sshlib.KeyboardInteractiveCallback
@@ -9,6 +11,8 @@ import org.connectbot.sshlib.SshClient as SshlibClient
 import sh.haven.core.ssh.ConnectionConfig
 import sh.haven.core.ssh.HostKeyResult
 import sh.haven.core.ssh.HostKeyVerifier
+import sh.haven.core.ssh.KeyboardInteractiveAnswerer
+import sh.haven.core.ssh.KeyboardInteractiveChallenge
 import sh.haven.core.ssh.KnownHostEntry
 import sh.haven.core.ssh.SshClient
 import sh.haven.core.ssh.SshIoException
@@ -52,9 +56,10 @@ internal object SshlibSftpConnector {
         is ConnectionConfig.AuthMethod.PrivateKeys ->
             if (method.keys.any { it.certificateBytes != null }) "OpenSSH certificate auth" else null
         is ConnectionConfig.AuthMethod.FidoKey -> "FIDO2 hardware keys"
-        // Multi-factor chains rely on server-driven partial success — untested
-        // on sshlib; gate until the phase-2 capability spike proves it.
-        is ConnectionConfig.AuthMethod.Multi -> "multi-method auth chains"
+        // Chains run as their sub-methods in order plus a keyboard-interactive
+        // follow-up (see authenticate); a sub-method we cannot do still gates.
+        is ConnectionConfig.AuthMethod.Multi ->
+            method.methods.firstNotNullOfOrNull { unsupportedAuthReason(it) }
     }
 
     /**
@@ -85,6 +90,7 @@ internal object SshlibSftpConnector {
         config: ConnectionConfig,
         hostKeyGate: org.connectbot.sshlib.HostKeyVerifier,
         connectTimeoutMs: Long = CONNECT_TIMEOUT_MS,
+        ki: KeyboardInteractiveAnswerer? = null,
     ): SshlibClient {
         val host = SshClient.resolveHost(config.host, config.addressFamily)
         val client = SshlibClient(
@@ -124,7 +130,7 @@ internal object SshlibSftpConnector {
                 is ConnectResult.ProtocolError ->
                     throw SshIoException("sshlib: protocol error: ${result.message}", result.cause)
             }
-            authenticate(client, config)
+            authenticate(client, config, ki)
             return client
         } catch (t: Throwable) {
             try { client.disconnect() } catch (_: Exception) { /* best effort */ }
@@ -159,53 +165,129 @@ internal object SshlibSftpConnector {
         }
     }
 
-    private suspend fun authenticate(client: SshlibClient, config: ConnectionConfig) {
-        val username = config.username
-        when (val method = config.authMethod) {
-            is ConnectionConfig.AuthMethod.Password -> {
-                val password = String(method.password)
-                var result = client.authenticatePassword(username, password)
-                // Servers that only advertise keyboard-interactive still take
-                // the same secret — answer every prompt with it, as JSch's
-                // UserInfo path does for simple password-equivalent KI.
-                if (result is AuthResult.Failure && "keyboard-interactive" in result.allowedMethods) {
-                    result = client.authenticateKeyboardInteractive(
-                        username,
-                        object : KeyboardInteractiveCallback {
-                            override suspend fun onInfoRequest(
-                                name: String,
-                                instruction: String,
-                                prompts: List<KeyboardInteractiveCallback.Prompt>,
-                                respond: suspend (responses: List<String>) -> Unit,
-                            ) = respond(prompts.map { password })
-                        },
-                    )
-                }
-                result.requireSuccess()
+    /**
+     * Run the profile's key(s), then let sshlib's [org.connectbot.sshlib.AuthHandler]
+     * flow drive whatever password / keyboard-interactive the SERVER says it
+     * wants.
+     *
+     * The split is deliberate. Keys go through [SshlibClient.authenticatePublicKey]
+     * because that path negotiates `rsa-sha2-*` from the server's `server-sig-algs`
+     * and does host-bound auth; the handler flow exposes neither, so routing keys
+     * through it would regress RSA. Everything else goes through the handler flow
+     * because it probes with `none` FIRST and only sends a method the server
+     * advertised — sending an unadvertised one is what broke here: a MINA sshd
+     * offering only keyboard-interactive answered a `password` request with a
+     * failure carrying NO method list, so a "then try KI" follow-up could not
+     * even tell KI was available.
+     *
+     * Running the flow after a rejected key is also what makes a second factor
+     * work — an OpenSSH server with `AuthenticationMethods publickey,keyboard-interactive`
+     * answers the accepted key with a failure that still lists KI, which sshlib's
+     * public [AuthResult.Failure] cannot distinguish from a flat rejection — and
+     * it means [ConnectionConfig.AuthMethod.Multi] needs nothing beyond running
+     * its sub-methods in order.
+     *
+     * [ki] is null when no prompter was supplied (the dedicated SFTP dial), in
+     * which case KI prompts are answered with the saved password — no UI, which
+     * covers the common "server routes Password: through KI" case.
+     */
+    private suspend fun authenticate(
+        client: SshlibClient,
+        config: ConnectionConfig,
+        ki: KeyboardInteractiveAnswerer? = null,
+    ) {
+        val methods = when (val method = config.authMethod) {
+            is ConnectionConfig.AuthMethod.Multi -> method.methods
+            else -> listOf(method)
+        }
+        var last: AuthResult = AuthResult.Failure(emptySet())
+        for (method in methods.filterNot { it is ConnectionConfig.AuthMethod.Password }) {
+            last = attemptKey(client, config.username, method)
+            if (last is AuthResult.Success) return
+        }
+        val password = fallbackPassword(methods)
+        if (password != null || ki != null) {
+            last = client.authenticate(
+                config.username,
+                PasswordOrKeyboardHandler(password, ki),
+            )
+            if (last is AuthResult.Success) return
+        }
+        last.requireSuccess()
+    }
+
+    private suspend fun attemptKey(
+        client: SshlibClient,
+        username: String,
+        method: ConnectionConfig.AuthMethod,
+    ): AuthResult = when (method) {
+        is ConnectionConfig.AuthMethod.PrivateKey ->
+            client.authenticatePublicKey(
+                username,
+                method.keyBytes,
+                method.passphrase.takeIf { it.isNotEmpty() }?.let { String(it) },
+            )
+        is ConnectionConfig.AuthMethod.PrivateKeys -> {
+            var last: AuthResult = AuthResult.Failure(emptySet())
+            for (entry in method.keys) {
+                last = client.authenticatePublicKey(
+                    username, entry.keyBytes, entry.passphrase?.let { String(it, Charsets.UTF_8) },
+                )
+                if (last is AuthResult.Success) break
             }
-            is ConnectionConfig.AuthMethod.PrivateKey -> {
-                client.authenticatePublicKey(
-                    username,
-                    method.keyBytes,
-                    method.passphrase.takeIf { it.isNotEmpty() }?.let { String(it) },
-                ).requireSuccess()
-            }
-            is ConnectionConfig.AuthMethod.PrivateKeys -> {
-                var last: AuthResult = AuthResult.Failure(emptySet())
-                for (entry in method.keys) {
-                    last = client.authenticatePublicKey(
-                        username, entry.keyBytes, entry.passphrase?.let { String(it, Charsets.UTF_8) },
-                    )
-                    if (last is AuthResult.Success) break
-                }
-                last.requireSuccess()
-            }
-            // Both rejected by unsupportedReason before dialing.
-            is ConnectionConfig.AuthMethod.FidoKey,
-            is ConnectionConfig.AuthMethod.Multi,
-            -> throw SshIoException("sshlib: unsupported auth method ${method::class.simpleName}")
+            last
+        }
+        // FidoKey is rejected by unsupportedReason before dialing; Password is
+        // filtered out by the caller; nested Multi is not a shape the profile
+        // editor can produce.
+        is ConnectionConfig.AuthMethod.FidoKey,
+        is ConnectionConfig.AuthMethod.Multi,
+        is ConnectionConfig.AuthMethod.Password,
+        -> throw SshIoException("sshlib: unsupported auth method ${method::class.simpleName}")
+    }
+
+    /**
+     * The password / keyboard-interactive half of auth, as sshlib's
+     * [org.connectbot.sshlib.AuthHandler]. Offers no public keys — those are
+     * already done by then (see [authenticate]) — so the flow it drives is
+     * `none` probe → whichever of KI / password the server advertised.
+     */
+    private class PasswordOrKeyboardHandler(
+        private val password: String?,
+        private val ki: KeyboardInteractiveAnswerer?,
+    ) : AuthHandler {
+
+        override suspend fun onPublicKeysNeeded(): List<AuthPublicKey> = emptyList()
+
+        override suspend fun onSignatureRequest(key: AuthPublicKey, dataToSign: ByteArray): ByteArray? = null
+
+        override suspend fun onPasswordNeeded(): String? = password
+
+        override suspend fun onKeyboardInteractivePrompt(
+            name: String,
+            instruction: String,
+            prompts: List<KeyboardInteractiveCallback.Prompt>,
+        ): List<String>? = if (ki != null) {
+            ki.answer(
+                name = name,
+                instruction = instruction,
+                prompts = prompts.map {
+                    KeyboardInteractiveChallenge.Prompt(text = it.text, echo = it.echo)
+                },
+            )
+        } else {
+            // No prompter (the dedicated SFTP dial): answer with the saved
+            // password, or decline by returning null so KI ends rather than
+            // looping on prompts nobody can answer.
+            password?.let { pw -> prompts.map { pw } }
         }
     }
+
+    /** The password a KI round can be auto-answered with, when the profile has one. */
+    private fun fallbackPassword(methods: List<ConnectionConfig.AuthMethod>): String? =
+        methods.filterIsInstance<ConnectionConfig.AuthMethod.Password>()
+            .firstOrNull()
+            ?.let { String(it.password) }
 
     private fun AuthResult.requireSuccess() {
         when (this) {
