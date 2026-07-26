@@ -165,7 +165,7 @@ List Bluetooth Classic devices already paired (bonded) with the phone — { addr
 <details markdown="1">
 <summary><code>list_connections</code> · no per-call prompt</summary>
 
-List saved connection profiles (SSH, Mosh, VNC, RDP, SMB, rclone, local, Reticulum). Secrets like passwords and keys are redacted.
+List saved connection profiles (SSH, Mosh, VNC, RDP, SMB, rclone, local, Reticulum). Secrets like passwords and keys are redacted. SSH profiles also report `sshOptions` (the ssh_config-style lines set on the profile) and `sshEngine` — "jsch" (default) or "sshlib" (the experimental whole-connection engine, opted into with the 'HavenSshEngine sshlib' directive) — so an agent that sets the engine can confirm which one a profile is actually on.
 
 </details>
 

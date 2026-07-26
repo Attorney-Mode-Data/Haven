@@ -321,7 +321,7 @@ internal class McpTools(
         ) { args -> unpairMcpClient(args) },
 
         "list_connections" to ToolHandler(
-            description = "List saved connection profiles (SSH, Mosh, VNC, RDP, SMB, rclone, local, Reticulum). Secrets like passwords and keys are redacted.",
+            description = "List saved connection profiles (SSH, Mosh, VNC, RDP, SMB, rclone, local, Reticulum). Secrets like passwords and keys are redacted. SSH profiles also report `sshOptions` (the ssh_config-style lines set on the profile) and `sshEngine` — \"jsch\" (default) or \"sshlib\" (the experimental whole-connection engine, opted into with the 'HavenSshEngine sshlib' directive) — so an agent that sets the engine can confirm which one a profile is actually on.",
             inputSchema = emptyObjectSchema(),
         ) { _ -> listConnections() },
 
@@ -2013,6 +2013,15 @@ internal class McpTools(
         if (p.useEternalTerminal) put("useEternalTerminal", true)
         if (!p.usbForwardVidPid.isNullOrBlank()) put("usbForwardVidPid", p.usbForwardVidPid)
         if (!p.moshServerCommand.isNullOrBlank()) put("moshServerCommand", p.moshServerCommand)
+        // sshOptions was settable but never readable, so an agent could opt a
+        // profile into the sshlib engine and then have no way to confirm which
+        // engine it was actually on — the same write-only asymmetry
+        // usbForwardVidPid had. Report the raw lines and the engine they
+        // resolve to, since the engine is the actionable part (#58).
+        if (!p.sshOptions.isNullOrBlank()) put("sshOptions", p.sshOptions)
+        if (p.connectionType == "SSH") {
+            put("sshEngine", sh.haven.core.ssh.sshEngineFromOptionsText(p.sshOptions).name.lowercase())
+        }
         // VNC-specific fields
         if (p.vncPort != null) put("vncPort", p.vncPort)
         if (!p.vncUsername.isNullOrEmpty()) put("vncUsername", p.vncUsername)
