@@ -1,5 +1,6 @@
 package sh.haven.feature.terminal
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,6 +13,23 @@ class MouseModeTrackerTest {
     private fun MouseModeTracker.feed(s: String) {
         val b = s.toByteArray(Charsets.US_ASCII)
         process(b, 0, b.size)
+    }
+
+    /**
+     * zellij 0.44.0's real startup burst, taken from the asciinema cast on #435:
+     * it clears every mouse mode, then enables 1000/1002/1003 plus 1015 (urxvt)
+     * and 1006 (SGR). The unknown 1005/1015 modes must not disturb the ones we
+     * do track — if they did, Haven would think the app never asked for the
+     * mouse and would keep stealing its clicks for local selections.
+     */
+    @Test
+    fun `zellij startup burst leaves mouse mode on`() {
+        val t = MouseModeTracker()
+        t.feed("$esc[?1000l$esc[?1002l$esc[?1003l$esc[?1005l$esc[?1006l")
+        assertFalse(t.mouseMode.value)
+        t.feed("$esc[?1000h$esc[?1002h$esc[?1003h$esc[?1015h$esc[?1006h")
+        assertTrue("zellij asked for the mouse but Haven did not see it", t.mouseMode.value)
+        assertEquals(1003, t.activeMouseMode.value)
     }
 
     @Test

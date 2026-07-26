@@ -60,6 +60,8 @@ fun HavenTerminal(
     onScrollControllerAvailable: ((org.connectbot.terminal.ScrollController) -> Unit)? = null,
     onGestureInjectorReady: ((org.connectbot.terminal.GestureInjector) -> Unit)? = null,
     reflowOnKeyboard: Boolean = false,
+    /** True while the remote app has mouse tracking on — see Terminal. (#435) */
+    mouseModeActive: Boolean = false,
 ) {
     Terminal(
         terminalEmulator = terminalEmulator,
@@ -84,6 +86,7 @@ fun HavenTerminal(
         onComposeControllerAvailable = onComposeControllerAvailable,
         onFontSizeChanged = onFontSizeChanged,
         gestureCallback = gestureCallback,
+        mouseModeActive = mouseModeActive,
         allowStandardKeyboard = keyboardMode is HavenKeyboardMode.Standard,
         rawKeyboardMode = keyboardMode is HavenKeyboardMode.Raw,
         customImeFlags = (keyboardMode as? HavenKeyboardMode.Custom)?.let {

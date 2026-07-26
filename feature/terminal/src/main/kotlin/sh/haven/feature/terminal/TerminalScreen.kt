@@ -1242,6 +1242,11 @@ fun TerminalScreen(
                                     }
                                 },
                                 gestureCallback = gestureCallback,
+                                // The real DECSET mouse-tracking signal, not
+                                // "a gestureCallback exists" — one is installed
+                                // for alt-screen-only apps too, and those have
+                                // no click to protect. (#435)
+                                mouseModeActive = isMouseMode && mouseInputEnabled,
                                 keyboardMode = keyboardMode,
                                 tapToPositionCursorOnPrompt = tapToPositionCursorOnPrompt,
                             )
