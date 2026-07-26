@@ -202,11 +202,11 @@
     <string name="connections_file_transport_scp_label">SCP (legacy)</string>
     <string name="connections_file_transport_scp_desc">Force legacy scp -t/-f and shell ls. Use on hardened or embedded servers.</string>
     <string name="connections_section_ssh_engine">SSH engine</string>
-    <string name="connections_helper_ssh_engine">Which SSH implementation this connection uses. sshlib is experimental: file transfer only for now — terminal and tunnels stay on JSch.</string>
+    <string name="connections_helper_ssh_engine">Which SSH implementation this connection uses. sshlib is experimental: it now carries the whole connection — terminal, file transfer and tunnels — not just SFTP.</string>
     <string name="connections_ssh_engine_jsch_label">Default (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">The proven engine. All features.</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (experimental)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Kotlin engine, SFTP file browsing/transfer only. Needs a direct connection — no jump host or proxy.</string>
+    <string name="connections_ssh_engine_sshlib_desc">Kotlin engine: terminal, SFTP and port forwarding. Needs a direct connection — no jump host, proxy, hardware key, certificate or multi-factor login. A second session on one connection can drop it.</string>
     <string name="connection_address_family_label">Address family</string>
     <string name="connection_address_family_auto">Auto</string>
     <string name="connection_address_family_ipv4_only">IPv4 only</string>

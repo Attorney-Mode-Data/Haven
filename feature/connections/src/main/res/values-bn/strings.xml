@@ -556,9 +556,9 @@
     <string name="connections_usbserial_flow_rtscts">RTS/CTS</string>
     <string name="connections_usbserial_flow_xonxoff">XON/XOFF</string>
     <string name="connections_section_ssh_engine">SSH ইঞ্জিন</string>
-    <string name="connections_helper_ssh_engine">এই সংযোগটি কোন SSH বাস্তবায়ন ব্যবহার করে। sshlib পরীক্ষামূলক: আপাতত শুধু ফাইল স্থানান্তর — টার্মিনাল ও টানেল JSch-এ থাকবে।</string>
+    <string name="connections_helper_ssh_engine">এই সংযোগটি কোন SSH বাস্তবায়ন ব্যবহার করে। sshlib পরীক্ষামূলক: এখন এটি শুধু SFTP নয়, পুরো সংযোগ পরিচালনা করে — টার্মিনাল, ফাইল স্থানান্তর এবং টানেল।</string>
     <string name="connections_ssh_engine_jsch_label">ডিফল্ট (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">প্রমাণিত ইঞ্জিন। সব বৈশিষ্ট্য।</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (পরীক্ষামূলক)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Kotlin ইঞ্জিন, শুধুমাত্র SFTP ফাইল ব্রাউজিং/স্থানান্তর। সরাসরি সংযোগ প্রয়োজন — জাম্প হোস্ট বা প্রক্সি নয়।</string>
+    <string name="connections_ssh_engine_sshlib_desc">Kotlin ইঞ্জিন: টার্মিনাল, SFTP এবং পোর্ট ফরওয়ার্ডিং। সরাসরি সংযোগ প্রয়োজন — জাম্প হোস্ট, প্রক্সি, হার্ডওয়্যার কী, সার্টিফিকেট বা বহু-স্তর লগইন নয়। একটি সংযোগে দ্বিতীয় সেশন এটি বিচ্ছিন্ন করতে পারে।</string>
 </resources>
