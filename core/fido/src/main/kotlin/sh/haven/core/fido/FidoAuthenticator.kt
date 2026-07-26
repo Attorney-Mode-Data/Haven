@@ -940,10 +940,23 @@ class FidoAuthenticator @Inject constructor(
         lastAssertionError = null
         Log.d(TAG, "FIDO2 enumerateResidentCredentials requested: rpIdPrefix='$rpIdPrefix'")
 
+        // Collect the PIN UP FRONT — before the key is tapped — so the whole
+        // enumeration runs as one continuous tap, the same as getAssertion and
+        // makeCredential already do (#449). Credential management always needs a
+        // pinUvAuthToken, so this is never a wasted prompt on a key that can
+        // enumerate at all; a key with no PIN set fails with the explicit
+        // "no PIN configured" error either way.
+        //
+        // Over NFC a mid-exchange prompt is fatal, not just awkward: you cannot
+        // hold the key against the phone and type a PIN at the same time, so the
+        // tag lifts while the dialog is up and the next transceive dies with
+        // "Tag ... is out of date" — which is exactly how this surfaced.
+        val prePin = promptPin(null) ?: throw IOException("PIN entry cancelled")
+
         withDiscoveredFidoDevice { device ->
             when (device) {
-                is ConnectedDevice.Usb -> performUsbEnumerate(device.device, rpIdPrefix)
-                is ConnectedDevice.Nfc -> performNfcEnumerate(device.tag, rpIdPrefix)
+                is ConnectedDevice.Usb -> performUsbEnumerate(device.device, rpIdPrefix, prePin)
+                is ConnectedDevice.Nfc -> performNfcEnumerate(device.tag, rpIdPrefix, prePin)
             }
         }
     }
@@ -1379,6 +1392,7 @@ class FidoAuthenticator @Inject constructor(
     private suspend fun performUsbEnumerate(
         device: UsbDevice,
         rpIdPrefix: String,
+        prePin: String,
     ): List<Pair<String, SkKeyData>> {
         // Open the USB transport and run the shared enumerate. USB permission
         // handling is duplicated from performUsbAssertion — pulling it out
@@ -1399,6 +1413,7 @@ class FidoAuthenticator @Inject constructor(
                 return runCredentialManagementEnumerate(
                     rpIdPrefix = rpIdPrefix,
                     touchTransport = FidoTouchPrompt.TouchKey.Transport.USB,
+                    prePin = prePin,
                 ) { transport.sendCborCommand(it) }
             }
         } catch (e: Exception) {
@@ -1413,6 +1428,7 @@ class FidoAuthenticator @Inject constructor(
     private suspend fun performNfcEnumerate(
         tag: Tag,
         rpIdPrefix: String,
+        prePin: String,
     ): List<Pair<String, SkKeyData>> {
         val isoDep = IsoDep.get(tag) ?: throw IOException("Tag does not support ISO-DEP")
         CtapNfcTransport(isoDep).use { transport ->
@@ -1421,6 +1437,7 @@ class FidoAuthenticator @Inject constructor(
             return runCredentialManagementEnumerate(
                 rpIdPrefix = rpIdPrefix,
                 touchTransport = FidoTouchPrompt.TouchKey.Transport.NFC,
+                prePin = prePin,
             ) { transport.sendCborCommand(it) }
         }
     }
@@ -1444,13 +1461,18 @@ class FidoAuthenticator @Inject constructor(
     private suspend fun runCredentialManagementEnumerate(
         rpIdPrefix: String,
         touchTransport: FidoTouchPrompt.TouchKey.Transport,
+        prePin: String,
         send: (ByteArray) -> ByteArray,
     ): List<Pair<String, SkKeyData>> {
-        // 1. PIN/UV exchange — cm token has no rpId scoping.
+        // 1. PIN/UV exchange — cm token has no rpId scoping. The PIN was
+        //    collected before the tap, so never prompt from in here: a dialog
+        //    mid-exchange drops the NFC tag (#449).
         val (token, protocol) = runUvPinProtocol(
             rpId = null,
             permission = Ctap2Cbor.PERMISSION_CREDENTIAL_MANAGEMENT,
             send = send,
+            knownPin = prePin,
+            allowPrompt = false,
         )
 
         // 2. enumerateRPs: Begin (subCmd 2) returns first RP + totalRPs,
@@ -1831,4 +1853,23 @@ internal fun findFidoCtapHidInterface(
         if (epIn != null && epOut != null) return Triple(iface, epIn, epOut)
     }
     return null
+}
+
+/**
+ * Recognise transport failures worth explaining in the user's terms, or null to
+ * fall back to the raw exception text (#449).
+ *
+ * Android words a lifted NFC tag as "Permission Denial: Tag ( ID: ... ) is out
+ * of date", which reads like a permissions bug in Haven rather than "the key
+ * left the field". It is the normal outcome of the key moving — including
+ * moving it to type a PIN — so it needs to say so.
+ */
+fun fidoFailureMessage(e: Throwable): String? {
+    val raw = e.message.orEmpty()
+    return when {
+        e is SecurityException && raw.contains("is out of date") ->
+            "The security key moved out of range before Haven finished reading it. " +
+                "Hold it still against the phone until the operation completes, then try again."
+        else -> null
+    }
 }

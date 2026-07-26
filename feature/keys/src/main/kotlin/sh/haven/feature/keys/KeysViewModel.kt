@@ -656,7 +656,8 @@ class KeysViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("KeysViewModel", "discoverFromSecurityKey failed", e)
-                _error.value = "FIDO discovery failed: ${e.message ?: e.javaClass.simpleName}"
+                _error.value = sh.haven.core.fido.fidoFailureMessage(e)
+                    ?: "FIDO discovery failed: ${e.message ?: e.javaClass.simpleName}"
             } finally {
                 _discoverInProgress.value = false
             }
