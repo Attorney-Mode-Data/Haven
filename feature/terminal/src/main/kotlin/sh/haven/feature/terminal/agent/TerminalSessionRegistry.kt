@@ -210,9 +210,79 @@ class TerminalSessionRegistry @Inject constructor() {
         }
     }
 
-    fun unregister(sessionId: String) {
+    /**
+     * The last thing a terminal showed before its tab went away.
+     *
+     * A session that ends immediately — a `remoteCommand` that exits, a shell
+     * refused by the server, a connection dropped at startup — deregisters
+     * here, and every read verb then fails with "no registered terminal tab".
+     * That is exactly the case where the output matters most: the agent (or a
+     * user reading the agent's report) wants to know *why* it exited, and the
+     * only copy of that answer has just been discarded.
+     *
+     * Retained per session, newest first, capped at [MAX_RETAINED].
+     */
+    data class ExitedSession(
+        val sessionId: String,
+        val profileId: String?,
+        val label: String?,
+        val rows: Int,
+        val cols: Int,
+        /** Visible screen at teardown, trailing blank lines trimmed. */
+        val screen: List<String>,
+        val exitedAtMs: Long,
+    )
+
+    private val exitedLock = Any()
+    private val exited = ArrayDeque<ExitedSession>()
+
+    /**
+     * Remove a session's handles, keeping a copy of its final screen for
+     * [lastExited]. [profileId]/[label] are the caller's — the registry is
+     * keyed by sessionId and has no other way to know which profile a dead
+     * session belonged to.
+     */
+    fun unregister(sessionId: String, profileId: String? = null, label: String? = null) {
+        val entry = _sessions.value[sessionId]
+        if (entry != null) {
+            runCatching {
+                val snap = entry.emulator.buildAgentSnapshot(
+                    includeSemanticSegments = false,
+                    maxLines = Int.MAX_VALUE,
+                )
+                ExitedSession(
+                    sessionId = sessionId,
+                    profileId = profileId,
+                    label = label,
+                    rows = snap.rows,
+                    cols = snap.cols,
+                    screen = snap.lines.map { it.text.trimEnd() }.dropLastWhile { it.isEmpty() },
+                    exitedAtMs = System.currentTimeMillis(),
+                )
+            }.onSuccess { record ->
+                synchronized(exitedLock) {
+                    exited.addFirst(record)
+                    while (exited.size > MAX_RETAINED) exited.removeLast()
+                }
+            }
+            // A snapshot failure must never block teardown — the tab is going
+            // away either way; losing the retained copy is the lesser problem.
+        }
         _sessions.update { it - sessionId }
     }
 
+    /**
+     * The most recently exited session, or the most recent one for
+     * [profileId] when given. Null when nothing has exited since launch.
+     */
+    fun lastExited(profileId: String? = null): ExitedSession? = synchronized(exitedLock) {
+        if (profileId.isNullOrBlank()) exited.firstOrNull()
+        else exited.firstOrNull { it.profileId == profileId }
+    }
+
     fun get(sessionId: String): Entry? = _sessions.value[sessionId]
+
+    private companion object {
+        const val MAX_RETAINED = 8
+    }
 }

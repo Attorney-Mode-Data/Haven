@@ -325,6 +325,13 @@ internal class McpTools(
             inputSchema = emptyObjectSchema(),
         ) { _ -> listConnections() },
 
+        "read_exited_session" to ToolHandler(
+            description = "Return the final screen of a terminal session that has already ended — the one thing every other terminal read verb cannot give you, because they need a live tab. A session that exits immediately (a remoteCommand that returns, a shell the server refuses, a connection dropped at startup) deregisters its tab, so read_terminal_snapshot and read_terminal_scrollback both fail with \"no registered terminal tab\" at exactly the moment its output would explain why. Pass profileId for the most recent exit on that profile, or omit it for the most recent exit overall. Returns { sessionId, profileId, label, rows, cols, exitedAtMs, screen: [lines] } with trailing blank lines trimmed, or { found: false } when nothing has exited since Haven started. The last 8 exits are kept in memory only — they do not survive an app restart.",
+            inputSchema = objectSchema {
+                string("profileId", "Optional: only consider sessions that belonged to this profile (from list_connections). Omit for the most recent exit on any profile.")
+            },
+        ) { args -> readExitedSession(args) },
+
         "list_sessions" to ToolHandler(
             description = "List currently registered sessions across all transports (ssh, mosh, et, reticulum, rdp, smb, local, mail, and Bluetooth/BLE/USB serial) with sessionId, profileId, label, status (connecting, connected, reconnecting, disconnected, error), transport, and isAgentRepl — a screen heuristic (Claude Code TUI chrome in the bottom lines) marking which terminal session is an agent REPL, so a conversation peer can be picked without guessing; null when the session has no attached terminal tab. SSH sessions additionally include sessionManager, chosenSessionName (the stable tmux/zellij identity that survives reconnects), channel state, jump-session linkage, and active port forwards.",
             inputSchema = emptyObjectSchema(),
@@ -3374,6 +3381,32 @@ internal class McpTools(
         if (sessionId.isEmpty()) throw McpError(-32602, "Missing required argument: sessionId")
         return terminalSessionRegistry.get(sessionId)
             ?: throw McpError(-32603, "No registered terminal tab for session $sessionId — open a terminal tab on this session first")
+    }
+
+    private fun readExitedSession(args: JSONObject): JSONObject {
+        val profileId = args.optString("profileId").ifBlank { null }
+        val record = terminalSessionRegistry.lastExited(profileId)
+            ?: return JSONObject().apply {
+                put("found", false)
+                put(
+                    "note",
+                    if (profileId == null) {
+                        "No terminal session has exited since Haven started."
+                    } else {
+                        "No terminal session for profile $profileId has exited since Haven started."
+                    },
+                )
+            }
+        return JSONObject().apply {
+            put("found", true)
+            put("sessionId", record.sessionId)
+            put("profileId", record.profileId ?: JSONObject.NULL)
+            put("label", record.label ?: JSONObject.NULL)
+            put("rows", record.rows)
+            put("cols", record.cols)
+            put("exitedAtMs", record.exitedAtMs)
+            put("screen", org.json.JSONArray(record.screen))
+        }
     }
 
     private fun readTerminalSnapshot(args: JSONObject): JSONObject {

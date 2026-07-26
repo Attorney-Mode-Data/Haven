@@ -129,4 +129,75 @@ class TerminalSessionRegistryTest {
         )
         assertNull(registry.get("ghost"))
     }
+
+    // ------------------------------------------------------------------
+    // Retained final screen for an exited session
+    // ------------------------------------------------------------------
+
+    private fun emulatorShowing(vararg lines: String): TerminalEmulator = mockk {
+        io.mockk.every { buildAgentSnapshot(any(), any()) } returns org.connectbot.terminal.AgentSnapshot(
+            rows = lines.size,
+            cols = 80,
+            cursorRow = 0,
+            cursorCol = 0,
+            cursorVisible = true,
+            terminalTitle = "",
+            scrollbackSize = 0,
+            lines = lines.map { org.connectbot.terminal.AgentLine(text = it, softWrapped = false, semanticSegments = emptyList()) },
+        )
+    }
+
+    /**
+     * A session that exits takes its tab with it, so every live-tab read verb
+     * fails at exactly the moment the output would explain why it exited.
+     */
+    @Test
+    fun `unregister keeps the final screen`() {
+        registerHeadless("s1", emulatorShowing("bash: /usr/bin/thing: No such file", "", ""))
+        registry.unregister("s1", profileId = "p1", label = "box")
+
+        val exited = registry.lastExited()
+        assertEquals("s1", exited?.sessionId)
+        assertEquals("p1", exited?.profileId)
+        assertEquals("box", exited?.label)
+        // Trailing blanks are noise on a 47-row screen showing one line.
+        assertEquals(listOf("bash: /usr/bin/thing: No such file"), exited?.screen)
+    }
+
+    /** Scoping by profile is the point: "why did THAT profile die?" */
+    @Test
+    fun `lastExited filters by profile`() {
+        registerHeadless("s1", emulatorShowing("from-p1"))
+        registry.unregister("s1", profileId = "p1")
+        registerHeadless("s2", emulatorShowing("from-p2"))
+        registry.unregister("s2", profileId = "p2")
+
+        assertEquals(listOf("from-p2"), registry.lastExited()?.screen)
+        assertEquals(listOf("from-p1"), registry.lastExited("p1")?.screen)
+        assertNull(registry.lastExited("nobody"))
+    }
+
+    /** Retention is bounded — a long session-churning run must not grow forever. */
+    @Test
+    fun `retention is capped and newest-first`() {
+        repeat(12) { i ->
+            registerHeadless("s$i", emulatorShowing("screen-$i"))
+            registry.unregister("s$i", profileId = "p$i")
+        }
+        assertEquals(listOf("screen-11"), registry.lastExited()?.screen)
+        assertNull("oldest entries must have been dropped", registry.lastExited("p0"))
+        assertEquals(listOf("screen-4"), registry.lastExited("p4")?.screen)
+    }
+
+    /** Teardown must not depend on the snapshot succeeding. */
+    @Test
+    fun `a failing snapshot still unregisters`() {
+        val broken: TerminalEmulator = mockk {
+            io.mockk.every { buildAgentSnapshot(any(), any()) } throws IllegalStateException("boom")
+        }
+        registerHeadless("s1", broken)
+        registry.unregister("s1", profileId = "p1")
+        assertNull(registry.get("s1"))
+        assertNull(registry.lastExited("p1"))
+    }
 }

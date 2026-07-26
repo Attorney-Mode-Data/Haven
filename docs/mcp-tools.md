@@ -43,12 +43,12 @@ consent level:
 
 - **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (68 tools).
 - **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (49 tools).
-- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (82 tools).
+- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (83 tools).
 
 ## Sections
 
 - [**Connections & profiles**](#sec-connections) — 9 tools
-- [**Terminal, selection & sessions**](#sec-terminal) — 26 tools
+- [**Terminal, selection & sessions**](#sec-terminal) — 27 tools
 - [**Files, media & clipboard**](#sec-files) — 19 tools
 - [**Cloud storage (rclone)**](#sec-rclone) — 15 tools
 - [**Email**](#sec-email) — 15 tools
@@ -215,7 +215,7 @@ Edit fields on an existing connection profile (load → change → save). Pass p
 
 <a id="sec-terminal"></a>
 
-## Terminal, selection & sessions (26)
+## Terminal, selection & sessions (27)
 
 Reading and driving terminal sessions: input, scrollback, text selection, snippets, and workspace layouts.
 
@@ -378,6 +378,15 @@ Power-user: queue text to be typed into any connected SSH session at the next ma
 - `sessionId` (string) — SSH session id from list_sessions. Optional — defaults to the SSH session carrying the MCP reverse tunnel on port 8730 (which, in the agent-drives-its-own-conversation case, is the session running the agent's REPL). For unrelated sessions, pass this explicitly.
 - `submitKey` (string) — Key bytes sent after the text. Default `\r` — what TTYs in cooked mode translate to NL, and what programs in raw mode (Claude Code, vim, less, fzf, readline-based shells) read as Enter. Use `\n` for line-buffered programs reading stdin directly without a tty. Use `""` (empty) to leave the text in the input buffer without submitting (e.g. pre-fill a prompt the user will edit).
 - `timeoutSeconds` (integer) — Give up if the prompt hasn't appeared in this many seconds. Default 60.
+
+</details>
+
+<details markdown="1">
+<summary><code>read_exited_session</code> · no per-call prompt</summary>
+
+Return the final screen of a terminal session that has already ended — the one thing every other terminal read verb cannot give you, because they need a live tab. A session that exits immediately (a remoteCommand that returns, a shell the server refuses, a connection dropped at startup) deregisters its tab, so read_terminal_snapshot and read_terminal_scrollback both fail with "no registered terminal tab" at exactly the moment its output would explain why. Pass profileId for the most recent exit on that profile, or omit it for the most recent exit overall. Returns { sessionId, profileId, label, rows, cols, exitedAtMs, screen: [lines] } with trailing blank lines trimmed, or { found: false } when nothing has exited since Haven started. The last 8 exits are kept in memory only — they do not survive an app restart.
+
+- `profileId` (string) — Optional: only consider sessions that belonged to this profile (from list_connections). Omit for the most recent exit on any profile.
 
 </details>
 

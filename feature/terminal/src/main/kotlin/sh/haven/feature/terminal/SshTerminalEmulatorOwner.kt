@@ -66,6 +66,9 @@ class SshTerminalEmulatorOwner @Inject constructor(
     /** Per-session emulator + output pipeline, owned here across ViewModel cycles. */
     class Bundle(
         val sessionId: String,
+        /** Kept so teardown can attribute the retained final screen (#58 soak). */
+        val profileId: String?,
+        val label: String?,
         val oscHandler: OscHandler,
         val cwdFlow: MutableStateFlow<String?>,
         val hyperlinkFlow: MutableStateFlow<String?>,
@@ -158,7 +161,16 @@ class SshTerminalEmulatorOwner @Inject constructor(
         val mouseTracker = MouseModeTracker()
         val recorder = createRecorderIfEnabled(sessionId)
 
-        val bundle = Bundle(sessionId, oscHandler, cwdFlow, hyperlinkFlow, mouseTracker, recorder)
+        val bundle = Bundle(
+            sessionId,
+            state.profileId,
+            profile?.label,
+            oscHandler,
+            cwdFlow,
+            hyperlinkFlow,
+            mouseTracker,
+            recorder,
+        )
         val writeBuffer = EmulatorWriteBuffer({ bundle.emulatorOrNull() }, recorder)
         // OSC scan → mouse-mode scan → emulator. Same pipeline the agent's
         // feed_terminal_output goes through; synchronized on the OSC handler
@@ -233,7 +245,7 @@ class SshTerminalEmulatorOwner @Inject constructor(
     internal fun dispose(sessionId: String) {
         val b = bundles.remove(sessionId) ?: return
         b.recorder?.close()
-        registry.unregister(sessionId)
+        registry.unregister(sessionId, b.profileId, b.label)
         Log.d(TAG, "Disposed SSH emulator bundle for $sessionId")
     }
 

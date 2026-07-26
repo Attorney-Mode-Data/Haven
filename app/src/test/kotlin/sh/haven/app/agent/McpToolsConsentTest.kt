@@ -505,7 +505,7 @@ class McpToolsConsentTest {
                 listOf("connection", "connect_profile", "disconnect_profile", "run_command", "bluetooth")),
             Section("terminal", "Terminal, selection & sessions", 8,
                 "Reading and driving terminal sessions: input, scrollback, text selection, snippets, and workspace layouts.",
-                listOf("terminal", "selection", "snippet", "list_sessions", "auth_prompt", "session_picker", "workspace", "compose", "open_local_shell")),
+                listOf("terminal", "selection", "snippet", "list_sessions", "auth_prompt", "session_picker", "workspace", "compose", "open_local_shell", "exited_session")),
             Section("files", "Files, media & clipboard", 10,
                 "The unified file browser (local and SFTP), format conversion, media playback/streaming, encryption, and the clipboard.",
                 listOf("file", "directory", "sftp", "convert", "play_", "stream", "editor", "serve_", "encrypt", "decrypt", "clipboard", "view_file")),
