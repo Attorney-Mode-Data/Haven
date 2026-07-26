@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.14
+
+🖱️ **Terminal: a tap no longer goes missing after the copy menu appears** — in an app that asks for the mouse (zellij, tmux, htop…), a tap that landed while Haven's text selection was showing was spent dismissing that selection and never reached the app. So once a selection appeared — say a press held slightly too long turned into one — the next tap did nothing visible, and you had to tap a second time before the app saw a click. That reads exactly like mouse reporting being broken. The click now belongs to the app: one tap dismisses the selection *and* is delivered. Outside mouse-mode apps nothing changes — a tap still just dismisses the selection.
+
+Measured on a device rather than reasoned about: with a selection showing, two identical taps at the same cell previously put only one click on the wire. Now one tap clears the selection and forwards the click at exactly the tapped cell. (#435)
+
 ## v5.83.13
 
 ⌨️ **Terminal: selecting text in vim, less or plain tmux is responsive again** — v5.83.12 gave a press 900ms before it turns into a text selection, meant only for apps that ask for the mouse. It applied too widely: Haven also hooks the gestures of full-screen apps that take swipes as arrow keys but leave taps alone — vim, less, nano, a tmux session without mouse mode — and those got the longer hold too, so press-and-hold to select felt broken there for no benefit. The delay now follows the app's actual mouse-tracking state.
