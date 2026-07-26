@@ -560,5 +560,5 @@
     <string name="connections_ssh_engine_jsch_label">Standard (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">Die bewährte Engine. Alle Funktionen.</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (experimentell)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Kotlin-Engine: Terminal, SFTP und Portweiterleitung. Benötigt eine direkte Verbindung — kein Jump-Host, Proxy, Hardware-Schlüssel, Zertifikat oder Multi-Faktor-Anmeldung. Eine zweite Sitzung auf einer Verbindung kann sie trennen.</string>
+    <string name="connections_ssh_engine_sshlib_desc">Kotlin-Engine: Terminal, SFTP und Portweiterleitung über eine Verbindung. Benötigt eine direkte Verbindung — kein Jump-Host, Proxy, Hardware-Schlüssel, Zertifikat oder Multi-Faktor-Anmeldung.</string>
 </resources>

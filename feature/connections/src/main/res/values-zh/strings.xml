@@ -558,5 +558,5 @@
     <string name="connections_ssh_engine_jsch_label">默认（JSch）</string>
     <string name="connections_ssh_engine_jsch_desc">成熟稳定的引擎。支持全部功能。</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib（实验性）</string>
-    <string name="connections_ssh_engine_sshlib_desc">Kotlin 引擎：终端、SFTP 和端口转发。需要直接连接 — 不支持跳板机、代理、硬件密钥、证书或多因素登录。同一连接上的第二个会话可能导致断开。</string>
+    <string name="connections_ssh_engine_sshlib_desc">Kotlin 引擎：在同一连接上提供终端、SFTP 和端口转发。需要直接连接 — 不支持跳板机、代理、硬件密钥、证书或多因素登录。</string>
 </resources>

@@ -560,5 +560,5 @@
     <string name="connections_ssh_engine_jsch_label">Par défaut (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">Le moteur éprouvé. Toutes les fonctionnalités.</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (expérimental)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Moteur Kotlin : terminal, SFTP et redirection de ports. Nécessite une connexion directe — sans rebond, proxy, clé matérielle, certificat ni authentification multifacteur. Une seconde session sur une connexion peut la couper.</string>
+    <string name="connections_ssh_engine_sshlib_desc">Moteur Kotlin : terminal, SFTP et redirection de ports sur une seule connexion. Nécessite une connexion directe — sans rebond, proxy, clé matérielle, certificat ni authentification multifacteur.</string>
 </resources>

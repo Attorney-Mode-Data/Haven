@@ -99,6 +99,16 @@ internal object SshlibSftpConnector {
                 // were pushed out of reach. 0.4.0 fixes it (strict-KEX packet
                 // numbering); the SshlibCapabilitySpikeTest probes flipped, so
                 // the mitigation is gone and keys rotate normally again.
+
+                // Haven owns this connection's lifetime and multiplexes over it
+                // — an interactive shell, an exec for a command, SFTP on the
+                // same transport, another exec later. sshlib's default is to
+                // disconnect once the last channel closes, which is right for a
+                // one-shot `ssh host command` client and fatal here: the first
+                // channel to leave the registry empty takes the connection with
+                // it, so only one session ever works (connectbot/cbssh#238).
+                // Haven closes the connection explicitly when it is done.
+                this.autoDisconnectOnLastChannelClose = false
             },
         )
         try {

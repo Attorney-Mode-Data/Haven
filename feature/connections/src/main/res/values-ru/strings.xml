@@ -560,5 +560,5 @@
     <string name="connections_ssh_engine_jsch_label">По умолчанию (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">Проверенный движок. Все функции.</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (экспериментальный)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Движок на Kotlin: терминал, SFTP и проброс портов. Нужно прямое подключение — без jump-хоста, прокси, аппаратного ключа, сертификата и многофакторного входа. Второй сеанс в одном подключении может его оборвать.</string>
+    <string name="connections_ssh_engine_sshlib_desc">Движок на Kotlin: терминал, SFTP и проброс портов в одном подключении. Нужно прямое подключение — без jump-хоста, прокси, аппаратного ключа, сертификата и многофакторного входа.</string>
 </resources>

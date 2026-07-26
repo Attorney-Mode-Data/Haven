@@ -206,7 +206,7 @@
     <string name="connections_ssh_engine_jsch_label">Default (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">The proven engine. All features.</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (experimental)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Kotlin engine: terminal, SFTP and port forwarding. Needs a direct connection — no jump host, proxy, hardware key, certificate or multi-factor login. A second session on one connection can drop it.</string>
+    <string name="connections_ssh_engine_sshlib_desc">Kotlin engine: terminal, SFTP and port forwarding on one connection. Needs a direct connection — no jump host, proxy, hardware key, certificate or multi-factor login.</string>
     <string name="connection_address_family_label">Address family</string>
     <string name="connection_address_family_auto">Auto</string>
     <string name="connection_address_family_ipv4_only">IPv4 only</string>

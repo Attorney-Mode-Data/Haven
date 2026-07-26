@@ -560,5 +560,5 @@
     <string name="connections_ssh_engine_jsch_label">डिफ़ॉल्ट (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">आज़माया हुआ इंजन। सभी सुविधाएँ।</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (प्रायोगिक)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Kotlin इंजन: टर्मिनल, SFTP और पोर्ट फ़ॉरवर्डिंग। सीधा कनेक्शन आवश्यक — जंप होस्ट, प्रॉक्सी, हार्डवेयर कुंजी, प्रमाणपत्र या बहु-कारक लॉगिन नहीं। एक कनेक्शन पर दूसरा सत्र उसे बंद कर सकता है।</string>
+    <string name="connections_ssh_engine_sshlib_desc">Kotlin इंजन: एक ही कनेक्शन पर टर्मिनल, SFTP और पोर्ट फ़ॉरवर्डिंग। सीधा कनेक्शन आवश्यक — जंप होस्ट, प्रॉक्सी, हार्डवेयर कुंजी, प्रमाणपत्र या बहु-कारक लॉगिन नहीं।</string>
 </resources>

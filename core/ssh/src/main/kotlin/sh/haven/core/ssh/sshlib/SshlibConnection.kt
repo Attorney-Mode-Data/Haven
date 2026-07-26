@@ -19,18 +19,22 @@ import sh.haven.core.ssh.sftp.SftpSession
 import java.util.Base64
 
 /**
- * Appended to the error a user actually sees when the known upstream
- * channel-registry bug bites, so the failure carries its own explanation and a
- * way out instead of looking like a random disconnect. sshlib registers a
- * channel under the server's remote number without releasing it on close, so a
- * later channel that the server assigns the same number to is rejected — and
- * the whole connection goes down with it.
+ * Appended to the error a user actually sees when a session channel cannot be
+ * opened, so the failure carries a way out instead of looking like a random
+ * disconnect.
+ *
+ * This used to describe connectbot/cbssh#238 — sshlib registered a channel
+ * under the server's remote number and never released it on close, so a reused
+ * number was rejected and took the connection with it. sshlib 0.4.1 fixes that,
+ * and [SshlibSftpConnector] turns off `autoDisconnectOnLastChannelClose` so the
+ * connection also survives its last channel closing. What remains is the
+ * ordinary case: a server that refuses another channel, usually a per-session
+ * channel limit.
  */
 internal const val SSHLIB_CHANNEL_LIMITATION =
-    "This is a known limitation of the experimental sshlib engine: a second command channel on " +
-        "one connection can be refused and take the connection down with it — tracked upstream at " +
-        "https://github.com/connectbot/cbssh/issues/238. Switch this profile's SSH engine back to " +
-        "JSch (remove 'HavenSshEngine sshlib' from its SSH Options) if it keeps happening."
+    "The server refused another channel on this connection — some servers cap how many a single " +
+        "session may open. If it keeps happening, switch this profile's SSH engine back to JSch " +
+        "(remove 'HavenSshEngine sshlib' from its SSH Options)."
 
 /**
  * A whole connection on the sshlib engine (#58) — the **experimental** opt-in

@@ -560,5 +560,5 @@
     <string name="connections_ssh_engine_jsch_label">Padrão (JSch)</string>
     <string name="connections_ssh_engine_jsch_desc">O motor comprovado. Todos os recursos.</string>
     <string name="connections_ssh_engine_sshlib_label">sshlib (experimental)</string>
-    <string name="connections_ssh_engine_sshlib_desc">Motor Kotlin: terminal, SFTP e encaminhamento de portas. Requer conexão direta — sem host de salto, proxy, chave física, certificado ou login multifator. Uma segunda sessão em uma conexão pode derrubá-la.</string>
+    <string name="connections_ssh_engine_sshlib_desc">Motor Kotlin: terminal, SFTP e encaminhamento de portas em uma única conexão. Requer conexão direta — sem host de salto, proxy, chave física, certificado ou login multifator.</string>
 </resources>
