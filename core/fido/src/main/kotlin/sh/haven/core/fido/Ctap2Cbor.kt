@@ -22,6 +22,13 @@ object Ctap2Cbor {
     const val CMD_CLIENT_PIN: Byte = 0x06
     const val CMD_CREDENTIAL_MANAGEMENT: Byte = 0x0A
 
+    /**
+     * `authenticatorCredentialManagementPreview` — the CTAP 2.1-PRE prototype
+     * of 0x0A, carried as a vendor command. Keys that predate the standardised
+     * version (YubiKey firmware < 5.5) answer only this one (#449).
+     */
+    const val CMD_CREDENTIAL_MANAGEMENT_PREVIEW: Byte = 0x41
+
     // COSE algorithm identifiers (used in MakeCredential pubKeyCredParams)
     const val COSE_ALG_EDDSA = -8   // Ed25519 -> sk-ssh-ed25519@openssh.com
     const val COSE_ALG_ES256 = -7   // ECDSA P-256 -> sk-ecdsa-sha2-nistp256@openssh.com
@@ -89,6 +96,18 @@ object Ctap2Cbor {
          * (subCommand 0x05); calling 0x09 on them returns INVALID_COMMAND.
          */
         val pinUvAuthTokenSupported: Boolean,
+        /**
+         * `credMgmt: true` — the authenticator implements the STANDARDISED
+         * CTAP 2.1 `authenticatorCredentialManagement` command (0x0A).
+         */
+        val credMgmtSupported: Boolean,
+        /**
+         * `credentialMgmtPreview: true` — the authenticator only implements the
+         * CTAP 2.1-PRE prototype of the same feature, under vendor command
+         * 0x41. YubiKey firmware before 5.5 (e.g. 5.4.3) is in this group:
+         * sending the standard 0x0A returns CTAP1_ERR_INVALID_COMMAND (0x01).
+         */
+        val credMgmtPreviewSupported: Boolean,
     )
 
     /** Authenticator's COSE_Key from clientPIN getKeyAgreement (P-256 only). */
@@ -358,6 +377,8 @@ object Ctap2Cbor {
         var clientPin = false
         var uv = false
         var pinUvAuthToken = false
+        var credMgmt = false
+        var credMgmtPreview = false
 
         for (i in 0 until mapSize) {
             val key = readSignedInt(buf)
@@ -371,6 +392,8 @@ object Ctap2Cbor {
                             "clientPin" -> clientPin = optVal
                             "uv" -> uv = optVal
                             "pinUvAuthToken" -> pinUvAuthToken = optVal
+                            "credMgmt" -> credMgmt = optVal
+                            "credentialMgmtPreview" -> credMgmtPreview = optVal
                         }
                     }
                 }
@@ -387,6 +410,8 @@ object Ctap2Cbor {
             clientPinSet = clientPin,
             uvBuiltIn = uv,
             pinUvAuthTokenSupported = pinUvAuthToken,
+            credMgmtSupported = credMgmt,
+            credMgmtPreviewSupported = credMgmtPreview,
         )
     }
 
@@ -597,9 +622,17 @@ object Ctap2Cbor {
         subCommandParams: ByteArray? = null,
         pinUvAuthProtocol: Int? = null,
         pinUvAuthParam: ByteArray? = null,
+        /**
+         * Send the CTAP 2.1-PRE prototype command 0x41 instead of the
+         * standardised 0x0A. The body is identical; only the command byte
+         * differs. Decided from GetInfo, never guessed (#449).
+         */
+        preview: Boolean = false,
     ): ByteArray {
         val out = ByteArrayOutputStream()
-        out.write(CMD_CREDENTIAL_MANAGEMENT.toInt())
+        out.write(
+            (if (preview) CMD_CREDENTIAL_MANAGEMENT_PREVIEW else CMD_CREDENTIAL_MANAGEMENT).toInt(),
+        )
 
         var entries = 1 // subCommand always
         if (subCommandParams != null) entries++

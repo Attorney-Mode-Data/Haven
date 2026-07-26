@@ -1467,12 +1467,36 @@ class FidoAuthenticator @Inject constructor(
         // 1. PIN/UV exchange — cm token has no rpId scoping. The PIN was
         //    collected before the tap, so never prompt from in here: a dialog
         //    mid-exchange drops the NFC tag (#449).
+        var info: Ctap2Cbor.GetInfoResponse? = null
         val (token, protocol) = runUvPinProtocol(
             rpId = null,
             permission = Ctap2Cbor.PERMISSION_CREDENTIAL_MANAGEMENT,
             send = send,
             knownPin = prePin,
             allowPrompt = false,
+            onInfo = { info = it },
+        )
+
+        // Credential management exists in two forms. CTAP 2.1 standardised it
+        // as command 0x0A; before that it shipped as the 2.1-PRE prototype
+        // 0x41, which is all a YubiKey below firmware 5.5 answers — sending
+        // 0x0A there returns CTAP1_ERR_INVALID_COMMAND (0x01) right after a
+        // successful PIN exchange, which is what #449 hit on a 5.4.3 key.
+        // Take the answer from GetInfo rather than probing: a key advertising
+        // credMgmt gets the standard command, one advertising only
+        // credentialMgmtPreview gets the prototype.
+        val useStandard = info?.credMgmtSupported == true
+        val usePreview = !useStandard && info?.credMgmtPreviewSupported == true
+        if (!useStandard && !usePreview) {
+            throw IOException(
+                "This security key does not support listing its resident credentials " +
+                    "(no credMgmt or credentialMgmtPreview in its capabilities). " +
+                    "Import the key file from the machine that created it instead.",
+            )
+        }
+        Log.d(
+            TAG,
+            "Credential management: ${if (usePreview) "0x41 (2.1-PRE preview)" else "0x0A (CTAP 2.1)"}",
         )
 
         // 2. enumerateRPs: Begin (subCmd 2) returns first RP + totalRPs,
@@ -1484,6 +1508,7 @@ class FidoAuthenticator @Inject constructor(
             params = null,
             includeAuth = true,
             describe = "enumerateRPsBegin",
+            preview = usePreview,
         )?.let { Ctap2Cbor.decodeEnumerateRPsResponse(it) }
             ?: return emptyList() // STATUS_NO_CREDENTIALS — no resident creds at all
         val rpList = mutableListOf(firstRp)
@@ -1495,6 +1520,7 @@ class FidoAuthenticator @Inject constructor(
                 params = null,
                 includeAuth = false,
                 describe = "enumerateRPsGetNext[$i]",
+                preview = usePreview,
             ) ?: break
             rpList += Ctap2Cbor.decodeEnumerateRPsResponse(resp)
         }
@@ -1511,6 +1537,7 @@ class FidoAuthenticator @Inject constructor(
                 params = paramsBytes,
                 includeAuth = true,
                 describe = "enumerateCredsBegin(${rp.id})",
+                preview = usePreview,
             )?.let { Ctap2Cbor.decodeEnumerateCredentialsResponse(it) } ?: continue
             val creds = mutableListOf(firstCred)
             val totalCreds = firstCred.totalCredentials ?: 1
@@ -1521,6 +1548,7 @@ class FidoAuthenticator @Inject constructor(
                     params = null,
                     includeAuth = false,
                     describe = "enumerateCredsGetNext[$i](${rp.id})",
+                    preview = usePreview,
                 ) ?: break
                 creds += Ctap2Cbor.decodeEnumerateCredentialsResponse(resp)
             }
@@ -1552,6 +1580,7 @@ class FidoAuthenticator @Inject constructor(
         params: ByteArray?,
         includeAuth: Boolean,
         describe: String,
+        preview: Boolean,
     ): ByteArray? {
         val authParam = if (includeAuth) {
             // pinUvAuthParam = LEFT(16, HMAC(token, subCommand_byte || params))
@@ -1563,6 +1592,7 @@ class FidoAuthenticator @Inject constructor(
             subCommandParams = params,
             pinUvAuthProtocol = if (authParam != null) protocol.version else null,
             pinUvAuthParam = authParam,
+            preview = preview,
         )
         val resp = send(cmd)
         if (resp.isEmpty()) throw IOException("$describe: empty CTAP response")
@@ -1601,11 +1631,14 @@ class FidoAuthenticator @Inject constructor(
         send: (ByteArray) -> ByteArray,
         knownPin: String? = null,
         allowPrompt: Boolean = true,
+        /** Receives the GetInfo result, for callers that need more than the token. */
+        onInfo: ((Ctap2Cbor.GetInfoResponse) -> Unit)? = null,
     ): Pair<ByteArray, Ctap2PinProtocol> {
         // 1. authenticatorGetInfo to learn supported protocols and PIN state
         val infoResp = send(Ctap2Cbor.encodeGetInfoCommand())
         ensureOk(infoResp, "GetInfo")
         val info = Ctap2Cbor.decodeGetInfoResponse(infoResp.copyOfRange(1, infoResp.size))
+        onInfo?.invoke(info)
         Log.d(TAG, "GetInfo: pinProtocols=${info.pinUvAuthProtocols}, " +
             "clientPinSet=${info.clientPinSet}, uvBuiltIn=${info.uvBuiltIn}, " +
             "pinUvAuthToken=${info.pinUvAuthTokenSupported}")
