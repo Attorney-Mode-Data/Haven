@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.18
+
+🔑 **Security keys: listing resident keys works on older YubiKeys** — importing a resident SSH key from a YubiKey with firmware below 5.5 failed straight after the PIN was accepted, over NFC and USB-C alike. The feature that lists the keys stored on a security key exists in two versions: the one standardised in CTAP 2.1, and the earlier prototype that shipped first. Haven only ever asked for the standardised one, so a key that speaks only the prototype rejected the request outright — which is every YubiKey before firmware 5.5. Haven now asks the key which one it understands and uses that. A key that supports neither says so plainly instead of failing with a numeric code. (#449, thanks onatio22)
+
 ## v5.83.17
 
 🖱️ **Terminal: two-finger scrolling works on OPPO/ColorOS keyboard touchpads** — on an OPPO Pad 3 Pro keyboard, two-finger scrolling did nothing in the terminal while it worked everywhere else on the tablet, and two previous attempts at this didn't help. wxjiee found why by capturing the raw input events on the affected tablet: ColorOS doesn't report that gesture as a scroll event at all. It sends a plain touch stream from the touchpad, flagged by Android as an official two-finger swipe, with every scroll value at zero — so the earlier fixes, which both waited for a scroll event, never ran. Haven now recognises that flagged gesture and scrolls from it, feeding tmux and vim wheel events as usual. A touchpad click-and-drag is flagged differently and is untouched, as are taps and press-and-hold text selection. Verified by wxjiee on the affected hardware, and checked here for no change to ordinary touchscreen use. (#419, patch by wxjiee)
