@@ -492,6 +492,59 @@ class SshlibCapabilitySpikeTest {
         )
     }
 
+    @Test
+    fun `GAP CHANNEL_CLOSE discards output the consumer has not received yet — flips when upstream fixes`() {
+        // Root cause of the #448 CI flake. SessionChannel buffers arriving
+        // stderr in an UNLIMITED `stderrIngress`, then a `stderrDeliveryJob`
+        // pump forwards it to the RENDEZVOUS `_stderr` the caller reads — so
+        // the pump sits suspended in `send()` until the caller parks in
+        // `receive()`. closeResources() (on CHANNEL_CLOSE) cancels that pump
+        // and closes `_stderr`, so anything mid-handoff is dropped and the
+        // caller sees a cleanly-closed empty channel, not an error.
+        //
+        // Below, the consumer deliberately parks late; on 0.4.0 the "oops"
+        // never arrives. SshlibExec works around it by parking both drains
+        // UNDISPATCHED before requestExec — remove that workaround when this
+        // probe flips.
+        val server = newServer {
+            commandFactory = org.apache.sshd.server.command.CommandFactory { _, _ ->
+                object : org.apache.sshd.server.command.Command {
+                    private var err: java.io.OutputStream? = null
+                    private var exit: org.apache.sshd.server.ExitCallback? = null
+                    override fun setInputStream(value: java.io.InputStream?) {}
+                    override fun setOutputStream(value: java.io.OutputStream?) {}
+                    override fun setErrorStream(value: java.io.OutputStream?) { err = value }
+                    override fun setExitCallback(value: org.apache.sshd.server.ExitCallback?) { exit = value }
+                    override fun start(channel: org.apache.sshd.server.channel.ChannelSession?, env: org.apache.sshd.server.Environment?) {
+                        Thread({
+                            err!!.write("oops\n".toByteArray()); err!!.flush(); exit!!.onExit(3)
+                        }, "gap-stderr-command").apply { isDaemon = true; start() }
+                    }
+                    override fun destroy(channel: org.apache.sshd.server.channel.ChannelSession?) {}
+                }
+            }
+        }
+        val client = sshlibClient { host = "127.0.0.1"; port = server.port }
+        assertTrue(connectAndAuth(client) is ConnectResult.Success)
+
+        val stderr = runBlocking {
+            val session = client.openSession()!!
+            assertTrue(session.requestExec("fail"))
+            // Let the command run and the server's CHANNEL_CLOSE land first.
+            kotlinx.coroutines.delay(750)
+            val buf = java.io.ByteArrayOutputStream()
+            runCatching { for (chunk in session.stderr) buf.write(chunk) }
+            buf.toByteArray().decodeToString()
+        }
+
+        assertEquals(
+            "sshlib now drains buffered output before CHANNEL_CLOSE tears the pump down — " +
+                "drop the UNDISPATCHED pre-parking workaround in SshlibExec and close #448",
+            "",
+            stderr,
+        )
+    }
+
     // ------------------------------------------------------------------
     // TransportFactory pluggability + jump chains (phase 7)
     // ------------------------------------------------------------------

@@ -1,6 +1,7 @@
 package sh.haven.core.ssh.sshlib
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
@@ -45,24 +46,36 @@ internal object SshlibExec {
                 "sshlib: server refused a session channel for exec. $SSHLIB_CHANNEL_LIMITATION",
             )
         try {
-            if (!session.requestExec(command)) {
-                throw SshIoException("sshlib: server rejected exec request: ${command.take(64)}")
-            }
             val timedOut = AtomicBoolean(false)
             val (outBytes, errBytes) = coroutineScope {
+                // Park both drains BEFORE the exec request goes out (#448).
+                // sshlib hands output over a RENDEZVOUS channel fed by a pump
+                // coroutine, and cancels that pump on CHANNEL_CLOSE — so output
+                // the pump is still holding when the server closes is dropped
+                // silently. A short-lived command can finish before a drain
+                // dispatched *after* requestExec ever parks, which is exactly
+                // how CI lost "oops" from the stderr contract case. UNDISPATCHED
+                // runs each drain inline up to its first receive(), so both
+                // receivers are waiting before the command can produce anything.
+                // Narrows the window rather than closing it; the residual race
+                // is upstream's (see the GAP probe in SshlibCapabilitySpikeTest).
+                val outDeferred = async(start = CoroutineStart.UNDISPATCHED) { drain(session.stdout) }
+                val errDeferred = async(start = CoroutineStart.UNDISPATCHED) { drain(session.stderr) }
+                if (!session.requestExec(command)) {
+                    // Propagating here cancels both drains via the scope.
+                    throw SshIoException("sshlib: server rejected exec request: ${command.take(64)}")
+                }
                 val watchdog = timeoutMs?.let {
                     async {
                         delay(it)
                         timedOut.set(true)
                         // Closing the session closes both receive channels,
-                        // which is what actually unblocks the drains below.
+                        // which is what actually unblocks the drains above.
                         runCatching { session.close() }
                     }
                 }
                 try {
-                    val errDeferred = async { drain(session.stderr) }
-                    val out = drain(session.stdout)
-                    out to errDeferred.await()
+                    outDeferred.await() to errDeferred.await()
                 } finally {
                     watchdog?.cancel()
                 }
