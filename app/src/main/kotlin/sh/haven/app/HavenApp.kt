@@ -65,6 +65,11 @@ class HavenApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
+        // Before any SSH session exists: on some devices AndroidKeyStore wins an
+        // unpinned raw-key JCE lookup, which breaks every curve25519 key exchange
+        // on the sshlib engine. No-op on devices with a sane provider order (#451).
+        sh.haven.core.ssh.RawKeyProviderOrder.apply()
+
         // Register the connect-time SSH emulator provider before any SSH session
         // can be created, so tmux's attach-time probes are answered live (#290 #2).
         sshTerminalEmulatorOwner.start()

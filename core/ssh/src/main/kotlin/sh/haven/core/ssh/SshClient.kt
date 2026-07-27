@@ -256,6 +256,22 @@ class SshClient : SshConnection {
         }
     }
 
+    /**
+     * The JSch `Proxy` inside a [HavenProxy], or a clear failure.
+     *
+     * A [HavenProxy] built from a sshlib jump session carries only a
+     * direct-tcpip opener, which this engine cannot consume. Refusing loudly
+     * matters: the alternative is dialing the target DIRECT, quietly skipping
+     * the bastion the profile asked to go through.
+     */
+    private fun requireJschProxy(proxy: HavenProxy): com.jcraft.jsch.Proxy =
+        proxy.jschProxy ?: throw SshIoException(
+            "This profile's jump host is connected with the sshlib engine, which the JSch " +
+                "engine cannot route through. Set this profile to the sshlib engine too " +
+                "(add 'HavenSshEngine sshlib' to its SSH Options), or reconnect the jump " +
+                "host on JSch.",
+        )
+
     private fun addFidoIdentity(auth: ConnectionConfig.AuthMethod.FidoKey, sess: Session) {
         val skData = SkKeyData.deserialize(auth.skKeyData)
         Log.d(TAG, "FIDO2 SK key: alg=${skData.algorithmName}")
@@ -301,7 +317,7 @@ class SshClient : SshConnection {
         val resolvedIp = if (proxy != null) config.host else resolveHost(config.host, family = config.addressFamily)
         connectedViaProxy = proxy != null
         val sess = jsch.getSession(config.username, resolvedIp, config.port)
-        if (proxy != null) sess.setProxy(proxy.jschProxy)
+        if (proxy != null) sess.setProxy(requireJschProxy(proxy))
         // Accept any key at the JSch level; we verify post-connect ourselves (TOFU)
         sess.setConfig("StrictHostKeyChecking", "no")
         // #133: trusted host-CA keys activate JSch's native OpenSSH host-
@@ -533,7 +549,7 @@ class SshClient : SshConnection {
         val resolvedIp = if (proxy != null) config.host else resolveHost(config.host, family = config.addressFamily)
         connectedViaProxy = proxy != null
         val sess = jsch.getSession(config.username, resolvedIp, config.port)
-        if (proxy != null) sess.setProxy(proxy.jschProxy)
+        if (proxy != null) sess.setProxy(requireJschProxy(proxy))
         sess.setConfig("StrictHostKeyChecking", "no")
         val caRepo = installHostCaRepository(sess, trustedHostCaKeys)
         sess.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password")

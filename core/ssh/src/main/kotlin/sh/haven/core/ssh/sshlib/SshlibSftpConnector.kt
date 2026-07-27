@@ -112,12 +112,15 @@ internal object SshlibSftpConnector {
                 this.port = config.port
                 this.hostKeyVerifier = hostKeyGate
                 proxy?.let {
-                    this.transportFactory = JschProxyTransportFactory(
-                        proxy = it.jschProxy,
-                        host = host,
-                        port = config.port,
-                        connectTimeoutMs = connectTimeoutMs.toInt(),
-                    )
+                    // A sshlib jump session gives us a native direct-tcpip
+                    // transport; anything else is a JSch Proxy we adapt.
+                    this.transportFactory = it.sshlibJump?.invoke(host, config.port)
+                        ?: JschProxyTransportFactory(
+                            proxy = requireNotNull(it.jschProxy) { "HavenProxy carries neither shape" },
+                            host = host,
+                            port = config.port,
+                            connectTimeoutMs = connectTimeoutMs.toInt(),
+                        )
                 }
                 // Rekey thresholds are sshlib's defaults (1 GiB / 1 h) again.
                 // 0.3.1 had client-initiated rekey broken both ways — a

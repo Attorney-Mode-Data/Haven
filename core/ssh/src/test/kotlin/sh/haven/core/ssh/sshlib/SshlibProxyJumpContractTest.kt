@@ -145,6 +145,62 @@ class SshlibProxyJumpContractTest {
         }
     }
 
+    /**
+     * The other direction: the JUMP host is itself a sshlib connection, so the
+     * target rides a native direct-tcpip transport with no JSch proxy involved
+     * at all. This is the shape `SshSessionManager.createProxyJump` builds when
+     * `jumpSession.client` is a [SshlibConnection] — built here by hand, since
+     * standing up the whole manager is not what this test is for.
+     */
+    @Test
+    fun sshlibJumpHostCarriesASshlibTarget() {
+        startServers()
+        val jump = SshlibConnection()
+        val connection: SshConnection = SshlibConnection()
+        try {
+            runBlocking {
+                jump.connect(
+                    config = ConnectionConfig(
+                        host = "127.0.0.1",
+                        port = jumpServer.port,
+                        username = "alice",
+                        authMethod = ConnectionConfig.AuthMethod.Password("any"),
+                    ),
+                    connectTimeoutMs = 10_000,
+                    proxy = null,
+                    keyboardInteractivePrompter = null,
+                    totpCodeProvider = null,
+                    confirmOtp = false,
+                    preConnect = null,
+                    trustedHostCaKeys = emptyList(),
+                )
+                connection.connect(
+                    config = targetConfig(),
+                    connectTimeoutMs = 10_000,
+                    proxy = HavenProxy(
+                        jschProxy = null,
+                        sshlibJump = { host, port -> jump.openJumpTransport(host, port) },
+                    ),
+                    keyboardInteractivePrompter = null,
+                    totpCodeProvider = null,
+                    confirmOtp = false,
+                    preConnect = null,
+                    trustedHostCaKeys = emptyList(),
+                )
+                assertTrue("a session channel must open over the sshlib jump", connection.isAlive(5_000))
+            }
+            assertTrue(connection.connectedViaProxy)
+            assertEquals(
+                "the sshlib jump host must have been asked to forward to the target",
+                listOf("127.0.0.1:${targetServer.port}"),
+                forwardRequests.toList(),
+            )
+        } finally {
+            connection.disconnect()
+            jump.disconnect()
+        }
+    }
+
     private fun targetConfig() = ConnectionConfig(
         host = "127.0.0.1",
         port = targetServer.port,

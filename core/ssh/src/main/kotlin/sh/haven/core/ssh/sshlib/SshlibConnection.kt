@@ -5,6 +5,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.connectbot.sshlib.PublicKey
 import org.connectbot.sshlib.SftpResult
 import org.connectbot.sshlib.SshClient as SshlibClient
+import org.connectbot.sshlib.transport.TransportFactory
 import sh.haven.core.fido.FidoAuthenticator
 import sh.haven.core.ssh.ConnectionConfig
 import sh.haven.core.ssh.ExecResult
@@ -215,6 +216,18 @@ internal class SshlibConnection : SshConnection {
         // connection carrying this profile's other channels and forwards.
         SshlibShell.open(connected, session, term, cols, rows, ownsClient = false)
     }
+
+    /**
+     * A direct-tcpip transport to [host]:[port] over THIS connection, so a
+     * profile using this session as its jump host dials the target natively —
+     * no JSch proxy, no stream bridging. Wired up by
+     * `SshSessionManager.createProxyJump`.
+     */
+    internal fun openJumpTransport(host: String, port: Int): TransportFactory =
+        // null means the jump connection is gone or unauthenticated — a real
+        // failure, not something to pass along as a nullable factory.
+        requireClient().openDirectTcpipTransport(host, port)
+            ?: throw SshIoException("sshlib: jump host connection is not authenticated — cannot reach $host:$port")
 
     override fun openSftpSession(): SftpSession = runBlocking {
         val connected = requireClient()

@@ -22,6 +22,7 @@ import sh.haven.core.data.repository.ConnectionLogRepository
 import sh.haven.core.data.terminal.ScrollbackRing
 import sh.haven.core.ssh.sftp.JschSftpSession
 import sh.haven.core.ssh.sftp.SftpSession
+import sh.haven.core.ssh.sshlib.SshlibConnection
 import sh.haven.core.ssh.sshlib.SshlibSftpConnector
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -939,7 +940,18 @@ class SshSessionManager @Inject constructor(
                         delayMs = (delayMs * 2).coerceAtMost(RECONNECT_MAX_DELAY_MS)
                         continue
                     }
-                    createProxyJump(jumpSid)
+                    // Fail CLOSED. A null here used to fall through to a
+                    // proxy-less dial, which silently reconnects straight to the
+                    // target instead of through the bastion — the opposite of
+                    // what a jump-host profile asks for. Retry instead; the
+                    // interactive path already throws for the same case.
+                    val jumpProxy = createProxyJump(jumpSid)
+                    if (jumpProxy == null) {
+                        Log.w(TAG, "Jump host $jumpSid gave no usable proxy — not dialing $sessionId direct")
+                        delayMs = (delayMs * 2).coerceAtMost(RECONNECT_MAX_DELAY_MS)
+                        continue
+                    }
+                    jumpProxy
                 } else {
                     reconnectProxyProviders[sessionId]?.let { provider ->
                         runBlocking { provider() }
@@ -1412,6 +1424,16 @@ class SshSessionManager @Inject constructor(
         if (jumpSession.status != SessionState.Status.CONNECTED) {
             Log.w(TAG, "createProxyJump: session $jumpSessionId status=${jumpSession.status}, expected CONNECTED")
             return null
+        }
+        // A sshlib jump session opens its own direct-tcpip transport to the
+        // target instead of going through a JSch Proxy. Deferred to dial time
+        // because only the dialer knows the target host/port.
+        (jumpSession.client as? SshlibConnection)?.let { sshlibJump ->
+            Log.d(TAG, "createProxyJump: sshlib jump session $jumpSessionId")
+            return HavenProxy(
+                jschProxy = null,
+                sshlibJump = { host, port -> sshlibJump.openJumpTransport(host, port) },
+            )
         }
         val jschSession = (jumpSession.client as? SshClient)?.jschSession
         if (jschSession == null) {
