@@ -31,4 +31,5 @@
     <string name="toolbar_attach_desc">রিমোটে পাঠাতে ফাইল সংযুক্ত করুন</string>
     <string name="toolbar_presets_label">Presets</string>
     <string name="toolbar_custom_key_label_placeholder">যেমন ^C, Paste</string>
+    <string name="toolbar_text_input_desc">ভাসমান টেক্সট ইনপুট খুলুন</string>
 </resources>

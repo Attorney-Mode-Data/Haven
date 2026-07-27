@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">%1$s देखें</string>
     <string name="tasker_watch_text">लाइव टर्मिनल में %1$s चलाने के लिए टैप करें</string>
     <string name="tasker_insert_variable">वेरिएबल डालें</string>
+    <string name="app_desktop_dns_title">गेस्ट DNS</string>
+    <string name="app_desktop_dns_custom_label">नेम सर्वर</string>
+    <string name="app_desktop_dns_custom_hint">उदा. 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">नेटवर्क (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">सार्वजनिक (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">कस्टम</string>
+    <string name="app_desktop_dns_description">स्थानीय Linux गेस्ट कौन-से नेम सर्वर उपयोग करता है। यदि इस नेटवर्क पर पैकेज इंस्टॉल अटक जाते हैं, तो यह सार्वजनिक DNS को रोक सकता है \u2014 नेटवर्क का अपना रिज़ॉल्वर उपयोग करें।</string>
 </resources>

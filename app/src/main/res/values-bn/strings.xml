@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">%1$s দেখুন</string>
     <string name="tasker_watch_text">লাইভ টার্মিনালে %1$s চালাতে ট্যাপ করুন</string>
     <string name="tasker_insert_variable">ভেরিয়েবল সন্নিবেশ করান</string>
+    <string name="app_desktop_dns_title">গেস্ট DNS</string>
+    <string name="app_desktop_dns_custom_label">নেম সার্ভার</string>
+    <string name="app_desktop_dns_custom_hint">যেমন 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">নেটওয়ার্ক (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">সর্বজনীন (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">কাস্টম</string>
+    <string name="app_desktop_dns_description">স্থানীয় Linux গেস্ট কোন নেম সার্ভার ব্যবহার করে। এই নেটওয়ার্কে প্যাকেজ ইনস্টল আটকে গেলে সেটি সর্বজনীন DNS ব্লক করতে পারে \u2014 নেটওয়ার্কের নিজস্ব রিসলভার ব্যবহার করুন।</string>
 </resources>

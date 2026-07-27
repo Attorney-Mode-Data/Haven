@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">%1$s を監視</string>
     <string name="tasker_watch_text">タップして %1$s をライブターミナルで実行</string>
     <string name="tasker_insert_variable">変数を挿入</string>
+    <string name="app_desktop_dns_title">ゲスト DNS</string>
+    <string name="app_desktop_dns_custom_label">ネームサーバー</string>
+    <string name="app_desktop_dns_custom_hint">例: 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">ネットワーク (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">パブリック (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">カスタム</string>
+    <string name="app_desktop_dns_description">ローカル Linux ゲストが使用するネームサーバー。このネットワークでパッケージのインストールが止まる場合、公開 DNS がブロックされている可能性があります \u2014 ネットワーク自身のリゾルバーを使ってください。</string>
 </resources>

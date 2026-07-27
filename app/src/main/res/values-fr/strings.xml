@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">Surveiller %1$s</string>
     <string name="tasker_watch_text">Appuyez pour exécuter %1$s dans un terminal en direct</string>
     <string name="tasker_insert_variable">Insérer une variable</string>
+    <string name="app_desktop_dns_title">DNS de l\'invité</string>
+    <string name="app_desktop_dns_custom_label">Serveurs de noms</string>
+    <string name="app_desktop_dns_custom_hint">ex. 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">Réseau (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">Publics (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">Personnalisés</string>
+    <string name="app_desktop_dns_description">Quels serveurs de noms utilise l\'invité Linux local. Si l\'installation de paquets se bloque sur ce réseau, celui-ci bloque peut-être le DNS public \u2014 utilisez le résolveur du réseau.</string>
 </resources>

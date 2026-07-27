@@ -31,4 +31,5 @@
     <string name="toolbar_attach_desc">Adjuntar archivo para enviar al remoto</string>
     <string name="toolbar_presets_label">Presets</string>
     <string name="toolbar_custom_key_label_placeholder">p. ej. ^C, Paste</string>
+    <string name="toolbar_text_input_desc">Abrir entrada de texto flotante</string>
 </resources>

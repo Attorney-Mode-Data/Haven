@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">Ver %1$s</string>
     <string name="tasker_watch_text">Toque para executar %1$s num terminal ao vivo</string>
     <string name="tasker_insert_variable">Inserir variável</string>
+    <string name="app_desktop_dns_title">DNS do convidado</string>
+    <string name="app_desktop_dns_custom_label">Servidores de nomes</string>
+    <string name="app_desktop_dns_custom_hint">ex.: 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">Rede (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">Públicos (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">Personalizados</string>
+    <string name="app_desktop_dns_description">Quais servidores de nomes o convidado Linux local usa. Se a instalação de pacotes travar nesta rede, ela pode bloquear o DNS público \u2014 use o resolvedor da própria rede.</string>
 </resources>

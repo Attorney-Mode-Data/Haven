@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">%1$s beobachten</string>
     <string name="tasker_watch_text">Tippen, um %1$s in einem Live-Terminal auszuführen</string>
     <string name="tasker_insert_variable">Variable einfügen</string>
+    <string name="app_desktop_dns_title">Gast-DNS</string>
+    <string name="app_desktop_dns_custom_label">Namensserver</string>
+    <string name="app_desktop_dns_custom_hint">z. B. 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">Netzwerk (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">Öffentlich (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">Benutzerdefiniert</string>
+    <string name="app_desktop_dns_description">Welche Namensserver der lokale Linux-Gast verwendet. Wenn Paketinstallationen in diesem Netzwerk hängen, blockiert es womöglich öffentliches DNS \u2014 nutze den Resolver des Netzwerks.</string>
 </resources>

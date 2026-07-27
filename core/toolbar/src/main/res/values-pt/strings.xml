@@ -31,4 +31,5 @@
     <string name="toolbar_attach_desc">Anexar arquivo para enviar ao remoto</string>
     <string name="toolbar_presets_label">Predefinições</string>
     <string name="toolbar_custom_key_label_placeholder">ex. ^C, Colar</string>
+    <string name="toolbar_text_input_desc">Abrir entrada de texto flutuante</string>
 </resources>

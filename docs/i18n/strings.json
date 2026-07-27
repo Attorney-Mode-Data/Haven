@@ -1561,49 +1561,133 @@
      "en": "Guest DNS",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "DNS الضيف",
+      "bn": "গেস্ট DNS",
+      "de": "Gast-DNS",
+      "es": "DNS del invitado",
+      "fr": "DNS de l\\'invité",
+      "hi": "गेस्ट DNS",
+      "ja": "ゲスト DNS",
+      "ko": "게스트 DNS",
+      "pt": "DNS do convidado",
+      "ru": "DNS гостя",
+      "zh": "客户机 DNS"
+     }
     },
     {
      "name": "app_desktop_dns_description",
      "en": "Which name servers the local Linux guest uses. If package installs hang on this network, it may block public DNS \\u2014 use the network\\'s own resolver.",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "خوادم الأسماء التي يستخدمها ضيف Linux المحلي. إذا تعطّل تثبيت الحزم على هذه الشبكة، فقد تكون تحجب DNS العام \\u2014 استخدم محلّل الشبكة نفسها.",
+      "bn": "স্থানীয় Linux গেস্ট কোন নেম সার্ভার ব্যবহার করে। এই নেটওয়ার্কে প্যাকেজ ইনস্টল আটকে গেলে সেটি সর্বজনীন DNS ব্লক করতে পারে \\u2014 নেটওয়ার্কের নিজস্ব রিসলভার ব্যবহার করুন।",
+      "de": "Welche Namensserver der lokale Linux-Gast verwendet. Wenn Paketinstallationen in diesem Netzwerk hängen, blockiert es womöglich öffentliches DNS \\u2014 nutze den Resolver des Netzwerks.",
+      "es": "Qué servidores de nombres usa el invitado Linux local. Si la instalación de paquetes se bloquea en esta red, puede que bloquee el DNS público \\u2014 usa el resolutor de la propia red.",
+      "fr": "Quels serveurs de noms utilise l\\'invité Linux local. Si l\\'installation de paquets se bloque sur ce réseau, celui-ci bloque peut-être le DNS public \\u2014 utilisez le résolveur du réseau.",
+      "hi": "स्थानीय Linux गेस्ट कौन-से नेम सर्वर उपयोग करता है। यदि इस नेटवर्क पर पैकेज इंस्टॉल अटक जाते हैं, तो यह सार्वजनिक DNS को रोक सकता है \\u2014 नेटवर्क का अपना रिज़ॉल्वर उपयोग करें।",
+      "ja": "ローカル Linux ゲストが使用するネームサーバー。このネットワークでパッケージのインストールが止まる場合、公開 DNS がブロックされている可能性があります \\u2014 ネットワーク自身のリゾルバーを使ってください。",
+      "ko": "로컬 Linux 게스트가 사용하는 네임 서버입니다. 이 네트워크에서 패키지 설치가 멈춘다면 공용 DNS가 차단된 것일 수 있습니다 \\u2014 네트워크 자체 리졸버를 사용하세요.",
+      "pt": "Quais servidores de nomes o convidado Linux local usa. Se a instalação de pacotes travar nesta rede, ela pode bloquear o DNS público \\u2014 use o resolvedor da própria rede.",
+      "ru": "Какие DNS-серверы использует локальный гость Linux. Если установка пакетов зависает в этой сети, она может блокировать публичный DNS \\u2014 используйте резолвер самой сети.",
+      "zh": "本地 Linux 客户机使用哪些域名服务器。如果在此网络中安装软件包时卡住，可能是公共 DNS 被屏蔽 \\u2014 请改用该网络自己的解析器。"
+     }
     },
     {
      "name": "app_desktop_dns_mode_system",
      "en": "Network (DHCP)",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "الشبكة (DHCP)",
+      "bn": "নেটওয়ার্ক (DHCP)",
+      "de": "Netzwerk (DHCP)",
+      "es": "Red (DHCP)",
+      "fr": "Réseau (DHCP)",
+      "hi": "नेटवर्क (DHCP)",
+      "ja": "ネットワーク (DHCP)",
+      "ko": "네트워크 (DHCP)",
+      "pt": "Rede (DHCP)",
+      "ru": "Сеть (DHCP)",
+      "zh": "网络 (DHCP)"
+     }
     },
     {
      "name": "app_desktop_dns_mode_public",
      "en": "Public (Google + Cloudflare)",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "عامة (Google + Cloudflare)",
+      "bn": "সর্বজনীন (Google + Cloudflare)",
+      "de": "Öffentlich (Google + Cloudflare)",
+      "es": "Públicos (Google + Cloudflare)",
+      "fr": "Publics (Google + Cloudflare)",
+      "hi": "सार्वजनिक (Google + Cloudflare)",
+      "ja": "パブリック (Google + Cloudflare)",
+      "ko": "공용 (Google + Cloudflare)",
+      "pt": "Públicos (Google + Cloudflare)",
+      "ru": "Публичные (Google + Cloudflare)",
+      "zh": "公共 (Google + Cloudflare)"
+     }
     },
     {
      "name": "app_desktop_dns_mode_custom",
      "en": "Custom",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "مخصّصة",
+      "bn": "কাস্টম",
+      "de": "Benutzerdefiniert",
+      "es": "Personalizados",
+      "fr": "Personnalisés",
+      "hi": "कस्टम",
+      "ja": "カスタム",
+      "ko": "사용자 지정",
+      "pt": "Personalizados",
+      "ru": "Свои",
+      "zh": "自定义"
+     }
     },
     {
      "name": "app_desktop_dns_custom_label",
      "en": "Name servers",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "خوادم الأسماء",
+      "bn": "নেম সার্ভার",
+      "de": "Namensserver",
+      "es": "Servidores de nombres",
+      "fr": "Serveurs de noms",
+      "hi": "नेम सर्वर",
+      "ja": "ネームサーバー",
+      "ko": "네임 서버",
+      "pt": "Servidores de nomes",
+      "ru": "DNS-серверы",
+      "zh": "域名服务器"
+     }
     },
     {
      "name": "app_desktop_dns_custom_hint",
      "en": "e.g. 10.0.0.53, 1.1.1.1",
      "comment": "Guest DNS (#446): the hardcoded public resolvers failed silently on networks that only allow their own resolver.",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "مثال: 10.0.0.53, 1.1.1.1",
+      "bn": "যেমন 10.0.0.53, 1.1.1.1",
+      "de": "z. B. 10.0.0.53, 1.1.1.1",
+      "es": "p. ej. 10.0.0.53, 1.1.1.1",
+      "fr": "ex. 10.0.0.53, 1.1.1.1",
+      "hi": "उदा. 10.0.0.53, 1.1.1.1",
+      "ja": "例: 10.0.0.53, 1.1.1.1",
+      "ko": "예: 10.0.0.53, 1.1.1.1",
+      "pt": "ex.: 10.0.0.53, 1.1.1.1",
+      "ru": "напр. 10.0.0.53, 1.1.1.1",
+      "zh": "例如 10.0.0.53, 1.1.1.1"
+     }
     },
     {
      "name": "app_desktop_bind_android_system_title",
@@ -5853,7 +5937,19 @@
      "en": "Open floating text input",
      "comment": "Strings added for issue #210 localisation",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "فتح إدخال النص العائم",
+      "bn": "ভাসমান টেক্সট ইনপুট খুলুন",
+      "de": "Schwebende Texteingabe öffnen",
+      "es": "Abrir entrada de texto flotante",
+      "fr": "Ouvrir la saisie de texte flottante",
+      "hi": "फ़्लोटिंग टेक्स्ट इनपुट खोलें",
+      "ja": "フローティング テキスト入力を開く",
+      "ko": "플로팅 텍스트 입력 열기",
+      "pt": "Abrir entrada de texto flutuante",
+      "ru": "Открыть плавающее поле ввода",
+      "zh": "打开悬浮文本输入"
+     }
     },
     {
      "name": "toolbar_presets_label",
@@ -37165,42 +37261,114 @@
      "en": "Save connection",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "حفظ الاتصال",
+      "bn": "সংযোগ সংরক্ষণ করুন",
+      "de": "Verbindung speichern",
+      "es": "Guardar conexión",
+      "fr": "Enregistrer la connexion",
+      "hi": "कनेक्शन सहेजें",
+      "ja": "接続を保存",
+      "ko": "연결 저장",
+      "pt": "Salvar conexão",
+      "ru": "Сохранить подключение",
+      "zh": "保存连接"
+     }
     },
     {
      "name": "terminal_save_connection_title",
      "en": "Save connection",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "حفظ الاتصال",
+      "bn": "সংযোগ সংরক্ষণ করুন",
+      "de": "Verbindung speichern",
+      "es": "Guardar conexión",
+      "fr": "Enregistrer la connexion",
+      "hi": "कनेक्शन सहेजें",
+      "ja": "接続を保存",
+      "ko": "연결 저장",
+      "pt": "Salvar conexão",
+      "ru": "Сохранить подключение",
+      "zh": "保存连接"
+     }
     },
     {
      "name": "terminal_save_connection_id",
      "en": "Profile ID",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "معرّف الملف الشخصي",
+      "bn": "প্রোফাইল ID",
+      "de": "Profil-ID",
+      "es": "ID del perfil",
+      "fr": "ID du profil",
+      "hi": "प्रोफ़ाइल ID",
+      "ja": "プロファイル ID",
+      "ko": "프로필 ID",
+      "pt": "ID do perfil",
+      "ru": "ID профиля",
+      "zh": "配置文件 ID"
+     }
     },
     {
      "name": "terminal_save_connection_id_hint",
      "en": "Identifies the saved connection — not the session name",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "يعرّف الاتصال المحفوظ، وليس اسم الجلسة",
+      "bn": "সংরক্ষিত সংযোগ শনাক্ত করে, সেশনের নাম নয়",
+      "de": "Kennzeichnet die gespeicherte Verbindung, nicht den Sitzungsnamen",
+      "es": "Identifica la conexión guardada, no el nombre de la sesión",
+      "fr": "Identifie la connexion enregistrée, pas le nom de la session",
+      "hi": "सहेजे गए कनेक्शन की पहचान करता है, सत्र का नाम नहीं",
+      "ja": "保存された接続を識別します。セッション名ではありません",
+      "ko": "저장된 연결을 식별합니다. 세션 이름이 아닙니다",
+      "pt": "Identifica a conexão salva, não o nome da sessão",
+      "ru": "Идентифицирует сохранённое подключение, а не имя сессии",
+      "zh": "标识已保存的连接，而不是会话名称"
+     }
     },
     {
      "name": "terminal_save_connection_name_label",
      "en": "Name",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "الاسم",
+      "bn": "নাম",
+      "de": "Name",
+      "es": "Nombre",
+      "fr": "Nom",
+      "hi": "नाम",
+      "ja": "名前",
+      "ko": "이름",
+      "pt": "Nome",
+      "ru": "Название",
+      "zh": "名称"
+     }
     },
     {
      "name": "terminal_save_connection_name_hint",
      "en": "Shown in the Connections list",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "يظهر في قائمة الاتصالات",
+      "bn": "সংযোগ তালিকায় দেখানো হয়",
+      "de": "Wird in der Verbindungsliste angezeigt",
+      "es": "Se muestra en la lista de Conexiones",
+      "fr": "Affiché dans la liste des connexions",
+      "hi": "कनेक्शन सूची में दिखाया जाता है",
+      "ja": "接続一覧に表示されます",
+      "ko": "연결 목록에 표시됩니다",
+      "pt": "Exibido na lista de Conexões",
+      "ru": "Отображается в списке подключений",
+      "zh": "显示在连接列表中"
+     }
     },
     {
      "name": "terminal_save_connection_context",
@@ -37211,7 +37379,19 @@
       "%2$s",
       "%3$s"
      ],
-     "t": {}
+     "t": {
+      "ar": "الاتصال: %1$s\\nالنقل: %2$s\\nالجلسة المراد تثبيتها: %3$s",
+      "bn": "সংযোগ: %1$s\\nট্রান্সপোর্ট: %2$s\\nপিন করার সেশন: %3$s",
+      "de": "Verbindung: %1$s\\nTransport: %2$s\\nZu merkende Sitzung: %3$s",
+      "es": "Conexión: %1$s\\nTransporte: %2$s\\nSesión a fijar: %3$s",
+      "fr": "Connexion : %1$s\\nTransport : %2$s\\nSession à épingler : %3$s",
+      "hi": "कनेक्शन: %1$s\\nट्रांसपोर्ट: %2$s\\nपिन करने का सत्र: %3$s",
+      "ja": "接続: %1$s\\nトランスポート: %2$s\\n固定するセッション: %3$s",
+      "ko": "연결: %1$s\\n전송: %2$s\\n고정할 세션: %3$s",
+      "pt": "Conexão: %1$s\\nTransporte: %2$s\\nSessão a fixar: %3$s",
+      "ru": "Подключение: %1$s\\nТранспорт: %2$s\\nЗакрепляемая сессия: %3$s",
+      "zh": "连接：%1$s\\n传输：%2$s\\n要固定的会话：%3$s"
+     }
     },
     {
      "name": "terminal_save_connection_mismatch",
@@ -37221,14 +37401,38 @@
       "%1$s",
       "%2$s"
      ],
-     "t": {}
+     "t": {
+      "ar": "هذا الاتصال مثبّت على الجلسة \\\"%1$s\\\" لكنك في \\\"%2$s\\\". سيؤدي الحفظ إلى إعادة تثبيته على الجلسة الحالية.",
+      "bn": "এই সংযোগটি \\\"%1$s\\\" সেশনে পিন করা, কিন্তু আপনি \\\"%2$s\\\"-এ আছেন। সংরক্ষণ করলে এটি বর্তমান সেশনে পুনরায় পিন হবে।",
+      "de": "Diese Verbindung ist an die Sitzung \\\"%1$s\\\" gebunden, du bist aber in \\\"%2$s\\\". Beim Speichern wird sie auf die aktuelle Sitzung umgestellt.",
+      "es": "Esta conexión está fijada a la sesión \\\"%1$s\\\" pero estás en \\\"%2$s\\\". Al guardar se refijará a la sesión actual.",
+      "fr": "Cette connexion est épinglée à la session \\\"%1$s\\\" mais vous êtes dans \\\"%2$s\\\". Enregistrer la réépinglera à la session actuelle.",
+      "hi": "यह कनेक्शन सत्र \\\"%1$s\\\" पर पिन है, पर आप \\\"%2$s\\\" में हैं। सहेजने पर यह वर्तमान सत्र पर फिर से पिन हो जाएगा.",
+      "ja": "この接続はセッション \\\"%1$s\\\" に固定されていますが、現在は \\\"%2$s\\\" にいます。保存すると現在のセッションに固定し直されます。",
+      "ko": "이 연결은 세션 \\\"%1$s\\\"에 고정되어 있지만 현재 \\\"%2$s\\\"에 있습니다. 저장하면 현재 세션으로 다시 고정됩니다.",
+      "pt": "Esta conexão está fixada na sessão \\\"%1$s\\\" mas você está em \\\"%2$s\\\". Salvar irá refixá-la na sessão atual.",
+      "ru": "Это подключение закреплено за сессией \\\"%1$s\\\", но вы находитесь в \\\"%2$s\\\". Сохранение перезакрепит его за текущей сессией.",
+      "zh": "此连接固定到会话 \\\"%1$s\\\"，但你当前在 \\\"%2$s\\\"。保存会将其重新固定到当前会话。"
+     }
     },
     {
      "name": "terminal_save_connection_update",
      "en": "Update pin",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تحديث التثبيت",
+      "bn": "পিন আপডেট করুন",
+      "de": "Bindung aktualisieren",
+      "es": "Actualizar fijación",
+      "fr": "Mettre à jour l\\'épinglage",
+      "hi": "पिन अपडेट करें",
+      "ja": "固定を更新",
+      "ko": "고정 업데이트",
+      "pt": "Atualizar fixação",
+      "ru": "Обновить закрепление",
+      "zh": "更新固定"
+     }
     },
     {
      "name": "terminal_save_connection_saved",
@@ -37237,7 +37441,19 @@
      "args": [
       "%1$s"
      ],
-     "t": {}
+     "t": {
+      "ar": "تم حفظ الاتصال \\\"%1$s\\\"",
+      "bn": "সংযোগ \\\"%1$s\\\" সংরক্ষিত হয়েছে",
+      "de": "Verbindung \\\"%1$s\\\" gespeichert",
+      "es": "Conexión \\\"%1$s\\\" guardada",
+      "fr": "Connexion \\\"%1$s\\\" enregistrée",
+      "hi": "कनेक्शन \\\"%1$s\\\" सहेजा गया",
+      "ja": "接続 \\\"%1$s\\\" を保存しました",
+      "ko": "연결 \\\"%1$s\\\"을(를) 저장했습니다",
+      "pt": "Conexão \\\"%1$s\\\" salva",
+      "ru": "Подключение \\\"%1$s\\\" сохранено",
+      "zh": "已保存连接 \\\"%1$s\\\""
+     }
     },
     {
      "name": "terminal_save_connection_updated",
@@ -37246,56 +37462,152 @@
      "args": [
       "%1$s"
      ],
-     "t": {}
+     "t": {
+      "ar": "تم تحديث الاتصال \\\"%1$s\\\"",
+      "bn": "সংযোগ \\\"%1$s\\\" আপডেট হয়েছে",
+      "de": "Verbindung \\\"%1$s\\\" aktualisiert",
+      "es": "Conexión \\\"%1$s\\\" actualizada",
+      "fr": "Connexion \\\"%1$s\\\" mise à jour",
+      "hi": "कनेक्शन \\\"%1$s\\\" अपडेट हुआ",
+      "ja": "接続 \\\"%1$s\\\" を更新しました",
+      "ko": "연결 \\\"%1$s\\\"을(를) 업데이트했습니다",
+      "pt": "Conexão \\\"%1$s\\\" atualizada",
+      "ru": "Подключение \\\"%1$s\\\" обновлено",
+      "zh": "已更新连接 \\\"%1$s\\\""
+     }
     },
     {
      "name": "terminal_save_connection_need_session",
      "en": "Couldn\\'t detect a session name for this tab. Open a named tmux/zellij/screen session, or set Remote command on the profile, then try Save connection again.",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تعذّر اكتشاف اسم جلسة لهذا التبويب. افتح جلسة tmux/zellij/screen باسم، أو اضبط الأمر البعيد في الملف الشخصي، ثم أعد المحاولة.",
+      "bn": "এই ট্যাবের সেশনের নাম শনাক্ত করা যায়নি। নামযুক্ত tmux/zellij/screen সেশন খুলুন, বা প্রোফাইলে রিমোট কমান্ড সেট করুন, তারপর আবার চেষ্টা করুন।",
+      "de": "Für diesen Tab wurde kein Sitzungsname erkannt. Öffne eine benannte tmux-/zellij-/screen-Sitzung oder setze im Profil einen Remote-Befehl, und versuche es erneut.",
+      "es": "No se pudo detectar un nombre de sesión para esta pestaña. Abre una sesión de tmux/zellij/screen con nombre, o define Comando remoto en el perfil, y vuelve a intentarlo.",
+      "fr": "Impossible de détecter un nom de session pour cet onglet. Ouvrez une session tmux/zellij/screen nommée, ou définissez la commande distante du profil, puis réessayez.",
+      "hi": "इस टैब के लिए सत्र का नाम पता नहीं चला। नामित tmux/zellij/screen सत्र खोलें, या प्रोफ़ाइल में रिमोट कमांड सेट करें, फिर दोबारा आज़माएँ।",
+      "ja": "このタブのセッション名を検出できませんでした。名前付きの tmux/zellij/screen セッションを開くか、プロファイルにリモートコマンドを設定してから、もう一度お試しください。",
+      "ko": "이 탭의 세션 이름을 감지할 수 없습니다. 이름이 있는 tmux/zellij/screen 세션을 열거나 프로필에 원격 명령을 설정한 뒤 다시 시도하세요.",
+      "pt": "Não foi possível detectar um nome de sessão para esta aba. Abra uma sessão tmux/zellij/screen nomeada, ou defina Comando remoto no perfil, e tente novamente.",
+      "ru": "Не удалось определить имя сессии для этой вкладки. Откройте именованную сессию tmux/zellij/screen или задайте удалённую команду в профиле, затем повторите.",
+      "zh": "无法检测此标签页的会话名称。请打开一个已命名的 tmux/zellij/screen 会话，或在配置文件中设置远程命令，然后重试。"
+     }
     },
     {
      "name": "terminal_details",
      "en": "Details",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "التفاصيل",
+      "bn": "বিবরণ",
+      "de": "Details",
+      "es": "Detalles",
+      "fr": "Détails",
+      "hi": "विवरण",
+      "ja": "詳細",
+      "ko": "세부 정보",
+      "pt": "Detalhes",
+      "ru": "Сведения",
+      "zh": "详情"
+     }
     },
     {
      "name": "terminal_details_title",
      "en": "Where am I?",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "أين أنا؟",
+      "bn": "আমি কোথায়?",
+      "de": "Wo bin ich?",
+      "es": "¿Dónde estoy?",
+      "fr": "Où suis-je ?",
+      "hi": "मैं कहाँ हूँ?",
+      "ja": "現在地は?",
+      "ko": "여기가 어디인가요?",
+      "pt": "Onde estou?",
+      "ru": "Где я?",
+      "zh": "我在哪里？"
+     }
     },
     {
      "name": "terminal_details_door",
      "en": "Door (connection card)",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "الباب (بطاقة الاتصال)",
+      "bn": "দরজা (সংযোগ কার্ড)",
+      "de": "Tür (Verbindungskarte)",
+      "es": "Puerta (tarjeta de conexión)",
+      "fr": "Porte (fiche de connexion)",
+      "hi": "दरवाज़ा (कनेक्शन कार्ड)",
+      "ja": "ドア (接続カード)",
+      "ko": "문 (연결 카드)",
+      "pt": "Porta (cartão de conexão)",
+      "ru": "Дверь (карточка подключения)",
+      "zh": "门（连接卡片）"
+     }
     },
     {
      "name": "terminal_details_path",
      "en": "Path (transport)",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "المسار (النقل)",
+      "bn": "পথ (ট্রান্সপোর্ট)",
+      "de": "Weg (Transport)",
+      "es": "Camino (transporte)",
+      "fr": "Chemin (transport)",
+      "hi": "रास्ता (ट्रांसपोर्ट)",
+      "ja": "経路 (トランスポート)",
+      "ko": "경로 (전송)",
+      "pt": "Caminho (transporte)",
+      "ru": "Путь (транспорт)",
+      "zh": "路径（传输）"
+     }
     },
     {
      "name": "terminal_details_room",
      "en": "Room (tmux / session)",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "الغرفة (tmux / الجلسة)",
+      "bn": "ঘর (tmux / সেশন)",
+      "de": "Raum (tmux / Sitzung)",
+      "es": "Habitación (tmux / sesión)",
+      "fr": "Pièce (tmux / session)",
+      "hi": "कमरा (tmux / सत्र)",
+      "ja": "部屋 (tmux / セッション)",
+      "ko": "방 (tmux / 세션)",
+      "pt": "Sala (tmux / sessão)",
+      "ru": "Комната (tmux / сессия)",
+      "zh": "房间（tmux / 会话）"
+     }
     },
     {
      "name": "terminal_details_room_unknown",
      "en": "— unknown —",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "\\u2014 غير معروفة \\u2014",
+      "bn": "\\u2014 অজানা \\u2014",
+      "de": "\\u2014 unbekannt \\u2014",
+      "es": "\\u2014 desconocida \\u2014",
+      "fr": "\\u2014 inconnue \\u2014",
+      "hi": "\\u2014 अज्ञात \\u2014",
+      "ja": "\\u2014 不明 \\u2014",
+      "ko": "\\u2014 알 수 없음 \\u2014",
+      "pt": "\\u2014 desconhecida \\u2014",
+      "ru": "\\u2014 неизвестно \\u2014",
+      "zh": "\\u2014 未知 \\u2014"
+     }
     },
     {
      "name": "terminal_details_room_pin",
@@ -37304,42 +37616,114 @@
      "args": [
       "%1$s"
      ],
-     "t": {}
+     "t": {
+      "ar": "تثبيت البطاقة: %1$s",
+      "bn": "কার্ড পিন: %1$s",
+      "de": "Kartenbindung: %1$s",
+      "es": "Fijación de la tarjeta: %1$s",
+      "fr": "Épinglage de la fiche : %1$s",
+      "hi": "कार्ड पिन: %1$s",
+      "ja": "カードの固定: %1$s",
+      "ko": "카드 고정: %1$s",
+      "pt": "Fixação do cartão: %1$s",
+      "ru": "Закрепление карточки: %1$s",
+      "zh": "卡片固定：%1$s"
+     }
     },
     {
      "name": "terminal_details_room_no_pin",
      "en": "— none —",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "\\u2014 لا شيء \\u2014",
+      "bn": "\\u2014 নেই \\u2014",
+      "de": "\\u2014 keine \\u2014",
+      "es": "\\u2014 ninguna \\u2014",
+      "fr": "\\u2014 aucun \\u2014",
+      "hi": "\\u2014 कोई नहीं \\u2014",
+      "ja": "\\u2014 なし \\u2014",
+      "ko": "\\u2014 없음 \\u2014",
+      "pt": "\\u2014 nenhuma \\u2014",
+      "ru": "\\u2014 нет \\u2014",
+      "zh": "\\u2014 无 \\u2014"
+     }
     },
     {
      "name": "terminal_details_room_mismatch",
      "en": "Live room differs from the card pin — you may have entered through a different door or landed in an auto-created session.",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "الغرفة الحالية تختلف عن تثبيت البطاقة \\u2014 ربما دخلت من باب آخر أو وصلت إلى جلسة أُنشئت تلقائيًا.",
+      "bn": "সক্রিয় ঘর কার্ড পিনের থেকে ভিন্ন \\u2014 আপনি হয়তো অন্য দরজা দিয়ে ঢুকেছেন বা স্বয়ংক্রিয়ভাবে তৈরি সেশনে পৌঁছেছেন।",
+      "de": "Der aktive Raum weicht von der Kartenbindung ab \\u2014 möglicherweise bist du durch eine andere Tür gekommen oder in einer automatisch erstellten Sitzung gelandet.",
+      "es": "La habitación activa difiere de la fijación de la tarjeta: puede que hayas entrado por otra puerta o acabado en una sesión creada automáticamente.",
+      "fr": "La pièce active diffère de l\\'épinglage de la fiche : vous êtes peut-être entré par une autre porte ou arrivé dans une session créée automatiquement.",
+      "hi": "सक्रिय कमरा कार्ड पिन से भिन्न है \\u2014 हो सकता है आप किसी और दरवाज़े से आए हों या स्वतः बने सत्र में पहुँचे हों।",
+      "ja": "現在の部屋がカードの固定と異なります \\u2014 別のドアから入ったか、自動作成されたセッションに入った可能性があります。",
+      "ko": "현재 방이 카드 고정과 다릅니다 \\u2014 다른 문으로 들어왔거나 자동 생성된 세션에 들어갔을 수 있습니다.",
+      "pt": "A sala ativa difere da fixação do cartão: você pode ter entrado por outra porta ou caído numa sessão criada automaticamente.",
+      "ru": "Активная комната отличается от закрепления карточки: возможно, вы вошли через другую дверь или попали в автоматически созданную сессию.",
+      "zh": "当前房间与卡片固定的不一致 \\u2014 你可能是从另一扇门进入的，或落入了自动创建的会话。"
+     }
     },
     {
      "name": "terminal_details_copy",
      "en": "Copy",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "نسخ",
+      "bn": "কপি করুন",
+      "de": "Kopieren",
+      "es": "Copiar",
+      "fr": "Copier",
+      "hi": "कॉपी करें",
+      "ja": "コピー",
+      "ko": "복사",
+      "pt": "Copiar",
+      "ru": "Копировать",
+      "zh": "复制"
+     }
     },
     {
      "name": "terminal_details_copied",
      "en": "Copied whereabouts",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تم نسخ الموقع",
+      "bn": "অবস্থান কপি হয়েছে",
+      "de": "Standort kopiert",
+      "es": "Ubicación copiada",
+      "fr": "Emplacement copié",
+      "hi": "स्थान कॉपी किया गया",
+      "ja": "現在地をコピーしました",
+      "ko": "위치를 복사했습니다",
+      "pt": "Localização copiada",
+      "ru": "Местоположение скопировано",
+      "zh": "已复制位置信息"
+     }
     },
     {
      "name": "terminal_details_unavailable",
      "en": "Couldn\\'t read connection details for this tab.",
      "comment": "Details / where am I (door · path · room)",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تعذّرت قراءة تفاصيل الاتصال لهذا التبويب.",
+      "bn": "এই ট্যাবের সংযোগ বিবরণ পড়া যায়নি।",
+      "de": "Verbindungsdetails für diesen Tab konnten nicht gelesen werden.",
+      "es": "No se pudieron leer los detalles de conexión de esta pestaña.",
+      "fr": "Impossible de lire les détails de connexion de cet onglet.",
+      "hi": "इस टैब के कनेक्शन विवरण नहीं पढ़े जा सके।",
+      "ja": "このタブの接続詳細を読み取れませんでした。",
+      "ko": "이 탭의 연결 정보를 읽을 수 없습니다.",
+      "pt": "Não foi possível ler os detalhes de conexão desta aba.",
+      "ru": "Не удалось прочитать сведения о подключении для этой вкладки.",
+      "zh": "无法读取此标签页的连接详情。"
+     }
     },
     {
      "name": "terminal_enter_fullscreen",
@@ -37728,70 +38112,190 @@
      "en": "Text input",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "إدخال النص",
+      "bn": "টেক্সট ইনপুট",
+      "de": "Texteingabe",
+      "es": "Entrada de texto",
+      "fr": "Saisie de texte",
+      "hi": "टेक्स्ट इनपुट",
+      "ja": "テキスト入力",
+      "ko": "텍스트 입력",
+      "pt": "Entrada de texto",
+      "ru": "Ввод текста",
+      "zh": "文本输入"
+     }
     },
     {
      "name": "terminal_text_input_placeholder",
      "en": "Type text to send…",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "اكتب النص المراد إرساله\\u2026",
+      "bn": "পাঠানোর টেক্সট লিখুন\\u2026",
+      "de": "Zu sendenden Text eingeben\\u2026",
+      "es": "Escribe el texto a enviar\\u2026",
+      "fr": "Saisissez le texte à envoyer\\u2026",
+      "hi": "भेजने के लिए टेक्स्ट लिखें\\u2026",
+      "ja": "送信するテキストを入力\\u2026",
+      "ko": "보낼 텍스트 입력\\u2026",
+      "pt": "Digite o texto a enviar\\u2026",
+      "ru": "Введите текст для отправки\\u2026",
+      "zh": "输入要发送的文本\\u2026"
+     }
     },
     {
      "name": "terminal_text_input_send",
      "en": "Send",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "إرسال",
+      "bn": "পাঠান",
+      "de": "Senden",
+      "es": "Enviar",
+      "fr": "Envoyer",
+      "hi": "भेजें",
+      "ja": "送信",
+      "ko": "보내기",
+      "pt": "Enviar",
+      "ru": "Отправить",
+      "zh": "发送"
+     }
     },
     {
      "name": "terminal_text_input_resize_handle",
      "en": "Resize text input window",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تغيير حجم نافذة الإدخال",
+      "bn": "টেক্সট ইনপুট উইন্ডোর আকার বদলান",
+      "de": "Texteingabefenster skalieren",
+      "es": "Redimensionar la ventana de entrada",
+      "fr": "Redimensionner la fenêtre de saisie",
+      "hi": "टेक्स्ट इनपुट विंडो का आकार बदलें",
+      "ja": "テキスト入力ウィンドウのサイズ変更",
+      "ko": "텍스트 입력 창 크기 조절",
+      "pt": "Redimensionar a janela de entrada",
+      "ru": "Изменить размер окна ввода",
+      "zh": "调整文本输入窗口大小"
+     }
     },
     {
      "name": "terminal_text_input_move_up",
      "en": "Move up",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تحريك لأعلى",
+      "bn": "উপরে সরান",
+      "de": "Nach oben verschieben",
+      "es": "Mover arriba",
+      "fr": "Déplacer vers le haut",
+      "hi": "ऊपर ले जाएँ",
+      "ja": "上へ移動",
+      "ko": "위로 이동",
+      "pt": "Mover para cima",
+      "ru": "Переместить вверх",
+      "zh": "上移"
+     }
     },
     {
      "name": "terminal_text_input_move_down",
      "en": "Move down",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تحريك لأسفل",
+      "bn": "নিচে সরান",
+      "de": "Nach unten verschieben",
+      "es": "Mover abajo",
+      "fr": "Déplacer vers le bas",
+      "hi": "नीचे ले जाएँ",
+      "ja": "下へ移動",
+      "ko": "아래로 이동",
+      "pt": "Mover para baixo",
+      "ru": "Переместить вниз",
+      "zh": "下移"
+     }
     },
     {
      "name": "terminal_text_input_move_left",
      "en": "Move left",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تحريك لليسار",
+      "bn": "বামে সরান",
+      "de": "Nach links verschieben",
+      "es": "Mover a la izquierda",
+      "fr": "Déplacer vers la gauche",
+      "hi": "बाएँ ले जाएँ",
+      "ja": "左へ移動",
+      "ko": "왼쪽으로 이동",
+      "pt": "Mover para a esquerda",
+      "ru": "Переместить влево",
+      "zh": "左移"
+     }
     },
     {
      "name": "terminal_text_input_move_right",
      "en": "Move right",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تحريك لليمين",
+      "bn": "ডানে সরান",
+      "de": "Nach rechts verschieben",
+      "es": "Mover a la derecha",
+      "fr": "Déplacer vers la droite",
+      "hi": "दाएँ ले जाएँ",
+      "ja": "右へ移動",
+      "ko": "오른쪽으로 이동",
+      "pt": "Mover para a direita",
+      "ru": "Переместить вправо",
+      "zh": "右移"
+     }
     },
     {
      "name": "terminal_text_input_expand",
      "en": "Make larger",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تكبير",
+      "bn": "বড় করুন",
+      "de": "Vergrößern",
+      "es": "Agrandar",
+      "fr": "Agrandir",
+      "hi": "बड़ा करें",
+      "ja": "大きくする",
+      "ko": "크게",
+      "pt": "Aumentar",
+      "ru": "Увеличить",
+      "zh": "放大"
+     }
     },
     {
      "name": "terminal_text_input_shrink",
      "en": "Make smaller",
      "comment": "FloatingTextInputDialog — floating text-entry key on the keyboard toolbar. Base locale only; other locales are translation debt for the normal i18n process (do not hand-translate here).",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تصغير",
+      "bn": "ছোট করুন",
+      "de": "Verkleinern",
+      "es": "Reducir",
+      "fr": "Réduire",
+      "hi": "छोटा करें",
+      "ja": "小さくする",
+      "ko": "작게",
+      "pt": "Diminuir",
+      "ru": "Уменьшить",
+      "zh": "缩小"
+     }
     },
     {
      "name": "terminal_selection_copy",

@@ -297,4 +297,11 @@
     <string name="tasker_watch_title">Наблюдать за %1$s</string>
     <string name="tasker_watch_text">Нажмите, чтобы выполнить %1$s в живом терминале</string>
     <string name="tasker_insert_variable">Вставить переменную</string>
+    <string name="app_desktop_dns_title">DNS гостя</string>
+    <string name="app_desktop_dns_custom_label">DNS-серверы</string>
+    <string name="app_desktop_dns_custom_hint">напр. 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">Сеть (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">Публичные (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">Свои</string>
+    <string name="app_desktop_dns_description">Какие DNS-серверы использует локальный гость Linux. Если установка пакетов зависает в этой сети, она может блокировать публичный DNS \u2014 используйте резолвер самой сети.</string>
 </resources>

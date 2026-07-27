@@ -31,4 +31,5 @@
     <string name="toolbar_attach_desc">إرفاق ملف للإرسال إلى الجهاز البعيد</string>
     <string name="toolbar_presets_label">الإعدادات المسبقة</string>
     <string name="toolbar_custom_key_label_placeholder">مثال: ^C, Paste</string>
+    <string name="toolbar_text_input_desc">فتح إدخال النص العائم</string>
 </resources>

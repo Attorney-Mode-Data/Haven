@@ -31,4 +31,5 @@
     <string name="toolbar_attach_desc">रिमोट पर भेजने के लिए फ़ाइल संलग्न करें</string>
     <string name="toolbar_presets_label">Presets</string>
     <string name="toolbar_custom_key_label_placeholder">उदा. ^C, Paste</string>
+    <string name="toolbar_text_input_desc">फ़्लोटिंग टेक्स्ट इनपुट खोलें</string>
 </resources>

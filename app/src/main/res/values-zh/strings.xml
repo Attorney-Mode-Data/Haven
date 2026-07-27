@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">查看 %1$s</string>
     <string name="tasker_watch_text">点按以在实时终端中运行 %1$s</string>
     <string name="tasker_insert_variable">插入变量</string>
+    <string name="app_desktop_dns_title">客户机 DNS</string>
+    <string name="app_desktop_dns_custom_label">域名服务器</string>
+    <string name="app_desktop_dns_custom_hint">例如 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">网络 (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">公共 (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">自定义</string>
+    <string name="app_desktop_dns_description">本地 Linux 客户机使用哪些域名服务器。如果在此网络中安装软件包时卡住，可能是公共 DNS 被屏蔽 \u2014 请改用该网络自己的解析器。</string>
 </resources>

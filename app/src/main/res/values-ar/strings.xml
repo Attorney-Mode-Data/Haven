@@ -291,4 +291,11 @@
     <string name="tasker_watch_title">مراقبة %1$s</string>
     <string name="tasker_watch_text">اضغط لتشغيل %1$s في طرفية مباشرة</string>
     <string name="tasker_insert_variable">إدراج متغير</string>
+    <string name="app_desktop_dns_title">DNS الضيف</string>
+    <string name="app_desktop_dns_custom_label">خوادم الأسماء</string>
+    <string name="app_desktop_dns_custom_hint">مثال: 10.0.0.53, 1.1.1.1</string>
+    <string name="app_desktop_dns_mode_system">الشبكة (DHCP)</string>
+    <string name="app_desktop_dns_mode_public">عامة (Google + Cloudflare)</string>
+    <string name="app_desktop_dns_mode_custom">مخصّصة</string>
+    <string name="app_desktop_dns_description">خوادم الأسماء التي يستخدمها ضيف Linux المحلي. إذا تعطّل تثبيت الحزم على هذه الشبكة، فقد تكون تحجب DNS العام \u2014 استخدم محلّل الشبكة نفسها.</string>
 </resources>
