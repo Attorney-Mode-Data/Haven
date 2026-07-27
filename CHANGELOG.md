@@ -5,7 +5,9 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
-## v5.84.1
+## v5.84.2
+
+🔍 **Terminal: gesture diagnostics for the zellij tap report (#435)** — a reporter sees a quick tap open the copy menu instead of clicking, on a device where none of the three fixes so far has helped, and it cannot be reproduced here. Haven now records one line per terminal gesture — how long the press really lasted, how far it moved, and what kind of pointer it was — so the next report carries measurements instead of estimates. It is a debug log, filterable with `logcat -s HavenGesture`, and does nothing for anyone not collecting one.
 
 🌍 **Every screen is fully translated again** — 42 strings added by recent features had only ever existed in English: the guest DNS settings, the floating text input, the "Where am I?" details sheet, and the new Save connection dialog. All eleven languages — Arabic, Bengali, Chinese, French, German, Hindi, Japanese, Korean, Portuguese, Russian and Spanish — are back to complete coverage. These translations have not been reviewed by native speakers, so corrections are welcome, either here or through the translation page.
 
