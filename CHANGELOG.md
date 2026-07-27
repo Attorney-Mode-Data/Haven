@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.84.3
+
+🔑 **Security keys: the resident-key list shows each key's name** — importing from a security key listed the credentials by their service and fingerprint, and the name you gave a key only appeared once you had ticked its row. Finding a particular key on a dongle holding many of them meant opening each one in turn to read its name and then closing it again. The name now leads each row, with the service and algorithm on the line beneath, so the list is readable at a glance. Clearing the label field during import also used to fall back to a generated `FIDO2: <service>` rather than to the name the row had been showing; it now restores that name. (#449, thanks onatio22)
+
+🔌 **Agents: `get_app_info` reports which transport carried the call** — the carrier list described what was configured, which answers a different question from how the current request actually arrived. Someone seeing the near/SSH carrier reported as inactive, bound to a machine they were not connected to, alongside a call that had plainly just succeeded, had no way to tell which of the four transports had delivered it. The reply now names it: `mcpCarriers.servedVia` is one of `DEVICE`, `TUNNELED`, `LAN` or `WIREGUARD`.
+
 ## v5.84.2
 
 🔍 **Terminal: gesture diagnostics for the zellij tap report (#435)** — a reporter sees a quick tap open the copy menu instead of clicking, on a device where none of the three fixes so far has helped, and it cannot be reproduced here. Haven now records one line per terminal gesture — how long the press really lasted, how far it moved, and what kind of pointer it was — so the next report carries measurements instead of estimates. It is a debug log, filterable with `logcat -s HavenGesture`, and does nothing for anyone not collecting one.
