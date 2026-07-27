@@ -81,11 +81,11 @@
     <string name="terminal_save_connection">Save connection</string>
     <string name="terminal_save_connection_title">Save connection</string>
     <string name="terminal_save_connection_id">Profile ID</string>
-    <string name="terminal_save_connection_id_hint">Stable card key — not the room name</string>
-    <string name="terminal_save_connection_name_label">Card name</string>
-    <string name="terminal_save_connection_name_hint">Label on the Connections list (door)</string>
-    <string name="terminal_save_connection_context">Door: %1$s\nPath: %2$s\nRoom to pin: %3$s</string>
-    <string name="terminal_save_connection_mismatch">This card is pinned to room \"%1$s\" but you are in \"%2$s\". Saving will repin the card to the live room.</string>
+    <string name="terminal_save_connection_id_hint">Identifies the saved connection — not the session name</string>
+    <string name="terminal_save_connection_name_label">Name</string>
+    <string name="terminal_save_connection_name_hint">Shown in the Connections list</string>
+    <string name="terminal_save_connection_context">Connection: %1$s\nTransport: %2$s\nSession to pin: %3$s</string>
+    <string name="terminal_save_connection_mismatch">This connection is pinned to session \"%1$s\" but you are in \"%2$s\". Saving will repin it to the current session.</string>
     <string name="terminal_save_connection_update">Update pin</string>
     <string name="terminal_save_connection_saved">Saved connection \"%1$s\"</string>
     <string name="terminal_save_connection_updated">Updated connection \"%1$s\"</string>

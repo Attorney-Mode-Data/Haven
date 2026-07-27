@@ -37183,28 +37183,28 @@
     },
     {
      "name": "terminal_save_connection_id_hint",
-     "en": "Stable card key — not the room name",
+     "en": "Identifies the saved connection — not the session name",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
      "t": {}
     },
     {
      "name": "terminal_save_connection_name_label",
-     "en": "Card name",
+     "en": "Name",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
      "t": {}
     },
     {
      "name": "terminal_save_connection_name_hint",
-     "en": "Label on the Connections list (door)",
+     "en": "Shown in the Connections list",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [],
      "t": {}
     },
     {
      "name": "terminal_save_connection_context",
-     "en": "Door: %1$s\\nPath: %2$s\\nRoom to pin: %3$s",
+     "en": "Connection: %1$s\\nTransport: %2$s\\nSession to pin: %3$s",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [
       "%1$s",
@@ -37215,7 +37215,7 @@
     },
     {
      "name": "terminal_save_connection_mismatch",
-     "en": "This card is pinned to room \\\"%1$s\\\" but you are in \\\"%2$s\\\". Saving will repin the card to the live room.",
+     "en": "This connection is pinned to session \\\"%1$s\\\" but you are in \\\"%2$s\\\". Saving will repin it to the current session.",
      "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
      "args": [
       "%1$s",
