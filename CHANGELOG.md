@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.20
+
+🔐 **SSH: the experimental sshlib engine connects again on affected devices** — on some Android builds every sshlib connection failed during key exchange with "To generate a key pair in Android Keystore…". Android offers several implementations of the same cryptography, and on those devices the system picked the key-store one for a task it can never do: reconstructing the server's temporary key, which by definition does not live in the key store. Haven now detects that and moves the key-store implementation out of the way for these unnamed lookups. Anything that genuinely wants the key store still asks for it by name, so your hardware-backed keys are unaffected, and on devices that were already choosing correctly this changes nothing. The default JSch engine was never affected. Reported upstream as connectbot/cbssh#246, where the real repair belongs. (#451, thanks Slayerx96)
+
 ## v5.83.19
 
 🔐 **SSH: the experimental sshlib engine handles two-factor logins and jump hosts** — it previously accepted a keyboard-interactive prompter, a TOTP provider and multi-step auth chains and then quietly ignored all three: challenge rounds were answered by echoing the saved password, so a 2FA prompt could not be answered at all, and multi-method chains were refused outright. Both engines now share the same answering logic — a password round answered from the saved password, a one-time-code round from your live code provider, anything else handed to you with the generated code pre-filled. The engine also reaches hosts through a jump host or proxy now: SOCKS4, SOCKS5, HTTP CONNECT, Tailscale, WireGuard, Cloudflare Access and ProxyJump all work, via a single adapter rather than per-tunnel code. Still opt-in, JSch still the default. (#58)
