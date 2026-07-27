@@ -43,9 +43,14 @@ class McpLoopbackTrustTest {
     private fun newServer(
         consentManager: AgentConsentManager = AgentConsentManager(),
         pairedClients: Set<String> = emptySet(),
+        /** client name -> pairing token, for tests that need a remote origin
+         *  to get past the gate the way a real paired client does. */
+        tokens: Map<String, String> = emptyMap(),
     ): McpServer {
         val prefs = mockk<UserPreferencesRepository>(relaxed = true)
         every { prefs.mcpAllowedClients } returns flowOf(pairedClients)
+        every { prefs.mcpClientTokenHashes } returns
+            flowOf(tokens.mapValues { (_, token) -> sha256HexOf(token) })
         coEvery { prefs.addMcpAllowedClient(any()) } returns Unit
 
         return McpServer(
@@ -193,6 +198,71 @@ class McpLoopbackTrustTest {
         val code = error?.optInt("code")
         assertNotEquals("loopback must not be consent-denied (-32000)", -32000, code)
         assertNotEquals("loopback must not be pairing-blocked (-32001)", -32001, code)
+    }
+
+    /**
+     * The carrier list in get_app_info describes what is *configured*, which
+     * answers a different question from "how did this call get here". A user
+     * reading `near.active = false` beside a call that plainly succeeded had
+     * no way to tell which transport carried it. `servedVia` is that answer,
+     * and it is a thread-through from the accepting listener — the kind of
+     * plumbing that silently reports null if any link in it breaks.
+     */
+    @Test
+    fun `get_app_info reports the origin that actually carried the call`() {
+        val server = newServer(consentManager = AgentConsentManager(), pairedClients = emptySet())
+        server.setTrustLoopbackEnabled(true)
+
+        val outcome = server.handleJsonRpc(
+            toolsCallBody("get_app_info", JSONObject()),
+            requestSessionId = null,
+            origin = McpOrigin.DEVICE,
+        )
+
+        assertEquals("DEVICE", servedViaOf(outcome.body))
+    }
+
+    /**
+     * The half that makes the test above mean something: a hardcoded
+     * "DEVICE" would satisfy it. This pins that the value tracks the
+     * listener the socket arrived on.
+     */
+    @Test
+    fun `servedVia distinguishes a tunneled call from an on-device one`() {
+        val client = "remote-through-tunnel"
+        val token = "tunnel-pairing-token"
+        val server = newServer(
+            consentManager = AgentConsentManager(),
+            pairedClients = setOf(client),
+            tokens = mapOf(client to token),
+        )
+
+        // A remote origin gets past the gate the way a real client does:
+        // a bearer-authenticated initialize, then calls on that session.
+        val sid = server.handleJsonRpc(
+            initBody(client),
+            requestSessionId = null,
+            origin = McpOrigin.TUNNELED,
+            bearerToken = token,
+        ).responseSessionId
+        assertTrue("paired client should get a session over the tunnel", !sid.isNullOrBlank())
+
+        val outcome = server.handleJsonRpc(
+            toolsCallBody("get_app_info", JSONObject()),
+            requestSessionId = sid,
+            origin = McpOrigin.TUNNELED,
+        )
+
+        assertEquals("TUNNELED", servedViaOf(outcome.body))
+    }
+
+    /** Pull `result.mcpCarriers.servedVia` out of a tools/call response. */
+    private fun servedViaOf(body: String): String? {
+        val obj = JSONObject(body)
+        obj.optJSONObject("error")?.let { error("get_app_info failed: $it") }
+        val text = obj.getJSONObject("result")
+            .getJSONArray("content").getJSONObject(0).getString("text")
+        return JSONObject(text).getJSONObject("mcpCarriers").optString("servedVia").ifEmpty { null }
     }
 
     @Test

@@ -1374,7 +1374,7 @@ class McpServer @Inject constructor(
             "initialize" -> handleInitialize(params, trusted, authClient)
             "notifications/initialized" -> JSONObject() // ack
             "tools/list" -> handleToolsList()
-            "tools/call" -> handleToolsCall(params, trusted)
+            "tools/call" -> handleToolsCall(params, trusted, origin)
             "resources/list" -> handleResourcesList()
             "resources/read" -> handleResourcesRead(params, trusted)
             "ping" -> JSONObject()
@@ -1568,7 +1568,11 @@ class McpServer @Inject constructor(
         }
     }
 
-    private fun handleToolsCall(params: JSONObject, trusted: Boolean): JSONObject {
+    private fun handleToolsCall(
+        params: JSONObject,
+        trusted: Boolean,
+        origin: McpOrigin = McpOrigin.LAN,
+    ): JSONObject {
         val name = params.optString("name", "")
             .ifEmpty { throw McpError(-32602, "Missing tool name") }
         val arguments = params.optJSONObject("arguments") ?: JSONObject()
@@ -1647,7 +1651,7 @@ class McpServer @Inject constructor(
         }
         mcpStatusHolder.callStarted(name)
         val result = try {
-            runBlocking { tools.callTyped(name, arguments, lastClientHint) }
+            runBlocking { tools.callTyped(name, arguments, lastClientHint, origin.name) }
         } catch (e: McpError) {
             mcpStatusHolder.callFinished(name, e.message)
             throw e

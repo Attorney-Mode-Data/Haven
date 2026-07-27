@@ -1823,6 +1823,17 @@ internal class McpTools(
     private var currentClientHint: String? = null
 
     /**
+     * Which listener accepted the socket this call arrived on, set alongside
+     * [currentClientHint]. Reported by get_app_info as `mcpCarriers.servedVia`:
+     * the carrier list describes what is *configured*, and a reader who sees
+     * `near.active = false` next to a call that plainly succeeded has no way
+     * to tell which transport actually carried it. Same volatility caveat as
+     * [currentClientHint] — a stale value only mislabels a report.
+     */
+    @Volatile
+    private var currentOrigin: String? = null
+
+    /**
      * Terminal outcome of the most recent backgrounded backend install
      * (install_apk_from_backend returns `pending` and finishes off-call, so the
      * result is otherwise only in logcat). Surfaced in get_app_info so an agent
@@ -1850,8 +1861,14 @@ internal class McpTools(
      * a proxied guest-MCP tool becomes a [ToolResult.Passthrough]. No reserved
      * `__`-prefixed keys anywhere on the path.
      */
-    suspend fun callTyped(name: String, arguments: JSONObject, clientHint: String? = null): ToolResult {
+    suspend fun callTyped(
+        name: String,
+        arguments: JSONObject,
+        clientHint: String? = null,
+        origin: String? = null,
+    ): ToolResult {
         currentClientHint = clientHint
+        currentOrigin = origin
         // Per-connection MCP gate + activity light: if the tool targets a connection
         // (a profileId arg, or a sessionId that maps to one), refuse when the user has
         // disabled MCP for it, otherwise mark it agent-active so its row indicator lights.
@@ -1938,6 +1955,11 @@ internal class McpTools(
         // seeing the near (SSH) carrier's live state without a separate
         // lookup. See McpNearCarrier for what "near" means today.
         put("mcpCarriers", JSONObject().apply {
+            // Which carrier actually delivered THIS call. The fields below
+            // describe what is configured, which is a different question: a
+            // reader seeing `near.active = false` beside a call that plainly
+            // worked would otherwise have to guess how it arrived.
+            put("servedVia", currentOrigin ?: JSONObject.NULL)
             val collision = mcpStatusHolder.wireguardCollision.value
             put("wireguardCollision", collision?.let { "${it.vpnInterface} @ ${it.address}" } ?: JSONObject.NULL)
             val near = mcpStatusHolder.nearCarrier.value
