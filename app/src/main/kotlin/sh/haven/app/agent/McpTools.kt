@@ -1128,7 +1128,7 @@ internal class McpTools(
         ) { args -> captureHavenUi(args) },
 
         "dump_haven_ui" to ToolHandler(
-            description = "Dump Haven's OWN foreground UI as a structured element list — the in-app equivalent of `uiautomator dump`, so you get EXACT control bounds instead of estimating them off a capture_haven_ui image. Returns { width, height, count, nodes:[{text, contentDescription, editableText, role, clickable, disabled, bounds:[left,top,right,bottom], centerX, centerY, window?}] } in the SAME window-pixel space tap_haven_ui / swipe_haven_ui use — read a control's centerX/centerY and tap it directly. Nodes from the activity window have no `window` field; nodes from an overlay that renders in its OWN window (e.g. the consent sheet, `window: consent-sheet`) are labelled with it (#355) — those bounds are that window's own pixel space. capture_haven_ui still photographs the activity window only, and tap_haven_ui refuses entirely while a consent prompt is pending, so an overlay can be observed but never tapped by an agent. FLAG_SECURE blocks it. Read-only.",
+            description = "Dump Haven's OWN foreground UI as a structured element list — the in-app equivalent of `uiautomator dump`, so you get EXACT control bounds instead of estimating them off a capture_haven_ui image. Returns { width, height, count, nodes:[{text, contentDescription, editableText, role, clickable, disabled, bounds:[left,top,right,bottom], centerX, centerY, window?}] } in the SAME window-pixel space tap_haven_ui / swipe_haven_ui use — read a control's centerX/centerY and tap it directly. Nodes from the activity window have no `window` field; nodes from an overlay that renders in its OWN window (e.g. the consent sheet, `window: consent-sheet`) are labelled with it (#355) — those bounds are that window's own pixel space. capture_haven_ui still photographs the activity window only, and tap_haven_ui refuses entirely while a consent prompt is pending, so an overlay can be observed but never tapped by an agent. Returns `windowsEnumerable`: when false, the platform refused the window-list lookup and only the activity window (plus self-registered overlays) could be walked — a dialog or dropdown may be on screen and missing from `nodes`, so an empty result does NOT mean nothing is open, and tapping blind will hit whatever is behind it. FLAG_SECURE blocks it. Read-only.",
             inputSchema = emptyObjectSchema(),
             consentLevel = ConsentLevel.ONCE_PER_SESSION,
             summarise = { _ -> "Let the agent read Haven's own screen structure" },
@@ -6855,6 +6855,19 @@ internal class McpTools(
                     put("height", result.height)
                     put("count", result.nodes.size)
                     put("nodes", arr)
+                    // Say so when dialogs may be missing, rather than letting an
+                    // empty result read as "nothing is open" (#447 soak).
+                    put("windowsEnumerable", result.windowsEnumerable)
+                    if (!result.windowsEnumerable) {
+                        put(
+                            "coverageWarning",
+                            "This platform refused the window-list lookup, so only the activity " +
+                                "window was walked. A dialog, dropdown menu or bottom sheet may be " +
+                                "on screen and absent from nodes — do not read this as 'no dialog " +
+                                "is open', and do not tap blind, because taps land on whatever is " +
+                                "behind it. Take a screenshot to check.",
+                        )
+                    }
                 }
             }
             HavenUiBridge.DumpResult.Secure -> JSONObject().apply {

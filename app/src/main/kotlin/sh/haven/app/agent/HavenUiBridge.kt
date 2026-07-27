@@ -119,7 +119,17 @@ class HavenUiBridge @Inject constructor(
             return WindowInfo(v, loc[0], loc[1], label)
         }
         val roots = windowManagerRootViews()
-            ?: return listOf(infoFor(activityDecor, null))
+            ?: return buildList {
+                // Reflection unavailable: the activity window is all we can
+                // enumerate, but overlays that registered themselves are still
+                // reachable and were previously dropped here — leaving a
+                // registered consent sheet invisible for no reason (#447 soak).
+                add(infoFor(activityDecor, null))
+                overlaySnapshot().forEach { (label, view) ->
+                    val root = view.rootView
+                    if (root !== activityDecor && root.isAttachedToWindow) add(infoFor(root, label))
+                }
+            }
         val overlaysNow = overlaySnapshot()
         var extra = 0
         return roots
@@ -445,7 +455,7 @@ class HavenUiBridge @Inject constructor(
         if (!walkedAny) {
             return@withContext DumpResult.Failed("No Compose semantics reachable in any foreground window.")
         }
-        DumpResult.Ok(nodes, decor.width, decor.height)
+        DumpResult.Ok(nodes, decor.width, decor.height, windowsEnumerable = windowManagerRootViews() != null)
     }
 
     private fun findComposeView(v: View): View? {
@@ -523,7 +533,20 @@ class HavenUiBridge @Inject constructor(
 
     /** Outcome of [dumpUi]. */
     sealed interface DumpResult {
-        data class Ok(val nodes: List<UiNode>, val width: Int, val height: Int) : DumpResult
+        /**
+         * @param windowsEnumerable false when the platform refused the
+         *   window-list lookup, so only the activity window and
+         *   self-registered overlays could be walked. A dialog, dropdown menu
+         *   or bottom sheet may be on screen and absent from [nodes]. Callers
+         *   driving the UI must not read an empty result as "nothing is open"
+         *   in that case — that mistake is what this field exists to prevent.
+         */
+        data class Ok(
+            val nodes: List<UiNode>,
+            val width: Int,
+            val height: Int,
+            val windowsEnumerable: Boolean = true,
+        ) : DumpResult
         object Secure : DumpResult
         data class NoForeground(val reason: String) : DumpResult
         data class Failed(val reason: String) : DumpResult
