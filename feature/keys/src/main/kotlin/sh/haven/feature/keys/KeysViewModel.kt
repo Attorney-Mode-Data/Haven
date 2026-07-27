@@ -59,7 +59,16 @@ data class DiscoveredSkCredential(
      * dialog falls back to a generated "FIDO2: <rpId>" (#449).
      */
     val userName: String? = null,
-)
+) {
+    /**
+     * The label this credential imports under unless the user edits it.
+     * The picker shows this as the row's leading line, so the name on
+     * screen and the name saved are the same string by construction —
+     * they used to be two copies of this expression that could drift.
+     */
+    val defaultLabel: String
+        get() = userName?.takeIf { it.isNotBlank() } ?: "FIDO2: $rpId"
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -678,9 +687,9 @@ class KeysViewModel @Inject constructor(
      * user chose in the picker (#231). [labels] maps the
      * [DiscoveredSkCredential.id] of every credential to import to its
      * label; credentials absent from the map are dropped. A blank label
-     * falls back to the `FIDO2: <rpId>` default — importing several
-     * resident keys with the same rpId off different dongles is exactly
-     * the collision the per-key label solves.
+     * falls back to [DiscoveredSkCredential.defaultLabel] — the same
+     * string the picker showed for that row, so clearing the field
+     * restores what was there rather than dropping to a generated name.
      */
     fun importDiscoveredCredentials(labels: Map<String, String>) {
         val selected = _discoveredCredentials.value.filter { it.id in labels.keys }
@@ -691,7 +700,7 @@ class KeysViewModel @Inject constructor(
             for (cred in selected) {
                 try {
                     val label = labels[cred.id]?.trim()?.ifBlank { null }
-                        ?: "FIDO2: ${cred.rpId}"
+                        ?: cred.defaultLabel
                     saveSkKey(cred.data, label)
                     ok++
                 } catch (e: Exception) {

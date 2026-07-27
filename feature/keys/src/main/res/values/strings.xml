@@ -159,6 +159,8 @@
     <string name="keys_discover_picker_title">Resident SSH keys</string>
     <string name="keys_discover_picker_body">Pick which resident credentials to import. Each becomes a new SSH key entry; the security key itself still holds the private material.</string>
     <string name="keys_discover_import_selected">Import selected</string>
+    <!-- Punctuation-only join of two already-translated values; nothing to translate. -->
+    <string name="keys_discover_cred_detail" translatable="false">%1$s · %2$s</string>
 
     <!-- Security key (YubiKey) — one menu entry, two paths -->
     <string name="keys_security_key">Security key (YubiKey)</string>

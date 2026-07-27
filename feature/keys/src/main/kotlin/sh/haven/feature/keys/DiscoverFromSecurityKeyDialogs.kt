@@ -215,11 +215,7 @@ internal fun DiscoveredCredentialsPicker(
                 HorizontalDivider()
                 credentials.forEach { cred ->
                     val isOn = cred.id in selected.value
-                    // Prefer the name stored on the credential — that is the
-                    // label the key was created with. "FIDO2: <rpId>" is a
-                    // fallback for keys that carry no name (#449).
-                    val defaultLabel = cred.userName?.takeIf { it.isNotBlank() }
-                        ?: "FIDO2: ${cred.rpId}"
+                    val defaultLabel = cred.defaultLabel
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.Top,
@@ -232,9 +228,17 @@ internal fun DiscoveredCredentialsPicker(
                             },
                         )
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(cred.rpId, style = MaterialTheme.typography.bodyMedium)
+                            // The label leads the row: with dozens of resident keys,
+                            // ticking each one just to read its name is the whole
+                            // cost of finding one (#449). rpId and algorithm drop to
+                            // a single supporting line so the row height is unchanged.
+                            Text(defaultLabel, style = MaterialTheme.typography.bodyMedium)
                             Text(
-                                cred.algorithmName,
+                                stringResource(
+                                    R.string.keys_discover_cred_detail,
+                                    cred.rpId,
+                                    cred.algorithmName,
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             Text(
@@ -266,10 +270,8 @@ internal fun DiscoveredCredentialsPicker(
                 onClick = {
                     onImport(
                         selected.value.associateWith { id ->
-                            val cred = credentials.first { it.id == id }
                             labelEdits.value[id]
-                                ?: cred.userName?.takeIf { it.isNotBlank() }
-                                ?: "FIDO2: ${cred.rpId}"
+                                ?: credentials.first { it.id == id }.defaultLabel
                         },
                     )
                 },

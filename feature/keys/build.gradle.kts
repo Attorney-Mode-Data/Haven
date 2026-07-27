@@ -39,6 +39,8 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.lifecycle.viewmodel)
+
+    testImplementation(libs.junit)
 }
 
 kotlin {

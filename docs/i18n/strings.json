@@ -19505,6 +19505,16 @@
      }
     },
     {
+     "name": "keys_discover_cred_detail",
+     "en": "%1$s · %2$s",
+     "comment": "Punctuation-only join of two already-translated values; nothing to translate.",
+     "args": [
+      "%1$s",
+      "%2$s"
+     ],
+     "t": {}
+    },
+    {
      "name": "keys_security_key",
      "en": "Security key (YubiKey)",
      "comment": "Security key (YubiKey) — one menu entry, two paths",
