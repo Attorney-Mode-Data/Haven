@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.84.4
+
+🔐 **SSH: a second attempt at the sshlib key-exchange failure (#451)** — the fix in v5.83.20 moved Android's key store out of the way when it was answering a lookup it can only ever refuse. The reporter's log shows it ran exactly as intended and the connection failed anyway, which ruled out its own explanation: moving a provider to the end of the list cannot help when it is the *only* one offering the algorithm, because last place is still first place. Haven now detects that case and registers its bundled cryptography provider ahead of the key store, so the lookup has a working implementation to land on. That step runs only on a device that has already proved it cannot resolve the algorithm any other way — on every other device nothing is touched, as before. Haven's own hardware-backed keys are unaffected either way, since they ask for the key store by name.
+
+This is reproduced in the test suite rather than reasoned about, including an assertion that the previous fix does *not* rescue this arrangement. It has not been confirmed on the affected hardware, so if it still fails the log now names which provider serves each algorithm after the reordering, which the previous one could not. The default JSch engine was never affected. (#451, thanks Slayerx96)
+
 ## v5.84.3
 
 🔑 **Security keys: the resident-key list shows each key's name** — importing from a security key listed the credentials by their service and fingerprint, and the name you gave a key only appeared once you had ticked its row. Finding a particular key on a dongle holding many of them meant opening each one in turn to read its name and then closing it again. The name now leads each row, with the service and algorithm on the line beneath, so the list is readable at a glance. Clearing the label field during import also used to fall back to a generated `FIDO2: <service>` rather than to the name the row had been showing; it now restores that name. (#449, thanks onatio22)
