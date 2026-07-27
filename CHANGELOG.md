@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.83.19
+
+🔐 **SSH: the experimental sshlib engine handles two-factor logins and jump hosts** — it previously accepted a keyboard-interactive prompter, a TOTP provider and multi-step auth chains and then quietly ignored all three: challenge rounds were answered by echoing the saved password, so a 2FA prompt could not be answered at all, and multi-method chains were refused outright. Both engines now share the same answering logic — a password round answered from the saved password, a one-time-code round from your live code provider, anything else handed to you with the generated code pre-filled. The engine also reaches hosts through a jump host or proxy now: SOCKS4, SOCKS5, HTTP CONNECT, Tailscale, WireGuard, Cloudflare Access and ProxyJump all work, via a single adapter rather than per-tunnel code. Still opt-in, JSch still the default. (#58)
+
+🖱️ **Terminal: touch scrolling behaves the same on every screen** — the drag distance needed to send one scroll step was measured in raw pixels, so the same physical swipe produced very different amounts of scrolling depending on how dense your display is: about 1.3mm per step on a dense phone against roughly 4mm on a coarser one, meaning up to three times as many scroll steps for an identical gesture. It is now a fixed physical distance instead. Dense displays — where scrolling felt twitchy and overshot — get calmer; coarser screens that needed an unusually long drag get slightly more responsive. Measured on hardware: a 300-pixel swipe now sends exactly the twelve scroll steps it should. (#421, thanks dkoppenh)
+
 ## v5.83.18
 
 🔑 **Security keys: listing resident keys works on older YubiKeys** — importing a resident SSH key from a YubiKey with firmware below 5.5 failed straight after the PIN was accepted, over NFC and USB-C alike. The feature that lists the keys stored on a security key exists in two versions: the one standardised in CTAP 2.1, and the earlier prototype that shipped first. Haven only ever asked for the standardised one, so a key that speaks only the prototype rejected the request outright — which is every YubiKey before firmware 5.5. Haven now asks the key which one it understands and uses that. A key that supports neither says so plainly instead of failing with a numeric code. (#449, thanks onatio22)
