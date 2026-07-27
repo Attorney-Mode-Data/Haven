@@ -934,9 +934,22 @@ class FidoAuthenticator @Inject constructor(
      * (user-presence). The caller persists the chosen ones into the
      * SSH key store via the same path as file-imported SK keys.
      */
+    /**
+     * One resident credential found on the security key.
+     *
+     * @param userName the credential's stored user name — the label the key
+     *   was given when it was created. Null when the authenticator returns
+     *   none, in which case callers fall back to a generated label.
+     */
+    data class ResidentCredential(
+        val rpId: String,
+        val userName: String?,
+        val key: SkKeyData,
+    )
+
     suspend fun enumerateResidentCredentials(
         rpIdPrefix: String = "ssh",
-    ): List<Pair<String, SkKeyData>> = withContext(Dispatchers.IO) {
+    ): List<ResidentCredential> = withContext(Dispatchers.IO) {
         lastAssertionError = null
         Log.d(TAG, "FIDO2 enumerateResidentCredentials requested: rpIdPrefix='$rpIdPrefix'")
 
@@ -1393,7 +1406,7 @@ class FidoAuthenticator @Inject constructor(
         device: UsbDevice,
         rpIdPrefix: String,
         prePin: String,
-    ): List<Pair<String, SkKeyData>> {
+    ): List<ResidentCredential> {
         // Open the USB transport and run the shared enumerate. USB permission
         // handling is duplicated from performUsbAssertion — pulling it out
         // into a generic openUsbCtapTransport helper is a follow-up.
@@ -1429,7 +1442,7 @@ class FidoAuthenticator @Inject constructor(
         tag: Tag,
         rpIdPrefix: String,
         prePin: String,
-    ): List<Pair<String, SkKeyData>> {
+    ): List<ResidentCredential> {
         val isoDep = IsoDep.get(tag) ?: throw IOException("Tag does not support ISO-DEP")
         CtapNfcTransport(isoDep).use { transport ->
             transport.connect()
@@ -1463,7 +1476,7 @@ class FidoAuthenticator @Inject constructor(
         touchTransport: FidoTouchPrompt.TouchKey.Transport,
         prePin: String,
         send: (ByteArray) -> ByteArray,
-    ): List<Pair<String, SkKeyData>> {
+    ): List<ResidentCredential> {
         // 1. PIN/UV exchange — cm token has no rpId scoping. The PIN was
         //    collected before the tap, so never prompt from in here: a dialog
         //    mid-exchange drops the NFC tag (#449).
@@ -1527,7 +1540,7 @@ class FidoAuthenticator @Inject constructor(
         Log.d(TAG, "Found ${rpList.size} RPs: ${rpList.map { it.id }}")
 
         // 3. For each RP whose id matches the prefix, enumerate its credentials.
-        val out = mutableListOf<Pair<String, SkKeyData>>()
+        val out = mutableListOf<ResidentCredential>()
         for (rp in rpList) {
             if (rpIdPrefix.isNotEmpty() && !rp.id.startsWith(rpIdPrefix)) continue
             val paramsBytes = Ctap2Cbor.encodeEnumerateCredentialsParams(rp.rpIdHash)
@@ -1560,7 +1573,11 @@ class FidoAuthenticator @Inject constructor(
                 // path will still prompt for PIN when signing — the flags
                 // bit is advisory metadata for the SSH stub, not a gate.
                 val sk = SkKeyParser.buildFromCtapCredential(cred, rp.id, flags = 0x01)
-                out += rp.id to sk
+                // The credential's user.name is the label the key was created
+                // with — Haven writes it there in makeCredential. Carrying it
+                // back is what lets import default to that name instead of a
+                // generic "FIDO2: <rpId>" (#449).
+                out += ResidentCredential(rp.id, cred.userName?.trim()?.ifBlank { null }, sk)
             }
         }
         Log.d(TAG, "Enumerate complete: ${out.size} SSH-SK credential(s) returned")

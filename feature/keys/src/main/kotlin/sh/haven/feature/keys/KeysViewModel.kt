@@ -53,6 +53,12 @@ data class DiscoveredSkCredential(
     val algorithmName: String,
     val fingerprint: String,
     val data: SkKeyData,
+    /**
+     * The name stored on the credential — the label the key was created with.
+     * Null when the authenticator reports none, in which case the import
+     * dialog falls back to a generated "FIDO2: <rpId>" (#449).
+     */
+    val userName: String? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -644,13 +650,16 @@ class KeysViewModel @Inject constructor(
                 if (results.isEmpty()) {
                     _message.value = "No SSH resident keys found on this security key"
                 } else {
-                    _discoveredCredentials.value = results.mapIndexed { i, (rpId, sk) ->
+                    _discoveredCredentials.value = results.mapIndexed { i, cred ->
+                        val rpId = cred.rpId
+                        val sk = cred.key
                         DiscoveredSkCredential(
                             id = "$i",
                             rpId = rpId,
                             algorithmName = sk.algorithmName,
                             fingerprint = SkKeyParser.fingerprintSha256(sk.publicKeyBlob),
                             data = sk,
+                            userName = cred.userName,
                         )
                     }
                 }

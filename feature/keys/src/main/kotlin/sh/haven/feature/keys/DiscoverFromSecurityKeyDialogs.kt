@@ -215,7 +215,11 @@ internal fun DiscoveredCredentialsPicker(
                 HorizontalDivider()
                 credentials.forEach { cred ->
                     val isOn = cred.id in selected.value
-                    val defaultLabel = "FIDO2: ${cred.rpId}"
+                    // Prefer the name stored on the credential — that is the
+                    // label the key was created with. "FIDO2: <rpId>" is a
+                    // fallback for keys that carry no name (#449).
+                    val defaultLabel = cred.userName?.takeIf { it.isNotBlank() }
+                        ?: "FIDO2: ${cred.rpId}"
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.Top,
@@ -263,7 +267,9 @@ internal fun DiscoveredCredentialsPicker(
                     onImport(
                         selected.value.associateWith { id ->
                             val cred = credentials.first { it.id == id }
-                            labelEdits.value[id] ?: "FIDO2: ${cred.rpId}"
+                            labelEdits.value[id]
+                                ?: cred.userName?.takeIf { it.isNotBlank() }
+                                ?: "FIDO2: ${cred.rpId}"
                         },
                     )
                 },
