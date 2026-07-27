@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.84.1
+
+🌍 **Every screen is fully translated again** — 42 strings added by recent features had only ever existed in English: the guest DNS settings, the floating text input, the "Where am I?" details sheet, and the new Save connection dialog. All eleven languages — Arabic, Bengali, Chinese, French, German, Hindi, Japanese, Korean, Portuguese, Russian and Spanish — are back to complete coverage. These translations have not been reviewed by native speakers, so corrections are welcome, either here or through the translation page.
+
+🔑 **Security keys: an imported key keeps the name you gave it** — every key imported from a security key came back labelled "FIDO2: ssh:", whatever you had called it when you created it, and that name then followed the key onto its public key. The name was never lost: Haven writes it onto the credential at creation and reads it back correctly, but the step that lists the keys was discarding it before anything could use it, so the import fell back to a generated name. Keys made before this change may carry no name and will still show the generated one; you can edit it during import either way. (#449, thanks onatio22)
+
 ## v5.84.0
 
 📌 **Save a running session as a connection** — long-press a terminal tab and choose **Save connection** to pin the tmux, zellij, screen or byobu session you are attached to as its own entry in Connections. It copies the host, login and transport from the live session and remembers the session name, so connecting to it later drops you straight back into that session instead of a fresh shell or a list to pick from. Saving the same session again updates the existing entry rather than adding a duplicate. Previously this needed a hand-written remote command in the profile's advanced settings. (#447, thanks kanazawahere)
