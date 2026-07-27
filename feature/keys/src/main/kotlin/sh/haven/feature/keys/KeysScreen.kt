@@ -1305,12 +1305,19 @@ private fun RenameKeyDialog(
  * import-label field from the key's own comment (#231).
  */
 private fun commentOf(publicKeyOpenSsh: String): String =
-    publicKeyOpenSsh.trim().split(Regex("\\s+"), limit = 3).getOrNull(2)?.trim().orEmpty()
+    sh.haven.core.ssh.SshPublicKeyComment.commentOf(publicKeyOpenSsh)
 
 private fun copyPublicKey(context: Context, sshKey: SshKey) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    // Imported keys and security-key credentials are stored without a comment,
+    // so the copied line had nothing identifying it in an authorized_keys file.
+    // Fall back to the key's own label (#449).
+    val line = sh.haven.core.ssh.SshPublicKeyComment.withComment(
+        sshKey.publicKeyOpenSsh,
+        sshKey.label,
+    )
     clipboard.setPrimaryClip(ClipData.newPlainText(
-        context.getString(R.string.keys_ssh_public_key_clip_label), sshKey.publicKeyOpenSsh,
+        context.getString(R.string.keys_ssh_public_key_clip_label), line,
     ))
 }
 
