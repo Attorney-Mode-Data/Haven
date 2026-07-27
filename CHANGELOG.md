@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.84.0
+
+📌 **Save a running session as a connection** — long-press a terminal tab and choose **Save connection** to pin the tmux, zellij, screen or byobu session you are attached to as its own entry in Connections. It copies the host, login and transport from the live session and remembers the session name, so connecting to it later drops you straight back into that session instead of a fresh shell or a list to pick from. Saving the same session again updates the existing entry rather than adding a duplicate. Previously this needed a hand-written remote command in the profile's advanced settings. (#447, thanks kanazawahere)
+
+🔑 **Security keys: a copied public key keeps its label** — copying a public key out of Haven produced a bare `sk-ssh-ed25519@openssh.com AAAA…` with nothing on the end identifying it, so an `authorized_keys` file full of them was impossible to tell apart. Keys Haven generates itself already carried their label; imported keys and credentials read off a security key did not. The label is now added when the key has no comment of its own — and a key that already carries one is left alone, since that comment may be exactly what a server already has on file. (#449, thanks onatio22)
+
 ## v5.83.20
 
 🔐 **SSH: the experimental sshlib engine connects again on affected devices** — on some Android builds every sshlib connection failed during key exchange with "To generate a key pair in Android Keystore…". Android offers several implementations of the same cryptography, and on those devices the system picked the key-store one for a task it can never do: reconstructing the server's temporary key, which by definition does not live in the key store. Haven now detects that and moves the key-store implementation out of the way for these unnamed lookups. Anything that genuinely wants the key store still asks for it by name, so your hardware-backed keys are unaffected, and on devices that were already choosing correctly this changes nothing. The default JSch engine was never affected. Reported upstream as connectbot/cbssh#246, where the real repair belongs. (#451, thanks Slayerx96)
