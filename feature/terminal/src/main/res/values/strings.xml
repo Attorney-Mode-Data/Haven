@@ -76,6 +76,34 @@
     <string name="terminal_rename_session_title">Rename Session</string>
     <string name="terminal_name">Name</string>
     <string name="terminal_rename">Rename</string>
+
+    <!-- Save connection (pin live session onto a profile for one-tap reconnect) -->
+    <string name="terminal_save_connection">Save connection</string>
+    <string name="terminal_save_connection_title">Save connection</string>
+    <string name="terminal_save_connection_id">Profile ID</string>
+    <string name="terminal_save_connection_id_hint">Stable card key — not the room name</string>
+    <string name="terminal_save_connection_name_label">Card name</string>
+    <string name="terminal_save_connection_name_hint">Label on the Connections list (door)</string>
+    <string name="terminal_save_connection_context">Door: %1$s\nPath: %2$s\nRoom to pin: %3$s</string>
+    <string name="terminal_save_connection_mismatch">This card is pinned to room \"%1$s\" but you are in \"%2$s\". Saving will repin the card to the live room.</string>
+    <string name="terminal_save_connection_update">Update pin</string>
+    <string name="terminal_save_connection_saved">Saved connection \"%1$s\"</string>
+    <string name="terminal_save_connection_updated">Updated connection \"%1$s\"</string>
+    <string name="terminal_save_connection_need_session">Couldn\'t detect a session name for this tab. Open a named tmux/zellij/screen session, or set Remote command on the profile, then try Save connection again.</string>
+
+    <!-- Details / where am I (door · path · room) -->
+    <string name="terminal_details">Details</string>
+    <string name="terminal_details_title">Where am I?</string>
+    <string name="terminal_details_door">Door (connection card)</string>
+    <string name="terminal_details_path">Path (transport)</string>
+    <string name="terminal_details_room">Room (tmux / session)</string>
+    <string name="terminal_details_room_unknown">— unknown —</string>
+    <string name="terminal_details_room_pin">Card pin: %1$s</string>
+    <string name="terminal_details_room_no_pin">— none —</string>
+    <string name="terminal_details_room_mismatch">Live room differs from the card pin — you may have entered through a different door or landed in an auto-created session.</string>
+    <string name="terminal_details_copy">Copy</string>
+    <string name="terminal_details_copied">Copied whereabouts</string>
+    <string name="terminal_details_unavailable">Couldn\'t read connection details for this tab.</string>
     <string name="terminal_enter_fullscreen">Enter fullscreen</string>
     <string name="terminal_exit_fullscreen">Exit fullscreen</string>
     <string name="terminal_vnc_username_label">Username (optional — VeNCrypt only)</string>

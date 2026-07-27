@@ -2896,6 +2896,332 @@ class TerminalViewModel @Inject constructor(
     }
 
     /**
+     * Three-layer "where am I?" snapshot for a live terminal tab:
+     * door (connection card), path (transport), room (multiplexer session).
+     */
+    data class ConnectionWhereabouts(
+        val sessionId: String,
+        /** Door — connection profile label. */
+        val doorLabel: String,
+        val doorId: String,
+        val doorHost: String,
+        val doorUser: String,
+        /** Path — SSH / Mosh / Eternal Terminal / … */
+        val pathTransport: String,
+        val pathDetail: String,
+        /** Room — live multiplexer / tab session name when known. */
+        val roomName: String?,
+        /** Room the card's remoteCommand is pinned to (if any). */
+        val roomPinnedOnCard: String?,
+        /** True when live room differs from the card pin. */
+        val roomMismatch: Boolean,
+        val summaryText: String,
+    )
+
+    /**
+     * Draft for "Save connection" — pin the live multiplexer session onto a
+     * connection profile (name editable, id stable), with door/path/room context.
+     */
+    data class SaveConnectionUi(
+        val draft: SaveConnectionFromSession.Draft,
+        val sourceProfileId: String,
+        val doorLabel: String,
+        val pathTransport: String,
+        val roomName: String,
+        val roomPinnedOnCard: String?,
+        val roomMismatch: Boolean,
+    )
+
+    private val _saveConnectionUi = MutableStateFlow<SaveConnectionUi?>(null)
+    val saveConnectionUi: StateFlow<SaveConnectionUi?> = _saveConnectionUi.asStateFlow()
+
+    private val _whereaboutsUi = MutableStateFlow<ConnectionWhereabouts?>(null)
+    val whereaboutsUi: StateFlow<ConnectionWhereabouts?> = _whereaboutsUi.asStateFlow()
+
+    fun dismissSaveConnection() {
+        _saveConnectionUi.value = null
+    }
+
+    fun dismissWhereabouts() {
+        _whereaboutsUi.value = null
+    }
+
+    /** Details is available for any SSH-family terminal tab. */
+    fun canShowDetails(sessionId: String): Boolean {
+        val tab = _tabs.value.find { it.sessionId == sessionId } ?: return false
+        return tab.transportType in setOf("SSH", "MOSH", "ET")
+    }
+
+    /**
+     * Whether the tab menu should offer Save connection. Cheap sync check;
+     * full validation runs in [beginSaveConnection].
+     */
+    fun canSaveConnection(sessionId: String): Boolean {
+        val ssh = sessionManager.getSession(sessionId)
+        if (ssh != null &&
+            ssh.sessionManager != SessionManager.NONE &&
+            !ssh.chosenSessionName.isNullOrBlank()
+        ) {
+            return true
+        }
+        val tab = _tabs.value.find { it.sessionId == sessionId } ?: return false
+        return tab.transportType in setOf("SSH", "MOSH", "ET")
+    }
+
+    /** Open the Details (where am I?) dialog for [sessionId]. */
+    fun beginShowDetails(sessionId: String) {
+        viewModelScope.launch {
+            val w = buildWhereabouts(sessionId)
+            if (w == null) {
+                _newTabMessage.value =
+                    appContext.getString(R.string.terminal_details_unavailable)
+                return@launch
+            }
+            _whereaboutsUi.value = w
+        }
+    }
+
+    /** Open the Save connection confirm dialog for [sessionId]. */
+    fun beginSaveConnection(sessionId: String) {
+        viewModelScope.launch {
+            val pin = resolveSavePin(sessionId)
+            if (pin == null) {
+                _newTabMessage.value =
+                    appContext.getString(R.string.terminal_save_connection_need_session)
+                return@launch
+            }
+            val (source, sessionName, manager) = pin
+            val existing = withContext(Dispatchers.IO) { connectionRepository.getAll() }
+            // Prefer card label as default name when pinning the same room already
+            // on the card; otherwise use the live room name (clearer for new pins).
+            val cardPin = SaveConnectionFromSession.sessionNameFromRemoteCommand(source.remoteCommand)
+            val defaultLabel = when {
+                cardPin != null && cardPin == sessionName && source.label.isNotBlank() -> source.label
+                else -> sessionName
+            }
+            val draft = SaveConnectionFromSession.draft(
+                source = source,
+                sessionName = sessionName,
+                manager = manager,
+                existing = existing,
+                defaultLabel = defaultLabel,
+            )
+            if (draft == null) {
+                _newTabMessage.value =
+                    appContext.getString(R.string.terminal_save_connection_need_session)
+                return@launch
+            }
+            val tab = _tabs.value.find { it.sessionId == sessionId }
+            val path = formatTransport(tab?.transportType, source)
+            val mismatch = cardPin != null && cardPin != sessionName
+            _saveConnectionUi.value = SaveConnectionUi(
+                draft = draft,
+                sourceProfileId = source.id,
+                doorLabel = source.label,
+                pathTransport = path,
+                roomName = sessionName,
+                roomPinnedOnCard = cardPin,
+                roomMismatch = mismatch,
+            )
+        }
+    }
+
+    private suspend fun buildWhereabouts(sessionId: String): ConnectionWhereabouts? {
+        val tab = _tabs.value.find { it.sessionId == sessionId } ?: return null
+        if (tab.transportType !in setOf("SSH", "MOSH", "ET")) return null
+        val profile = withContext(Dispatchers.IO) {
+            connectionRepository.getById(tab.profileId)
+        } ?: return null
+        val ssh = sessionManager.getSession(sessionId)
+        val liveRoom = ssh?.chosenSessionName?.takeIf { it.isNotBlank() }
+            ?: SaveConnectionFromSession.sessionNameFromRemoteCommand(profile.remoteCommand)
+            ?: profile.lastSessionName?.split("|")?.map { it.trim() }?.filter { it.isNotEmpty() }?.singleOrNull()
+            ?: tab.label.takeIf { it.isNotBlank() && it != profile.label }
+        val pinned = SaveConnectionFromSession.sessionNameFromRemoteCommand(profile.remoteCommand)
+        val path = formatTransport(tab.transportType, profile)
+        val pathDetail = buildString {
+            append(profile.username)
+            append('@')
+            append(profile.host)
+            append(':')
+            append(profile.port)
+            when {
+                profile.useEternalTerminal -> append(" · etPort ").append(profile.etPort)
+                profile.useMosh -> append(" · mosh")
+            }
+            if (!profile.remoteCommand.isNullOrBlank()) {
+                append("\nremoteCommand: ").append(profile.remoteCommand)
+            }
+        }
+        val mismatch = pinned != null && liveRoom != null &&
+            SessionManager.sanitizeSessionName(pinned) != SessionManager.sanitizeSessionName(liveRoom)
+        val summary = buildString {
+            appendLine("DOOR (card)")
+            appendLine("  ${profile.label}")
+            appendLine("  id ${profile.id}")
+            appendLine("  ${profile.username}@${profile.host}:${profile.port}")
+            appendLine()
+            appendLine("PATH (transport)")
+            appendLine("  $path")
+            appendLine("  ${profile.username}@${profile.host}:${profile.port}")
+            when {
+                profile.useEternalTerminal -> appendLine("  etPort ${profile.etPort}")
+                profile.useMosh -> appendLine("  mosh")
+            }
+            appendLine()
+            appendLine("ROOM (session)")
+            appendLine("  live: ${liveRoom ?: "— unknown —"}")
+            appendLine("  card pin: ${pinned ?: "— none —"}")
+            if (mismatch) appendLine("  ⚠ live room differs from card pin")
+        }.trimEnd()
+        return ConnectionWhereabouts(
+            sessionId = sessionId,
+            doorLabel = profile.label,
+            doorId = profile.id,
+            doorHost = profile.host,
+            doorUser = profile.username,
+            pathTransport = path,
+            pathDetail = pathDetail,
+            roomName = liveRoom,
+            roomPinnedOnCard = pinned,
+            roomMismatch = mismatch,
+            summaryText = summary,
+        )
+    }
+
+    private fun formatTransport(
+        transportType: String?,
+        profile: sh.haven.core.data.db.entities.ConnectionProfile,
+    ): String = when (transportType) {
+        "ET" -> "Eternal Terminal"
+        "MOSH" -> "Mosh"
+        "SSH" -> when {
+            profile.useEternalTerminal -> "Eternal Terminal"
+            profile.useMosh -> "Mosh"
+            else -> "SSH"
+        }
+        else -> transportType ?: when {
+            profile.useEternalTerminal -> "Eternal Terminal"
+            profile.useMosh -> "Mosh"
+            else -> "SSH"
+        }
+    }
+
+    /**
+     * Persist the draft with the user-edited [displayName]. Upserts by
+     * label+host+user so a second save with the same name updates the pin.
+     */
+    fun confirmSaveConnection(displayName: String) {
+        val ui = _saveConnectionUi.value ?: return
+        viewModelScope.launch {
+            val source = withContext(Dispatchers.IO) {
+                connectionRepository.getById(ui.sourceProfileId)
+            } ?: run {
+                _saveConnectionUi.value = null
+                return@launch
+            }
+            val existing = withContext(Dispatchers.IO) { connectionRepository.getAll() }
+            val result = SaveConnectionFromSession.build(
+                source = source,
+                displayName = displayName,
+                sessionName = ui.draft.sessionName,
+                manager = ui.draft.sessionManager,
+                existing = existing,
+                preferredId = ui.draft.profileId,
+            )
+            if (result == null) {
+                _newTabMessage.value =
+                    appContext.getString(R.string.terminal_save_connection_need_session)
+                _saveConnectionUi.value = null
+                return@launch
+            }
+            withContext(Dispatchers.IO) { connectionRepository.save(result.profile) }
+            _saveConnectionUi.value = null
+            val msgRes = if (result.created) {
+                R.string.terminal_save_connection_saved
+            } else {
+                R.string.terminal_save_connection_updated
+            }
+            _newTabMessage.value = appContext.getString(msgRes, result.profile.label)
+        }
+    }
+
+    /**
+     * Manager to use when writing a pin. Never [SessionManager.NONE] — a save
+     * always needs a real attach command. Global pref NONE still defaults to
+     * tmux (most common), otherwise dogfood of remoteCommand / plain-shell
+     * profiles falsely shows "attach a multiplexer first" while already inside one.
+     */
+    private suspend fun resolveManagerForPin(source: sh.haven.core.data.db.entities.ConnectionProfile): SessionManager {
+        SaveConnectionFromSession.parseSessionManager(source.sessionManager)
+            ?.takeIf { it != SessionManager.NONE }
+            ?.let { return it }
+        return try {
+            val pref = SessionManager.valueOf(preferencesRepository.sessionManager.first().name)
+            if (pref == SessionManager.NONE) SessionManager.TMUX else pref
+        } catch (_: IllegalArgumentException) {
+            SessionManager.TMUX
+        }
+    }
+
+    /**
+     * Resolve the multiplexer session to pin from a live terminal tab.
+     * Prefers an SSH [SessionManager] attach; falls back to profile
+     * remoteCommand / lastSessionName / tab label (Mosh/ET + remoteCommand).
+     */
+    private suspend fun resolveSavePin(
+        sessionId: String,
+    ): Triple<sh.haven.core.data.db.entities.ConnectionProfile, String, SessionManager>? {
+        val tab = _tabs.value.find { it.sessionId == sessionId }
+        val ssh = sessionManager.getSession(sessionId)
+        // Mosh/ET tabs don't live in SshSessionManager — profileId is only on the tab.
+        val profileId = tab?.profileId ?: ssh?.profileId ?: return null
+        val source = withContext(Dispatchers.IO) {
+            connectionRepository.getById(profileId)
+        } ?: return null
+        if (!source.isSsh) return null
+
+        if (ssh != null &&
+            ssh.sessionManager != SessionManager.NONE &&
+            !ssh.chosenSessionName.isNullOrBlank()
+        ) {
+            return Triple(source, ssh.chosenSessionName!!, ssh.sessionManager)
+        }
+
+        val mgr = resolveManagerForPin(source)
+
+        // remoteCommand pin (incl. Mosh/ET profiles that skip SessionManager)
+        SaveConnectionFromSession.sessionNameFromRemoteCommand(source.remoteCommand)?.let { name ->
+            return Triple(source, name, mgr)
+        }
+
+        // lastSessionName: single, or pick the part matching the tab label
+        val lastParts = source.lastSessionName
+            ?.split("|")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            .orEmpty()
+        if (lastParts.size == 1) {
+            return Triple(source, lastParts[0], mgr)
+        }
+        val tabLabel = tab?.label?.trim().orEmpty()
+        if (lastParts.size > 1 && tabLabel.isNotEmpty()) {
+            val match = lastParts.firstOrNull {
+                it == tabLabel || SessionManager.sanitizeSessionName(it) ==
+                    SessionManager.sanitizeSessionName(tabLabel)
+            }
+            if (match != null) return Triple(source, match, mgr)
+        }
+
+        // Tab label last resort (often equals the multiplexer / role name)
+        if (tabLabel.isNotEmpty()) {
+            val san = SessionManager.sanitizeSessionName(tabLabel)
+            if (san.isNotBlank()) return Triple(source, san, mgr)
+        }
+        return null
+    }
+
+    /**
      * Rename the tmux/zellij/screen session backing a connected tab — no need
      * to open a duplicate session via the picker. On success, propagates the
      * new name to the profile's lastSessionName + chosenSessionName + tab label.

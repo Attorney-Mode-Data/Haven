@@ -37161,9 +37161,190 @@
      }
     },
     {
+     "name": "terminal_save_connection",
+     "en": "Save connection",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_title",
+     "en": "Save connection",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_id",
+     "en": "Profile ID",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_id_hint",
+     "en": "Stable card key — not the room name",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_name_label",
+     "en": "Card name",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_name_hint",
+     "en": "Label on the Connections list (door)",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_context",
+     "en": "Door: %1$s\\nPath: %2$s\\nRoom to pin: %3$s",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [
+      "%1$s",
+      "%2$s",
+      "%3$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_mismatch",
+     "en": "This card is pinned to room \\\"%1$s\\\" but you are in \\\"%2$s\\\". Saving will repin the card to the live room.",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [
+      "%1$s",
+      "%2$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_update",
+     "en": "Update pin",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_saved",
+     "en": "Saved connection \\\"%1$s\\\"",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_updated",
+     "en": "Updated connection \\\"%1$s\\\"",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "terminal_save_connection_need_session",
+     "en": "Couldn\\'t detect a session name for this tab. Open a named tmux/zellij/screen session, or set Remote command on the profile, then try Save connection again.",
+     "comment": "Save connection (pin live session onto a profile for one-tap reconnect)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details",
+     "en": "Details",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_title",
+     "en": "Where am I?",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_door",
+     "en": "Door (connection card)",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_path",
+     "en": "Path (transport)",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_room",
+     "en": "Room (tmux / session)",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_room_unknown",
+     "en": "— unknown —",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_room_pin",
+     "en": "Card pin: %1$s",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_room_no_pin",
+     "en": "— none —",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_room_mismatch",
+     "en": "Live room differs from the card pin — you may have entered through a different door or landed in an auto-created session.",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_copy",
+     "en": "Copy",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_copied",
+     "en": "Copied whereabouts",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "terminal_details_unavailable",
+     "en": "Couldn\\'t read connection details for this tab.",
+     "comment": "Details / where am I (door · path · room)",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "terminal_enter_fullscreen",
      "en": "Enter fullscreen",
-     "comment": "RenameSessionDialog",
+     "comment": "Details / where am I (door · path · room)",
      "args": [],
      "t": {
       "ar": "الدخول إلى وضع ملء الشاشة",
@@ -37182,7 +37363,7 @@
     {
      "name": "terminal_exit_fullscreen",
      "en": "Exit fullscreen",
-     "comment": "RenameSessionDialog",
+     "comment": "Details / where am I (door · path · room)",
      "args": [],
      "t": {
       "ar": "الخروج من وضع ملء الشاشة",
@@ -37201,7 +37382,7 @@
     {
      "name": "terminal_vnc_username_label",
      "en": "Username (optional — VeNCrypt only)",
-     "comment": "RenameSessionDialog",
+     "comment": "Details / where am I (door · path · room)",
      "args": [],
      "t": {
       "ar": "Username (optional — VeNCrypt only)",
@@ -37220,7 +37401,7 @@
     {
      "name": "terminal_vnc_username_placeholder",
      "en": "Leave blank for classic VncAuth",
-     "comment": "RenameSessionDialog",
+     "comment": "Details / where am I (door · path · room)",
      "args": [],
      "t": {
       "ar": "Leave blank for classic VncAuth",
@@ -37239,7 +37420,7 @@
     {
      "name": "terminal_vnc_color_depth",
      "en": "Colour depth",
-     "comment": "RenameSessionDialog",
+     "comment": "Details / where am I (door · path · room)",
      "args": [],
      "t": {
       "ar": "Colour depth",
