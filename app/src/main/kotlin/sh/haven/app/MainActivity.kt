@@ -174,6 +174,7 @@ class MainActivity : AppCompatActivity() {
         handleOpenUsbDriveIntent(intent)
         handleOpenAgentLogExtra(intent)
         handleTaskerRunIntent(intent)
+        handleBackupShortcutIntent(intent)
     }
 
     /**
@@ -393,6 +394,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleBackupShortcutIntent(intent: Intent?) {
+        if (intent?.action != sh.haven.app.backup.PullBackupShortcutActivity.ACTION_SHOW_BACKUP_PASSWORD_DIALOG) return
+        intent.action = null
+        agentUiCommandBus.emit(sh.haven.core.data.agent.AgentUiCommand.OpenBackupPasswordDialog)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         KeyEventInterceptor.handler?.let { interceptor ->
             if (interceptor(event)) return true
@@ -410,6 +417,7 @@ class MainActivity : AppCompatActivity() {
         handleOpenUsbDriveIntent(intent)
         handleOpenAgentLogExtra(intent)
         handleTaskerRunIntent(intent)
+        handleBackupShortcutIntent(intent)
         setContent {
             // Tasker overlay run (#367): deferred here so the ConnectionsViewModel
             // is subscribed to the command bus before the coordinator connects.

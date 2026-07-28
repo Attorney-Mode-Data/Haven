@@ -45,6 +45,7 @@ class HavenApp : Application(), Configuration.Provider {
     @Inject lateinit var sessionManagerRegistry: sh.haven.core.ssh.SessionManagerRegistry
     @Inject lateinit var mailWatchManager: sh.haven.app.agent.mailrules.MailWatchManager
     @Inject lateinit var backupAutoSyncScheduler: sh.haven.app.backup.BackupAutoSyncScheduler
+    @Inject lateinit var backupAutoPullScheduler: sh.haven.app.backup.BackupAutoPullScheduler
     @Inject lateinit var sshTerminalEmulatorOwner: sh.haven.feature.terminal.SshTerminalEmulatorOwner
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -246,6 +247,7 @@ class HavenApp : Application(), Configuration.Provider {
         // Auto-push backup watch (#359) — same pattern: inert until the user
         // enables auto-sync in Settings → Backup → Sync to a remote.
         backupAutoSyncScheduler.start(appScope)
+        backupAutoPullScheduler.start(appScope)
 
         // Extend the shell-prompt terminator set used for command-on-attach
         // detection with the user's custom prompt characters (#280). Replays

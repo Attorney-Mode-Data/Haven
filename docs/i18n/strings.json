@@ -5469,6 +5469,13 @@
       "ru": "%1$s — ошибка",
       "zh": "%1$s — 失败"
      }
+    },
+    {
+     "name": "shortcut_pull_backup_label",
+     "en": "Pull Backup Now",
+     "comment": "App shortcuts",
+     "args": [],
+     "t": {}
     }
    ]
   },
@@ -25838,7 +25845,7 @@
     },
     {
      "name": "settings_backup_auto_sync_hint",
-     "en": "Re-pushes the encrypted backup a couple of minutes after settings change, plus a daily catch-up. Requires storing your backup passphrase (encrypted) on this device so pushes can run in the background. Pull always stays manual.",
+     "en": "Re-pushes the encrypted backup a couple of minutes after settings change, plus a daily catch-up. Requires storing your backup passphrase (encrypted) on this device so pushes can run in the background. Automatic pull is a separate opt-in below.",
      "comment": "Backup section",
      "args": [],
      "t": {
@@ -25892,6 +25899,76 @@
       "ru": "Задайте пароль, которым будет шифроваться каждая автоматическая резервная копия. Он хранится в зашифрованном виде на этом устройстве — при отключении автоотправки он удаляется.",
       "zh": "设置用于加密每次自动备份的密码。它加密保存在本设备上——关闭自动推送即会删除。"
      }
+    },
+    {
+     "name": "settings_backup_auto_pull_label",
+     "en": "Pull automatically",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_hint",
+     "en": "Periodically pulls the latest backup and restores it. If you also edit connections on this device, unsaved local changes can be overwritten (remote is last-write-wins).",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_dialog_title",
+     "en": "Enable automatic pull",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_dialog_description",
+     "en": "Enter the backup passphrase. It is kept encrypted on this device to pull backups in the background — turning auto-pull off deletes it.",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_interval_label",
+     "en": "Pull interval",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_interval_15m",
+     "en": "15 minutes",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_interval_1h",
+     "en": "1 hour",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_interval_6h",
+     "en": "6 hours",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_auto_pull_interval_24h",
+     "en": "24 hours",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_backup_remember_password_label",
+     "en": "Remember this password",
+     "comment": "Backup section",
+     "args": [],
+     "t": {}
     },
     {
      "name": "settings_export_backup_title",

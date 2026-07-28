@@ -265,4 +265,6 @@ sealed class AgentUiCommand {
         val profileId: String,
         val path: String,
     ) : AgentUiCommand()
+
+    data object OpenBackupPasswordDialog : AgentUiCommand()
 }

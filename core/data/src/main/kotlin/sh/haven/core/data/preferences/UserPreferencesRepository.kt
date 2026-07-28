@@ -80,6 +80,8 @@ class UserPreferencesRepository @Inject constructor(
     private val backupSyncProfileIdKey = stringPreferencesKey("backup_sync_profile_id")
     private val backupSyncPathKey = stringPreferencesKey("backup_sync_path")
     private val backupAutoSyncEnabledKey = booleanPreferencesKey("backup_auto_sync_enabled")
+    private val backupAutoPullEnabledKey = booleanPreferencesKey("backup_auto_pull_enabled")
+    private val backupAutoPullIntervalMinutesKey = intPreferencesKey("backup_auto_pull_interval_minutes")
     // CredentialEncryption-wrapped backup passphrase for background pushes (#359).
     private val backupSyncPassphraseKey = stringPreferencesKey("backup_sync_passphrase")
     // Session command for the Custom (X11) desktop (#361).
@@ -342,9 +344,69 @@ class UserPreferencesRepository @Inject constructor(
         val encrypted = if (enabled) passphrase?.let { CredentialEncryption.encrypt(context, it) } else null
         dataStore.edit { prefs ->
             prefs[backupAutoSyncEnabledKey] = enabled
-            if (encrypted == null) prefs.remove(backupSyncPassphraseKey)
-            else prefs[backupSyncPassphraseKey] = encrypted
+            if (enabled) {
+                if (encrypted != null) {
+                    prefs[backupSyncPassphraseKey] = encrypted
+                }
+            } else {
+                val autoPullEnabled = prefs[backupAutoPullEnabledKey] ?: false
+                if (!autoPullEnabled) {
+                    prefs.remove(backupSyncPassphraseKey)
+                }
+            }
         }
+    }
+
+    val backupAutoPullEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[backupAutoPullEnabledKey] ?: false
+    }
+
+    val backupAutoPullIntervalMinutes: Flow<Int> = dataStore.data.map { prefs ->
+        prefs[backupAutoPullIntervalMinutesKey] ?: 1440
+    }
+
+    suspend fun setBackupAutoPull(enabled: Boolean, passphrase: String?) {
+        val encrypted = if (enabled) passphrase?.let { CredentialEncryption.encrypt(context, it) } else null
+        dataStore.edit { prefs ->
+            prefs[backupAutoPullEnabledKey] = enabled
+            if (enabled) {
+                if (encrypted != null) {
+                    prefs[backupSyncPassphraseKey] = encrypted
+                }
+            } else {
+                val autoSyncEnabled = prefs[backupAutoSyncEnabledKey] ?: false
+                if (!autoSyncEnabled) {
+                    prefs.remove(backupSyncPassphraseKey)
+                }
+            }
+        }
+    }
+
+    suspend fun setBackupAutoPullInterval(minutes: Int) {
+        dataStore.edit { prefs ->
+            prefs[backupAutoPullIntervalMinutesKey] = minutes
+        }
+    }
+
+    suspend fun saveBackupSyncPassphrase(passphrase: String) {
+        val encrypted = CredentialEncryption.encrypt(context, passphrase)
+        dataStore.edit { prefs ->
+            prefs[backupSyncPassphraseKey] = encrypted
+        }
+    }
+
+    suspend fun clearBackupSyncPassphrase() {
+        dataStore.edit { prefs ->
+            val autoSyncEnabled = prefs[backupAutoSyncEnabledKey] ?: false
+            val autoPullEnabled = prefs[backupAutoPullEnabledKey] ?: false
+            if (!autoSyncEnabled && !autoPullEnabled) {
+                prefs.remove(backupSyncPassphraseKey)
+            }
+        }
+    }
+
+    val backupSyncPassphraseFlow: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[backupSyncPassphraseKey]?.let { CredentialEncryption.decrypt(context, it) }
     }
 
     /** The stored auto-sync passphrase, decrypted; null when auto-sync is off. */

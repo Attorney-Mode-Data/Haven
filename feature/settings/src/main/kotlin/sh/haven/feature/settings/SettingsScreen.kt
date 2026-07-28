@@ -80,6 +80,7 @@ import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -257,6 +258,11 @@ fun SettingsScreen(
     var showBackupSyncDialog by remember { mutableStateOf(false) }
     var showLockTimeoutDialog by remember { mutableStateOf(false) }
     var showOsc133SetupDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        viewModel.openBackupPasswordDialogEvent.collect {
+            showBackupPasswordDialog = BackupAction.PullRemote
+        }
+    }
     var showScreenOrderDialog by remember { mutableStateOf(false) }
     val screenOrder by viewModel.screenOrder.collectAsState()
 
@@ -1772,17 +1778,24 @@ fun SettingsScreen(
         )
     }
 
+    val backupSyncPassphrase by viewModel.backupSyncPassphrase.collectAsState()
+
     showBackupPasswordDialog?.let { action ->
         BackupPasswordDialog(
-            isExport = action !is BackupAction.Restore && action !is BackupAction.PullRemote,
-            titleOverride = if (action is BackupAction.EnableAutoSync) {
-                stringResource(R.string.settings_backup_auto_sync_dialog_title)
-            } else null,
-            descriptionOverride = if (action is BackupAction.EnableAutoSync) {
-                stringResource(R.string.settings_backup_auto_sync_dialog_description)
-            } else null,
+            isExport = action !is BackupAction.Restore && action !is BackupAction.PullRemote && action !is BackupAction.EnableAutoPull,
+            titleOverride = when (action) {
+                is BackupAction.EnableAutoSync -> stringResource(R.string.settings_backup_auto_sync_dialog_title)
+                is BackupAction.EnableAutoPull -> stringResource(R.string.settings_backup_auto_pull_dialog_title)
+                else -> null
+            },
+            descriptionOverride = when (action) {
+                is BackupAction.EnableAutoSync -> stringResource(R.string.settings_backup_auto_sync_dialog_description)
+                is BackupAction.EnableAutoPull -> stringResource(R.string.settings_backup_auto_pull_dialog_description)
+                else -> null
+            },
+            initialPassword = backupSyncPassphrase ?: "",
             onDismiss = { showBackupPasswordDialog = null },
-            onConfirm = { password ->
+            onConfirm = { password, remember ->
                 showBackupPasswordDialog = null
                 when (action) {
                     is BackupAction.Export -> {
@@ -1790,16 +1803,29 @@ fun SettingsScreen(
                         exportLauncher.launch("haven-backup.enc")
                     }
                     is BackupAction.Restore -> {
+                        if (remember) {
+                            viewModel.saveBackupSyncPassphrase(password)
+                        } else {
+                            viewModel.clearBackupSyncPassphrase()
+                        }
                         viewModel.importBackup(action.uri, password)
                     }
                     is BackupAction.PushRemote -> {
                         viewModel.pushBackupToRemote(password)
                     }
                     is BackupAction.PullRemote -> {
+                        if (remember) {
+                            viewModel.saveBackupSyncPassphrase(password)
+                        } else {
+                            viewModel.clearBackupSyncPassphrase()
+                        }
                         viewModel.pullBackupFromRemote(password)
                     }
                     is BackupAction.EnableAutoSync -> {
                         viewModel.setBackupAutoSync(true, password)
+                    }
+                    is BackupAction.EnableAutoPull -> {
+                        viewModel.setBackupAutoPull(true, password)
                     }
                 }
             },
@@ -1811,11 +1837,15 @@ fun SettingsScreen(
         val syncProfileId by viewModel.backupSyncProfileId.collectAsState()
         val syncPath by viewModel.backupSyncPath.collectAsState()
         val autoSyncEnabled by viewModel.backupAutoSyncEnabled.collectAsState()
+        val autoPullEnabled by viewModel.backupAutoPullEnabled.collectAsState()
+        val autoPullIntervalMinutes by viewModel.backupAutoPullIntervalMinutes.collectAsState()
         BackupSyncDialog(
             candidates = syncCandidates,
             selectedProfileId = syncProfileId,
             path = syncPath,
             autoSyncEnabled = autoSyncEnabled,
+            autoPullEnabled = autoPullEnabled,
+            autoPullIntervalMinutes = autoPullIntervalMinutes,
             onDestinationChange = { pid, p -> viewModel.setBackupSyncDestination(pid, p) },
             onAutoSyncChange = { enable ->
                 if (enable) {
@@ -1824,6 +1854,17 @@ fun SettingsScreen(
                 } else {
                     viewModel.setBackupAutoSync(false, null)
                 }
+            },
+            onAutoPullChange = { enable ->
+                if (enable) {
+                    showBackupSyncDialog = false
+                    showBackupPasswordDialog = BackupAction.EnableAutoPull
+                } else {
+                    viewModel.setBackupAutoPull(false, null)
+                }
+            },
+            onAutoPullIntervalChange = { minutes ->
+                viewModel.setBackupAutoPullInterval(minutes)
             },
             onPush = {
                 showBackupSyncDialog = false
@@ -1924,6 +1965,7 @@ private sealed interface BackupAction {
 
     /** Turning on auto-push (#359): collects the passphrase the background job will encrypt with. */
     data object EnableAutoSync : BackupAction
+    data object EnableAutoPull : BackupAction
 }
 
 /**
@@ -1939,8 +1981,12 @@ private fun BackupSyncDialog(
     selectedProfileId: String?,
     path: String,
     autoSyncEnabled: Boolean,
+    autoPullEnabled: Boolean,
+    autoPullIntervalMinutes: Int,
     onDestinationChange: (String?, String) -> Unit,
     onAutoSyncChange: (Boolean) -> Unit,
+    onAutoPullChange: (Boolean) -> Unit,
+    onAutoPullIntervalChange: (Int) -> Unit,
     onPush: () -> Unit,
     onPull: () -> Unit,
     onDismiss: () -> Unit,
@@ -2024,6 +2070,63 @@ private fun BackupSyncDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.settings_backup_auto_pull_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = autoPullEnabled,
+                            onCheckedChange = onAutoPullChange,
+                            enabled = hasDestination || autoPullEnabled,
+                        )
+                    }
+                    if (autoPullEnabled) {
+                        Spacer(Modifier.height(8.dp))
+                        var intervalExpanded by remember { mutableStateOf(false) }
+                        val intervals = listOf(15, 60, 360, 1440)
+                        val intervalLabels = mapOf(
+                            15 to stringResource(R.string.settings_backup_auto_pull_interval_15m),
+                            60 to stringResource(R.string.settings_backup_auto_pull_interval_1h),
+                            360 to stringResource(R.string.settings_backup_auto_pull_interval_6h),
+                            1440 to stringResource(R.string.settings_backup_auto_pull_interval_24h)
+                        )
+                        ExposedDropdownMenuBox(
+                            expanded = intervalExpanded,
+                            onExpandedChange = { intervalExpanded = it },
+                        ) {
+                            OutlinedTextField(
+                                value = intervalLabels[autoPullIntervalMinutes] ?: intervalLabels[1440]!!,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text(stringResource(R.string.settings_backup_auto_pull_interval_label)) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(intervalExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                            )
+                            ExposedDropdownMenu(
+                                expanded = intervalExpanded,
+                                onDismissRequest = { intervalExpanded = false }
+                            ) {
+                                intervals.forEach { minutes ->
+                                    DropdownMenuItem(
+                                        text = { Text(intervalLabels[minutes] ?: "") },
+                                        onClick = {
+                                            onAutoPullIntervalChange(minutes)
+                                            intervalExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.settings_backup_auto_pull_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         },
@@ -2047,12 +2150,14 @@ private fun BackupSyncDialog(
 private fun BackupPasswordDialog(
     isExport: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (String, Boolean) -> Unit,
     titleOverride: String? = null,
     descriptionOverride: String? = null,
+    initialPassword: String = "",
 ) {
-    var password by remember { mutableStateOf("") }
+    var password by remember(initialPassword) { mutableStateOf(initialPassword) }
     var confirmPassword by remember { mutableStateOf("") }
+    var rememberPassword by remember(initialPassword) { mutableStateOf(initialPassword.isNotEmpty()) }
     val title = titleOverride
         ?: stringResource(if (isExport) R.string.settings_backup_export_dialog_title else R.string.settings_backup_restore_dialog_title)
     val passwordError = if (isExport && password.length in 1..5) stringResource(R.string.settings_backup_password_min_length) else null
@@ -2095,11 +2200,30 @@ private fun BackupPasswordDialog(
                         supportingText = confirmError,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { rememberPassword = !rememberPassword }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(
+                            checked = rememberPassword,
+                            onCheckedChange = { rememberPassword = it }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.settings_backup_remember_password_label),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(password) }, enabled = canConfirm) {
+            TextButton(onClick = { onConfirm(password, rememberPassword) }, enabled = canConfirm) {
                 Text(stringResource(if (isExport) R.string.settings_backup_export_button else R.string.settings_backup_restore_button))
             }
         },

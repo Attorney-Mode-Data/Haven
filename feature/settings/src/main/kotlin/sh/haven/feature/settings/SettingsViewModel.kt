@@ -44,7 +44,20 @@ class SettingsViewModel @Inject constructor(
     private val connectionRepository: ConnectionRepository,
     private val mcpStatusHolder: sh.haven.core.data.agent.McpStatusHolder,
     private val biometricGate: sh.haven.core.data.keystore.BiometricGate,
+    private val agentUiCommandBus: sh.haven.core.data.agent.AgentUiCommandBus,
 ) : ViewModel() {
+
+    val openBackupPasswordDialogEvent = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(replay = 0)
+
+    init {
+        viewModelScope.launch {
+            agentUiCommandBus.commands.collect { command ->
+                if (command is sh.haven.core.data.agent.AgentUiCommand.OpenBackupPasswordDialog) {
+                    openBackupPasswordDialogEvent.emit(Unit)
+                }
+            }
+        }
+    }
 
     /**
      * Non-null when the WireGuard-exposed MCP endpoint is shadowed by another
@@ -239,6 +252,31 @@ class SettingsViewModel @Inject constructor(
      */
     fun setBackupAutoSync(enabled: Boolean, passphrase: String?) {
         viewModelScope.launch { preferencesRepository.setBackupAutoSync(enabled, passphrase) }
+    }
+
+    val backupAutoPullEnabled: StateFlow<Boolean> = preferencesRepository.backupAutoPullEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setBackupAutoPull(enabled: Boolean, passphrase: String?) {
+        viewModelScope.launch { preferencesRepository.setBackupAutoPull(enabled, passphrase) }
+    }
+
+    val backupAutoPullIntervalMinutes: StateFlow<Int> = preferencesRepository.backupAutoPullIntervalMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1440)
+
+    fun setBackupAutoPullInterval(minutes: Int) {
+        viewModelScope.launch { preferencesRepository.setBackupAutoPullInterval(minutes) }
+    }
+
+    val backupSyncPassphrase: StateFlow<String?> = preferencesRepository.backupSyncPassphraseFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun saveBackupSyncPassphrase(passphrase: String) {
+        viewModelScope.launch { preferencesRepository.saveBackupSyncPassphrase(passphrase) }
+    }
+
+    fun clearBackupSyncPassphrase() {
+        viewModelScope.launch { preferencesRepository.clearBackupSyncPassphrase() }
     }
 
     /** Encrypt the config and write it to the configured remote. */

@@ -326,4 +326,7 @@
     <string name="tasker_result_exit">%1$s — exit %2$d</string>
     <string name="tasker_result_timed_out">%1$s — timed out</string>
     <string name="tasker_result_failed">%1$s — failed</string>
+
+    <!-- App shortcuts -->
+    <string name="shortcut_pull_backup_label">Pull Backup Now</string>
 </resources>

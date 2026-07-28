@@ -77,7 +77,17 @@
                     android:scheme="haven"
                     android:host="connect" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <activity
+            android:name=".backup.PullBackupShortcutActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- One-shot resurrector for the restart_app MCP verb. Runs in its own
              process (:restart) so it can kill the main process — applying a
