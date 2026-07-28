@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">পুশ</string>
     <string name="settings_backup_sync_pull_button">পুল</string>
     <string name="settings_backup_auto_sync_label">স্বয়ংক্রিয় পুশ</string>
-    <string name="settings_backup_auto_sync_hint">সেটিংস বদলানোর কয়েক মিনিট পরে এনক্রিপ্ট করা ব্যাকআপ আবার পুশ করে, সাথে প্রতিদিন একবার ক্যাচ-আপ পুশ। ব্যাকগ্রাউন্ডে পুশ চালাতে আপনার ব্যাকআপ পাসওয়ার্ড (এনক্রিপ্ট করে) এই ডিভাইসে রাখা দরকার। পুল সবসময় ম্যানুয়াল থাকে।</string>
+    <string name="settings_backup_auto_sync_hint">সেটিংস পরিবর্তনের কয়েক মিনিট পরে এনক্রিপ্টেড ব্যাকআপ আবার পুশ করে, সঙ্গে দৈনিক ক্যাচ-আপ। ব্যাকগ্রাউন্ডে পুশ চালাতে আপনার পাসফ্রেজ (এনক্রিপ্ট করা) এই ডিভাইসে রাখতে হয়। স্বয়ংক্রিয় পুল নিচে আলাদা একটি বিকল্প।</string>
     <string name="settings_backup_auto_sync_dialog_title">স্বয়ংক্রিয় পুশ চালু করুন</string>
     <string name="settings_backup_auto_sync_dialog_description">প্রতিটি স্বয়ংক্রিয় ব্যাকআপ যে পাসওয়ার্ড দিয়ে এনক্রিপ্ট হবে তা সেট করুন। এটি এই ডিভাইসে এনক্রিপ্ট করে রাখা হয় — স্বয়ংক্রিয় পুশ বন্ধ করলে এটি মুছে যায়।</string>
     <string name="settings_export_backup_title">ব্যাকআপ এক্সপোর্ট</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive পরিমার্জন টাইল ডিকোড করে কিছু Windows RDP ডেস্কটপে দেখা কালো বর্গগুলি পূরণ করে। পরীক্ষামূলক (#418) — ছবি আরও খারাপ দেখালে এটি বন্ধ করুন</string>
     <string name="settings_rdp_avc_title">RDP: H.264/AVC420 ডিকোডিং</string>
     <string name="settings_rdp_avc_subtitle">ডিফল্টভাবে চালু। H.264 গ্রাফিক্স ডিকোড করে যাতে শুধুমাত্র H.264 সমর্থনকারী সার্ভার — বিশেষত KRDP (KDE-র RDP সার্ভার) — কালো স্ক্রিনের বদলে সঠিকভাবে দেখা যায়; ডিভাইসে MediaCodec-এর মাধ্যমে হার্ডওয়্যার ডিকোড করা হয়। কোনো Windows বা xrdp ডেস্কটপ ভুলভাবে দেখালে বন্ধ করুন (#425)</string>
+    <string name="settings_backup_auto_pull_label">স্বয়ংক্রিয়ভাবে টানুন</string>
+    <string name="settings_backup_auto_pull_hint">পর্যায়ক্রমে সর্বশেষ ব্যাকআপ টেনে পুনরুদ্ধার করে। আপনি যদি এই ডিভাইসেও সংযোগ সম্পাদনা করেন, তবে সংরক্ষিত না হওয়া স্থানীয় পরিবর্তন মুছে যেতে পারে (রিমোটে শেষ লেখাই প্রাধান্য পায়)।</string>
+    <string name="settings_backup_auto_pull_dialog_title">স্বয়ংক্রিয় পুল সক্রিয় করুন</string>
+    <string name="settings_backup_auto_pull_dialog_description">ব্যাকআপ পাসফ্রেজ লিখুন। ব্যাকগ্রাউন্ডে ব্যাকআপ টানতে এটি এই ডিভাইসে এনক্রিপ্ট করে রাখা হয় — স্বয়ংক্রিয় পুল বন্ধ করলে এটি মুছে যায়।</string>
+    <string name="settings_backup_auto_pull_interval_label">পুল ব্যবধান</string>
+    <string name="settings_backup_auto_pull_interval_15m">১৫ মিনিট</string>
+    <string name="settings_backup_auto_pull_interval_1h">১ ঘণ্টা</string>
+    <string name="settings_backup_auto_pull_interval_6h">৬ ঘণ্টা</string>
+    <string name="settings_backup_auto_pull_interval_24h">২৪ ঘণ্টা</string>
+    <string name="settings_backup_remember_password_label">এই পাসওয়ার্ড মনে রাখুন</string>
 </resources>

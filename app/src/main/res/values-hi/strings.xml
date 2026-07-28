@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">सार्वजनिक (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">कस्टम</string>
     <string name="app_desktop_dns_description">स्थानीय Linux गेस्ट कौन-से नेम सर्वर उपयोग करता है। यदि इस नेटवर्क पर पैकेज इंस्टॉल अटक जाते हैं, तो यह सार्वजनिक DNS को रोक सकता है \u2014 नेटवर्क का अपना रिज़ॉल्वर उपयोग करें।</string>
+    <string name="shortcut_pull_backup_label">अभी बैकअप खींचें</string>
+    <string name="backup_sync_channel_name">बैकअप सिंक</string>
+    <string name="backup_pull_restored_count">पुनर्स्थापित आइटम: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (त्रुटियाँ: %1$d)</string>
+    <string name="backup_pull_notify_success_title">बैकअप पुनर्स्थापित</string>
+    <string name="backup_pull_notify_failure_title">बैकअप पुनर्स्थापना विफल</string>
+    <string name="backup_pull_toast_success">बैकअप पुनर्स्थापित</string>
+    <string name="backup_pull_toast_failure">बैकअप खींचना विफल: %1$s</string>
 </resources>

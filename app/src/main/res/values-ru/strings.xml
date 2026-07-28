@@ -304,4 +304,12 @@
     <string name="app_desktop_dns_mode_public">Публичные (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">Свои</string>
     <string name="app_desktop_dns_description">Какие DNS-серверы использует локальный гость Linux. Если установка пакетов зависает в этой сети, она может блокировать публичный DNS \u2014 используйте резолвер самой сети.</string>
+    <string name="shortcut_pull_backup_label">Загрузить резервную копию</string>
+    <string name="backup_sync_channel_name">Синхронизация резервных копий</string>
+    <string name="backup_pull_restored_count">Восстановлено элементов: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (ошибок: %1$d)</string>
+    <string name="backup_pull_notify_success_title">Резервная копия восстановлена</string>
+    <string name="backup_pull_notify_failure_title">Не удалось восстановить резервную копию</string>
+    <string name="backup_pull_toast_success">Резервная копия восстановлена</string>
+    <string name="backup_pull_toast_failure">Не удалось загрузить резервную копию: %1$s</string>
 </resources>

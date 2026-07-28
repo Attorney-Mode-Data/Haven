@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">推送</string>
     <string name="settings_backup_sync_pull_button">拉取</string>
     <string name="settings_backup_auto_sync_label">自动推送</string>
-    <string name="settings_backup_auto_sync_hint">设置更改约几分钟后自动重新推送加密备份，并每天补推一次。需要在本设备上（加密）保存备份密码，以便在后台执行推送。拉取始终为手动操作。</string>
+    <string name="settings_backup_auto_sync_hint">设置更改几分钟后重新推送加密备份，并每日补推。需要将你的备份口令（加密后）保存在本设备上，以便在后台推送。自动拉取是下方的独立选项。</string>
     <string name="settings_backup_auto_sync_dialog_title">启用自动推送</string>
     <string name="settings_backup_auto_sync_dialog_description">设置用于加密每次自动备份的密码。它加密保存在本设备上——关闭自动推送即会删除。</string>
     <string name="settings_export_backup_title">导出备份</string>
@@ -446,4 +446,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">通过解码 RemoteFX-Progressive 精细化图块，填补某些 Windows RDP 桌面上出现的黑块。实验性功能（#418）——如果画面反而变差，请关闭此项</string>
     <string name="settings_rdp_avc_title">RDP：H.264/AVC420 解码</string>
     <string name="settings_rdp_avc_subtitle">默认开启。解码 H.264 图像，使仅支持 H.264 的服务器——尤其是 KRDP（KDE 的 RDP 服务器）——能正常显示而非黑屏；在设备上通过 MediaCodec 硬件解码。如果 Windows 或 xrdp 桌面显示异常，请关闭（#425）</string>
+    <string name="settings_backup_auto_pull_label">自动拉取</string>
+    <string name="settings_backup_auto_pull_hint">定期拉取最新备份并恢复。如果你同时在本设备上编辑连接，未保存的本地更改可能被覆盖（远端以最后写入为准）。</string>
+    <string name="settings_backup_auto_pull_dialog_title">启用自动拉取</string>
+    <string name="settings_backup_auto_pull_dialog_description">输入备份口令。它会加密保存在本设备上，用于在后台拉取备份——关闭自动拉取会将其删除。</string>
+    <string name="settings_backup_auto_pull_interval_label">拉取间隔</string>
+    <string name="settings_backup_auto_pull_interval_15m">15 分钟</string>
+    <string name="settings_backup_auto_pull_interval_1h">1 小时</string>
+    <string name="settings_backup_auto_pull_interval_6h">6 小时</string>
+    <string name="settings_backup_auto_pull_interval_24h">24 小时</string>
+    <string name="settings_backup_remember_password_label">记住此密码</string>
 </resources>

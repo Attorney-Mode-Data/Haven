@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">সর্বজনীন (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">কাস্টম</string>
     <string name="app_desktop_dns_description">স্থানীয় Linux গেস্ট কোন নেম সার্ভার ব্যবহার করে। এই নেটওয়ার্কে প্যাকেজ ইনস্টল আটকে গেলে সেটি সর্বজনীন DNS ব্লক করতে পারে \u2014 নেটওয়ার্কের নিজস্ব রিসলভার ব্যবহার করুন।</string>
+    <string name="shortcut_pull_backup_label">এখনই ব্যাকআপ টানুন</string>
+    <string name="backup_sync_channel_name">ব্যাকআপ সিঙ্ক</string>
+    <string name="backup_pull_restored_count">পুনরুদ্ধার করা আইটেম: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (ত্রুটি: %1$d)</string>
+    <string name="backup_pull_notify_success_title">ব্যাকআপ পুনরুদ্ধার হয়েছে</string>
+    <string name="backup_pull_notify_failure_title">ব্যাকআপ পুনরুদ্ধার ব্যর্থ</string>
+    <string name="backup_pull_toast_success">ব্যাকআপ পুনরুদ্ধার হয়েছে</string>
+    <string name="backup_pull_toast_failure">ব্যাকআপ টানা ব্যর্থ: %1$s</string>
 </resources>

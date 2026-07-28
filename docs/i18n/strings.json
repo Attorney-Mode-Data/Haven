@@ -5475,7 +5475,158 @@
      "en": "Pull Backup Now",
      "comment": "App shortcuts",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "سحب النسخة الاحتياطية الآن",
+      "bn": "এখনই ব্যাকআপ টানুন",
+      "de": "Backup jetzt abrufen",
+      "es": "Descargar copia ahora",
+      "fr": "Récupérer la sauvegarde",
+      "hi": "अभी बैकअप खींचें",
+      "ja": "今すぐバックアップを取得",
+      "ko": "지금 백업 가져오기",
+      "pt": "Obter backup agora",
+      "ru": "Загрузить резервную копию",
+      "zh": "立即拉取备份"
+     }
+    },
+    {
+     "name": "backup_sync_channel_name",
+     "en": "Backup sync",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [],
+     "t": {
+      "ar": "مزامنة النسخ الاحتياطي",
+      "bn": "ব্যাকআপ সিঙ্ক",
+      "de": "Backup-Synchronisierung",
+      "es": "Sincronización de copias",
+      "fr": "Synchronisation des sauvegardes",
+      "hi": "बैकअप सिंक",
+      "ja": "バックアップ同期",
+      "ko": "백업 동기화",
+      "pt": "Sincronização de backup",
+      "ru": "Синхронизация резервных копий",
+      "zh": "备份同步"
+     }
+    },
+    {
+     "name": "backup_pull_restored_count",
+     "en": "Items restored: %1$d",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [
+      "%1$d"
+     ],
+     "t": {
+      "ar": "العناصر المستعادة: %1$d",
+      "bn": "পুনরুদ্ধার করা আইটেম: %1$d",
+      "de": "Wiederhergestellte Elemente: %1$d",
+      "es": "Elementos restaurados: %1$d",
+      "fr": "Éléments restaurés : %1$d",
+      "hi": "पुनर्स्थापित आइटम: %1$d",
+      "ja": "復元した項目: %1$d",
+      "ko": "복원된 항목: %1$d",
+      "pt": "Itens restaurados: %1$d",
+      "ru": "Восстановлено элементов: %1$d",
+      "zh": "已恢复项目：%1$d"
+     }
+    },
+    {
+     "name": "backup_pull_errors_suffix",
+     "en": " (errors: %1$d)",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [
+      "%1$d"
+     ],
+     "t": {
+      "ar": " (أخطاء: %1$d)",
+      "bn": " (ত্রুটি: %1$d)",
+      "de": " (Fehler: %1$d)",
+      "es": " (errores: %1$d)",
+      "fr": " (erreurs : %1$d)",
+      "hi": " (त्रुटियाँ: %1$d)",
+      "ja": " (エラー: %1$d)",
+      "ko": " (오류: %1$d)",
+      "pt": " (erros: %1$d)",
+      "ru": " (ошибок: %1$d)",
+      "zh": "（错误：%1$d）"
+     }
+    },
+    {
+     "name": "backup_pull_notify_success_title",
+     "en": "Backup restored",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [],
+     "t": {
+      "ar": "تمت استعادة النسخة الاحتياطية",
+      "bn": "ব্যাকআপ পুনরুদ্ধার হয়েছে",
+      "de": "Backup wiederhergestellt",
+      "es": "Copia restaurada",
+      "fr": "Sauvegarde restaurée",
+      "hi": "बैकअप पुनर्स्थापित",
+      "ja": "バックアップを復元しました",
+      "ko": "백업이 복원됨",
+      "pt": "Backup restaurado",
+      "ru": "Резервная копия восстановлена",
+      "zh": "备份已恢复"
+     }
+    },
+    {
+     "name": "backup_pull_notify_failure_title",
+     "en": "Backup restore failed",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [],
+     "t": {
+      "ar": "فشلت استعادة النسخة الاحتياطية",
+      "bn": "ব্যাকআপ পুনরুদ্ধার ব্যর্থ",
+      "de": "Backup-Wiederherstellung fehlgeschlagen",
+      "es": "Error al restaurar la copia",
+      "fr": "Échec de la restauration",
+      "hi": "बैकअप पुनर्स्थापना विफल",
+      "ja": "バックアップの復元に失敗しました",
+      "ko": "백업 복원 실패",
+      "pt": "Falha ao restaurar backup",
+      "ru": "Не удалось восстановить резервную копию",
+      "zh": "备份恢复失败"
+     }
+    },
+    {
+     "name": "backup_pull_toast_success",
+     "en": "Backup restored",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [],
+     "t": {
+      "ar": "تمت استعادة النسخة الاحتياطية",
+      "bn": "ব্যাকআপ পুনরুদ্ধার হয়েছে",
+      "de": "Backup wiederhergestellt",
+      "es": "Copia restaurada",
+      "fr": "Sauvegarde restaurée",
+      "hi": "बैकअप पुनर्स्थापित",
+      "ja": "バックアップを復元しました",
+      "ko": "백업이 복원됨",
+      "pt": "Backup restaurado",
+      "ru": "Резервная копия восстановлена",
+      "zh": "备份已恢复"
+     }
+    },
+    {
+     "name": "backup_pull_toast_failure",
+     "en": "Backup pull failed: %1$s",
+     "comment": "Backup pull worker: notification, Toast and channel text (#458). Counts are phrased as \"label: N\" rather than \"N items\" so no language needs plurals.",
+     "args": [
+      "%1$s"
+     ],
+     "t": {
+      "ar": "فشل سحب النسخة الاحتياطية: %1$s",
+      "bn": "ব্যাকআপ টানা ব্যর্থ: %1$s",
+      "de": "Backup-Abruf fehlgeschlagen: %1$s",
+      "es": "Error al descargar la copia: %1$s",
+      "fr": "Échec de la récupération : %1$s",
+      "hi": "बैकअप खींचना विफल: %1$s",
+      "ja": "バックアップの取得に失敗しました: %1$s",
+      "ko": "백업 가져오기 실패: %1$s",
+      "pt": "Falha ao obter backup: %1$s",
+      "ru": "Не удалось загрузить резервную копию: %1$s",
+      "zh": "拉取备份失败：%1$s"
+     }
     }
    ]
   },
@@ -25849,17 +26000,17 @@
      "comment": "Backup section",
      "args": [],
      "t": {
-      "ar": "يعيد دفع النسخة الاحتياطية المشفّرة بعد دقائق من تغيير الإعدادات، مع دفعة تدارُك يومية. يتطلب حفظ كلمة مرور النسخ الاحتياطي (مشفّرة) على هذا الجهاز ليعمل الدفع في الخلفية. يبقى السحب يدويًا دائمًا.",
-      "bn": "সেটিংস বদলানোর কয়েক মিনিট পরে এনক্রিপ্ট করা ব্যাকআপ আবার পুশ করে, সাথে প্রতিদিন একবার ক্যাচ-আপ পুশ। ব্যাকগ্রাউন্ডে পুশ চালাতে আপনার ব্যাকআপ পাসওয়ার্ড (এনক্রিপ্ট করে) এই ডিভাইসে রাখা দরকার। পুল সবসময় ম্যানুয়াল থাকে।",
-      "de": "Pusht die verschlüsselte Sicherung einige Minuten nach Einstellungsänderungen erneut, dazu täglich ein Auffang-Push. Erfordert, dass dein Backup-Passwort (verschlüsselt) auf diesem Gerät gespeichert wird, damit Pushes im Hintergrund laufen können. Pull bleibt immer manuell.",
-      "es": "Reenvía el respaldo cifrado unos minutos después de cambiar la configuración, más un envío diario de recuperación. Requiere guardar tu contraseña del respaldo (cifrada) en este dispositivo para que los envíos se ejecuten en segundo plano. Traer siempre es manual.",
-      "fr": "Renvoie la sauvegarde chiffrée quelques minutes après un changement de réglages, plus un rattrapage quotidien. Nécessite de conserver votre mot de passe de sauvegarde (chiffré) sur cet appareil pour que les envois s’exécutent en arrière-plan. La récupération reste toujours manuelle.",
-      "hi": "सेटिंग बदलने के कुछ मिनट बाद एन्क्रिप्टेड बैकअप फिर से पुश करता है, साथ ही रोज़ एक कैच-अप पुश। बैकग्राउंड में पुश चलाने के लिए आपका बैकअप पासवर्ड (एन्क्रिप्ट करके) इस डिवाइस पर रखना ज़रूरी है। पुल हमेशा मैनुअल रहता है।",
-      "ja": "設定変更の数分後に暗号化バックアップを自動で再プッシュし、さらに毎日1回まとめてプッシュします。バックグラウンドでプッシュを実行するため、バックアップのパスワードを（暗号化して）この端末に保存する必要があります。プルは常に手動です。",
-      "ko": "설정이 변경되면 몇 분 후 암호화된 백업을 다시 푸시하고, 매일 한 번 보충 푸시를 실행합니다. 백그라운드에서 푸시하려면 백업 비밀번호를 (암호화하여) 이 기기에 저장해야 합니다. 풀은 항상 수동입니다.",
-      "pt": "Reenvia o backup criptografado alguns minutos após mudanças nas configurações, além de um envio diário de recuperação. Exige guardar sua senha do backup (criptografada) neste dispositivo para que os envios rodem em segundo plano. Obter permanece sempre manual.",
-      "ru": "Повторно отправляет зашифрованную резервную копию через пару минут после изменения настроек, плюс ежедневная контрольная отправка. Для этого пароль резервной копии хранится (в зашифрованном виде) на этом устройстве, чтобы отправка работала в фоне. Загрузка всегда выполняется вручную.",
-      "zh": "设置更改约几分钟后自动重新推送加密备份，并每天补推一次。需要在本设备上（加密）保存备份密码，以便在后台执行推送。拉取始终为手动操作。"
+      "ar": "يعيد رفع النسخة الاحتياطية المشفّرة بعد دقيقتين من تغيير الإعدادات، مع تحديث يومي. يتطلب تخزين عبارة المرور (مشفّرة) على هذا الجهاز لتشغيل الرفع في الخلفية. السحب التلقائي خيار منفصل أدناه.",
+      "bn": "সেটিংস পরিবর্তনের কয়েক মিনিট পরে এনক্রিপ্টেড ব্যাকআপ আবার পুশ করে, সঙ্গে দৈনিক ক্যাচ-আপ। ব্যাকগ্রাউন্ডে পুশ চালাতে আপনার পাসফ্রেজ (এনক্রিপ্ট করা) এই ডিভাইসে রাখতে হয়। স্বয়ংক্রিয় পুল নিচে আলাদা একটি বিকল্প।",
+      "de": "Überträgt das verschlüsselte Backup einige Minuten nach einer Einstellungsänderung erneut, plus täglicher Nachlauf. Erfordert, dass deine Backup-Passphrase (verschlüsselt) auf diesem Gerät gespeichert wird, damit Übertragungen im Hintergrund laufen. Automatisches Abrufen ist eine separate Option unten.",
+      "es": "Vuelve a enviar la copia cifrada unos minutos después de cambiar los ajustes, más una puesta al día diaria. Requiere guardar tu contraseña de copia (cifrada) en este dispositivo para que los envíos se ejecuten en segundo plano. La descarga automática es una opción aparte, más abajo.",
+      "fr": "Renvoie la sauvegarde chiffrée quelques minutes après un changement de réglages, plus un rattrapage quotidien. Nécessite de conserver votre phrase secrète (chiffrée) sur cet appareil pour que les envois s\\'exécutent en arrière-plan. La récupération automatique est une option distincte ci-dessous.",
+      "hi": "सेटिंग्स बदलने के कुछ मिनट बाद एन्क्रिप्टेड बैकअप दोबारा भेजता है, साथ में दैनिक कैच-अप। पृष्ठभूमि में भेजने के लिए आपका पासफ़्रेज़ (एन्क्रिप्टेड) इस डिवाइस पर रखना ज़रूरी है। स्वचालित पुल नीचे एक अलग विकल्प है।",
+      "ja": "設定変更の数分後に暗号化バックアップを再送信し、毎日の追従も行います。バックグラウンドで送信するため、パスフレーズを（暗号化して）この端末に保存する必要があります。自動取得は下の別のオプションです。",
+      "ko": "설정 변경 몇 분 후 암호화된 백업을 다시 푸시하고 매일 보완합니다. 백그라운드에서 푸시하려면 백업 암호를 (암호화하여) 이 기기에 저장해야 합니다. 자동 가져오기는 아래의 별도 옵션입니다.",
+      "pt": "Reenvia o backup criptografado alguns minutos após alterar as definições, mais uma atualização diária. Requer guardar a sua palavra-passe (criptografada) neste dispositivo para que os envios corram em segundo plano. A obtenção automática é uma opção separada abaixo.",
+      "ru": "Повторно отправляет зашифрованную резервную копию через пару минут после изменения настроек, плюс ежедневная досылка. Требует хранения парольной фразы (в зашифрованном виде) на этом устройстве для фоновой отправки. Автоматическая загрузка — отдельная опция ниже.",
+      "zh": "设置更改几分钟后重新推送加密备份，并每日补推。需要将你的备份口令（加密后）保存在本设备上，以便在后台推送。自动拉取是下方的独立选项。"
      }
     },
     {
@@ -25905,70 +26056,190 @@
      "en": "Pull automatically",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "السحب تلقائيًا",
+      "bn": "স্বয়ংক্রিয়ভাবে টানুন",
+      "de": "Automatisch abrufen",
+      "es": "Descargar automáticamente",
+      "fr": "Récupérer automatiquement",
+      "hi": "स्वचालित रूप से खींचें",
+      "ja": "自動で取得",
+      "ko": "자동으로 가져오기",
+      "pt": "Obter automaticamente",
+      "ru": "Загружать автоматически",
+      "zh": "自动拉取"
+     }
     },
     {
      "name": "settings_backup_auto_pull_hint",
      "en": "Periodically pulls the latest backup and restores it. If you also edit connections on this device, unsaved local changes can be overwritten (remote is last-write-wins).",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "يسحب أحدث نسخة احتياطية دوريًا ويستعيدها. إذا كنت تحرّر الاتصالات على هذا الجهاز أيضًا، فقد تُستبدل التغييرات المحلية غير المحفوظة (تعتمد الجهة البعيدة على آخر كتابة).",
+      "bn": "পর্যায়ক্রমে সর্বশেষ ব্যাকআপ টেনে পুনরুদ্ধার করে। আপনি যদি এই ডিভাইসেও সংযোগ সম্পাদনা করেন, তবে সংরক্ষিত না হওয়া স্থানীয় পরিবর্তন মুছে যেতে পারে (রিমোটে শেষ লেখাই প্রাধান্য পায়)।",
+      "de": "Ruft regelmäßig das neueste Backup ab und stellt es wieder her. Wenn du Verbindungen auch auf diesem Gerät bearbeitest, können ungespeicherte lokale Änderungen überschrieben werden (auf der Gegenstelle gilt der letzte Schreibvorgang).",
+      "es": "Descarga periódicamente la copia más reciente y la restaura. Si además editas conexiones en este dispositivo, los cambios locales sin guardar pueden sobrescribirse (en el remoto prevalece la última escritura).",
+      "fr": "Récupère périodiquement la dernière sauvegarde et la restaure. Si vous modifiez aussi des connexions sur cet appareil, les modifications locales non enregistrées peuvent être écrasées (le distant applique la dernière écriture).",
+      "hi": "समय-समय पर नवीनतम बैकअप खींचकर पुनर्स्थापित करता है। यदि आप इस डिवाइस पर भी कनेक्शन संपादित करते हैं, तो सहेजे न गए स्थानीय बदलाव अधिलेखित हो सकते हैं (रिमोट पर अंतिम लेखन ही मान्य होता है)।",
+      "ja": "定期的に最新のバックアップを取得して復元します。この端末でも接続を編集している場合、保存していないローカルの変更が上書きされることがあります（リモートは最後の書き込みが優先されます）。",
+      "ko": "주기적으로 최신 백업을 가져와 복원합니다. 이 기기에서도 연결을 편집한다면 저장하지 않은 로컬 변경이 덮어써질 수 있습니다(원격은 마지막 쓰기가 우선입니다).",
+      "pt": "Obtém periodicamente o backup mais recente e restaura-o. Se também editar ligações neste dispositivo, as alterações locais não guardadas podem ser substituídas (no remoto prevalece a última escrita).",
+      "ru": "Периодически загружает последнюю резервную копию и восстанавливает её. Если вы также редактируете подключения на этом устройстве, несохранённые локальные изменения могут быть перезаписаны (на удалённой стороне побеждает последняя запись).",
+      "zh": "定期拉取最新备份并恢复。如果你同时在本设备上编辑连接，未保存的本地更改可能被覆盖（远端以最后写入为准）。"
+     }
     },
     {
      "name": "settings_backup_auto_pull_dialog_title",
      "en": "Enable automatic pull",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تفعيل السحب التلقائي",
+      "bn": "স্বয়ংক্রিয় পুল সক্রিয় করুন",
+      "de": "Automatisches Abrufen aktivieren",
+      "es": "Activar descarga automática",
+      "fr": "Activer la récupération automatique",
+      "hi": "स्वचालित पुल सक्षम करें",
+      "ja": "自動取得を有効にする",
+      "ko": "자동 가져오기 사용",
+      "pt": "Ativar obtenção automática",
+      "ru": "Включить автозагрузку",
+      "zh": "启用自动拉取"
+     }
     },
     {
      "name": "settings_backup_auto_pull_dialog_description",
      "en": "Enter the backup passphrase. It is kept encrypted on this device to pull backups in the background — turning auto-pull off deletes it.",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "أدخل عبارة مرور النسخة الاحتياطية. تُحفظ مشفّرة على هذا الجهاز لسحب النسخ في الخلفية — وإيقاف السحب التلقائي يحذفها.",
+      "bn": "ব্যাকআপ পাসফ্রেজ লিখুন। ব্যাকগ্রাউন্ডে ব্যাকআপ টানতে এটি এই ডিভাইসে এনক্রিপ্ট করে রাখা হয় — স্বয়ংক্রিয় পুল বন্ধ করলে এটি মুছে যায়।",
+      "de": "Gib die Backup-Passphrase ein. Sie wird verschlüsselt auf diesem Gerät gespeichert, um Backups im Hintergrund abzurufen — beim Deaktivieren des automatischen Abrufs wird sie gelöscht.",
+      "es": "Introduce la contraseña de la copia. Se guarda cifrada en este dispositivo para descargar copias en segundo plano; al desactivar la descarga automática se elimina.",
+      "fr": "Saisissez la phrase secrète de la sauvegarde. Elle est conservée chiffrée sur cet appareil pour récupérer les sauvegardes en arrière-plan — désactiver la récupération automatique la supprime.",
+      "hi": "बैकअप पासफ़्रेज़ दर्ज करें। पृष्ठभूमि में बैकअप खींचने के लिए इसे इस डिवाइस पर एन्क्रिप्टेड रखा जाता है — स्वचालित पुल बंद करने पर यह हट जाता है।",
+      "ja": "バックアップのパスフレーズを入力してください。バックグラウンドで取得するためこの端末に暗号化して保存されます。自動取得をオフにすると削除されます。",
+      "ko": "백업 암호를 입력하세요. 백그라운드에서 백업을 가져오기 위해 이 기기에 암호화되어 저장되며, 자동 가져오기를 끄면 삭제됩니다.",
+      "pt": "Introduza a palavra-passe do backup. É guardada criptografada neste dispositivo para obter backups em segundo plano — desativar a obtenção automática elimina-a.",
+      "ru": "Введите парольную фразу резервной копии. Она хранится в зашифрованном виде на этом устройстве для фоновой загрузки — при отключении автозагрузки она удаляется.",
+      "zh": "输入备份口令。它会加密保存在本设备上，用于在后台拉取备份——关闭自动拉取会将其删除。"
+     }
     },
     {
      "name": "settings_backup_auto_pull_interval_label",
      "en": "Pull interval",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "فترة السحب",
+      "bn": "পুল ব্যবধান",
+      "de": "Abrufintervall",
+      "es": "Intervalo de descarga",
+      "fr": "Intervalle de récupération",
+      "hi": "पुल अंतराल",
+      "ja": "取得間隔",
+      "ko": "가져오기 주기",
+      "pt": "Intervalo de obtenção",
+      "ru": "Интервал загрузки",
+      "zh": "拉取间隔"
+     }
     },
     {
      "name": "settings_backup_auto_pull_interval_15m",
      "en": "15 minutes",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "15 دقيقة",
+      "bn": "১৫ মিনিট",
+      "de": "15 Minuten",
+      "es": "15 minutos",
+      "fr": "15 minutes",
+      "hi": "15 मिनट",
+      "ja": "15分",
+      "ko": "15분",
+      "pt": "15 minutos",
+      "ru": "15 минут",
+      "zh": "15 分钟"
+     }
     },
     {
      "name": "settings_backup_auto_pull_interval_1h",
      "en": "1 hour",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "ساعة واحدة",
+      "bn": "১ ঘণ্টা",
+      "de": "1 Stunde",
+      "es": "1 hora",
+      "fr": "1 heure",
+      "hi": "1 घंटा",
+      "ja": "1時間",
+      "ko": "1시간",
+      "pt": "1 hora",
+      "ru": "1 час",
+      "zh": "1 小时"
+     }
     },
     {
      "name": "settings_backup_auto_pull_interval_6h",
      "en": "6 hours",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "6 ساعات",
+      "bn": "৬ ঘণ্টা",
+      "de": "6 Stunden",
+      "es": "6 horas",
+      "fr": "6 heures",
+      "hi": "6 घंटे",
+      "ja": "6時間",
+      "ko": "6시간",
+      "pt": "6 horas",
+      "ru": "6 часов",
+      "zh": "6 小时"
+     }
     },
     {
      "name": "settings_backup_auto_pull_interval_24h",
      "en": "24 hours",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "24 ساعة",
+      "bn": "২৪ ঘণ্টা",
+      "de": "24 Stunden",
+      "es": "24 horas",
+      "fr": "24 heures",
+      "hi": "24 घंटे",
+      "ja": "24時間",
+      "ko": "24시간",
+      "pt": "24 horas",
+      "ru": "24 часа",
+      "zh": "24 小时"
+     }
     },
     {
      "name": "settings_backup_remember_password_label",
      "en": "Remember this password",
      "comment": "Backup section",
      "args": [],
-     "t": {}
+     "t": {
+      "ar": "تذكّر كلمة المرور هذه",
+      "bn": "এই পাসওয়ার্ড মনে রাখুন",
+      "de": "Dieses Passwort merken",
+      "es": "Recordar esta contraseña",
+      "fr": "Mémoriser ce mot de passe",
+      "hi": "यह पासवर्ड याद रखें",
+      "ja": "このパスワードを保存する",
+      "ko": "이 비밀번호 기억하기",
+      "pt": "Memorizar esta palavra-passe",
+      "ru": "Запомнить этот пароль",
+      "zh": "记住此密码"
+     }
     },
     {
      "name": "settings_export_backup_title",

@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import sh.haven.app.R
 import sh.haven.core.data.backup.BackupSyncManager
 import sh.haven.core.data.db.entities.ConnectionLog
 import sh.haven.core.data.preferences.UserPreferencesRepository
@@ -53,13 +54,18 @@ class BackupAutoPullWorker @AssistedInject constructor(
         return try {
             val started = System.currentTimeMillis()
             val result = backupSyncManager.pull(profileId, path, passphrase)
-            val msg = "Restored ${result.count} items" +
-                if (result.errors.isNotEmpty()) " (${result.errors.size} errors)" else ""
+            val ctx = applicationContext
+            val msg = ctx.getString(R.string.backup_pull_restored_count, result.count) +
+                if (result.errors.isNotEmpty()) {
+                    ctx.getString(R.string.backup_pull_errors_suffix, result.errors.size)
+                } else {
+                    ""
+                }
 
             if (isManual) {
-                showNotification(applicationContext, "Backup Sync Success", msg)
+                showNotification(ctx, ctx.getString(R.string.backup_pull_notify_success_title), msg)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(applicationContext, "Backup restored successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, R.string.backup_pull_toast_success, Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -73,9 +79,14 @@ class BackupAutoPullWorker @AssistedInject constructor(
             Log.w(TAG, "auto-pull failed (attempt $runAttemptCount)", e)
             val errorMsg = e.message ?: e.javaClass.simpleName
             if (isManual) {
-                showNotification(applicationContext, "Backup Sync Failed", errorMsg)
+                val ctx = applicationContext
+                showNotification(ctx, ctx.getString(R.string.backup_pull_notify_failure_title), errorMsg)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(applicationContext, "Backup pull failed: $errorMsg", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        ctx,
+                        ctx.getString(R.string.backup_pull_toast_failure, errorMsg),
+                        Toast.LENGTH_LONG,
+                    ).show()
                 }
             }
             if (runAttemptCount >= MAX_ATTEMPTS || isManual) {
@@ -104,7 +115,7 @@ class BackupAutoPullWorker @AssistedInject constructor(
                 if (nm.getNotificationChannel(BACKUP_CHANNEL_ID) == null) {
                     val channel = android.app.NotificationChannel(
                         BACKUP_CHANNEL_ID,
-                        "Backup Sync",
+                        context.getString(R.string.backup_sync_channel_name),
                         android.app.NotificationManager.IMPORTANCE_DEFAULT
                     )
                     nm.createNotificationChannel(channel)

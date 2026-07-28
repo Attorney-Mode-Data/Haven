@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">Öffentlich (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">Benutzerdefiniert</string>
     <string name="app_desktop_dns_description">Welche Namensserver der lokale Linux-Gast verwendet. Wenn Paketinstallationen in diesem Netzwerk hängen, blockiert es womöglich öffentliches DNS \u2014 nutze den Resolver des Netzwerks.</string>
+    <string name="shortcut_pull_backup_label">Backup jetzt abrufen</string>
+    <string name="backup_sync_channel_name">Backup-Synchronisierung</string>
+    <string name="backup_pull_restored_count">Wiederhergestellte Elemente: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (Fehler: %1$d)</string>
+    <string name="backup_pull_notify_success_title">Backup wiederhergestellt</string>
+    <string name="backup_pull_notify_failure_title">Backup-Wiederherstellung fehlgeschlagen</string>
+    <string name="backup_pull_toast_success">Backup wiederhergestellt</string>
+    <string name="backup_pull_toast_failure">Backup-Abruf fehlgeschlagen: %1$s</string>
 </resources>

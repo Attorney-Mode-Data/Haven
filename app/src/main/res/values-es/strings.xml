@@ -304,4 +304,12 @@
     <string name="app_desktop_dns_mode_public">Públicos (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">Personalizados</string>
     <string name="app_desktop_dns_description">Qué servidores de nombres usa el invitado Linux local. Si la instalación de paquetes se bloquea en esta red, puede que bloquee el DNS público \u2014 usa el resolutor de la propia red.</string>
+    <string name="shortcut_pull_backup_label">Descargar copia ahora</string>
+    <string name="backup_sync_channel_name">Sincronización de copias</string>
+    <string name="backup_pull_restored_count">Elementos restaurados: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (errores: %1$d)</string>
+    <string name="backup_pull_notify_success_title">Copia restaurada</string>
+    <string name="backup_pull_notify_failure_title">Error al restaurar la copia</string>
+    <string name="backup_pull_toast_success">Copia restaurada</string>
+    <string name="backup_pull_toast_failure">Error al descargar la copia: %1$s</string>
 </resources>

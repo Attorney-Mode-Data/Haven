@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">Publics (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">Personnalisés</string>
     <string name="app_desktop_dns_description">Quels serveurs de noms utilise l\'invité Linux local. Si l\'installation de paquets se bloque sur ce réseau, celui-ci bloque peut-être le DNS public \u2014 utilisez le résolveur du réseau.</string>
+    <string name="shortcut_pull_backup_label">Récupérer la sauvegarde</string>
+    <string name="backup_sync_channel_name">Synchronisation des sauvegardes</string>
+    <string name="backup_pull_restored_count">Éléments restaurés : %1$d</string>
+    <string name="backup_pull_errors_suffix"> (erreurs : %1$d)</string>
+    <string name="backup_pull_notify_success_title">Sauvegarde restaurée</string>
+    <string name="backup_pull_notify_failure_title">Échec de la restauration</string>
+    <string name="backup_pull_toast_success">Sauvegarde restaurée</string>
+    <string name="backup_pull_toast_failure">Échec de la récupération : %1$s</string>
 </resources>

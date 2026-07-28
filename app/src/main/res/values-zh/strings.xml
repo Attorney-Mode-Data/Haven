@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">公共 (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">自定义</string>
     <string name="app_desktop_dns_description">本地 Linux 客户机使用哪些域名服务器。如果在此网络中安装软件包时卡住，可能是公共 DNS 被屏蔽 \u2014 请改用该网络自己的解析器。</string>
+    <string name="shortcut_pull_backup_label">立即拉取备份</string>
+    <string name="backup_sync_channel_name">备份同步</string>
+    <string name="backup_pull_restored_count">已恢复项目：%1$d</string>
+    <string name="backup_pull_errors_suffix">（错误：%1$d）</string>
+    <string name="backup_pull_notify_success_title">备份已恢复</string>
+    <string name="backup_pull_notify_failure_title">备份恢复失败</string>
+    <string name="backup_pull_toast_success">备份已恢复</string>
+    <string name="backup_pull_toast_failure">拉取备份失败：%1$s</string>
 </resources>

@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">Enviar</string>
     <string name="settings_backup_sync_pull_button">Traer</string>
     <string name="settings_backup_auto_sync_label">Enviar automáticamente</string>
-    <string name="settings_backup_auto_sync_hint">Reenvía el respaldo cifrado unos minutos después de cambiar la configuración, más un envío diario de recuperación. Requiere guardar tu contraseña del respaldo (cifrada) en este dispositivo para que los envíos se ejecuten en segundo plano. Traer siempre es manual.</string>
+    <string name="settings_backup_auto_sync_hint">Vuelve a enviar la copia cifrada unos minutos después de cambiar los ajustes, más una puesta al día diaria. Requiere guardar tu contraseña de copia (cifrada) en este dispositivo para que los envíos se ejecuten en segundo plano. La descarga automática es una opción aparte, más abajo.</string>
     <string name="settings_backup_auto_sync_dialog_title">Activar el envío automático</string>
     <string name="settings_backup_auto_sync_dialog_description">Define la contraseña que cifrará cada respaldo automático. Se guarda cifrada en este dispositivo — al desactivar el envío automático se elimina.</string>
     <string name="settings_export_backup_title">Exportar respaldo</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">Rellena los cuadros negros que aparecen en algunos escritorios RDP de Windows decodificando los mosaicos de refinamiento RemoteFX-Progressive. Experimental (#418): si la imagen se ve peor, desactiva esto</string>
     <string name="settings_rdp_avc_title">RDP: decodificación H.264/AVC420</string>
     <string name="settings_rdp_avc_subtitle">Activado de forma predeterminada. Decodifica gráficos H.264 para que los servidores que solo hablan H.264 —en especial KRDP (el servidor RDP de KDE)— se muestren en lugar de una pantalla negra; decodificación por hardware en el dispositivo mediante MediaCodec. Desactívalo si un escritorio de Windows o xrdp se muestra mal (#425)</string>
+    <string name="settings_backup_auto_pull_label">Descargar automáticamente</string>
+    <string name="settings_backup_auto_pull_hint">Descarga periódicamente la copia más reciente y la restaura. Si además editas conexiones en este dispositivo, los cambios locales sin guardar pueden sobrescribirse (en el remoto prevalece la última escritura).</string>
+    <string name="settings_backup_auto_pull_dialog_title">Activar descarga automática</string>
+    <string name="settings_backup_auto_pull_dialog_description">Introduce la contraseña de la copia. Se guarda cifrada en este dispositivo para descargar copias en segundo plano; al desactivar la descarga automática se elimina.</string>
+    <string name="settings_backup_auto_pull_interval_label">Intervalo de descarga</string>
+    <string name="settings_backup_auto_pull_interval_15m">15 minutos</string>
+    <string name="settings_backup_auto_pull_interval_1h">1 hora</string>
+    <string name="settings_backup_auto_pull_interval_6h">6 horas</string>
+    <string name="settings_backup_auto_pull_interval_24h">24 horas</string>
+    <string name="settings_backup_remember_password_label">Recordar esta contraseña</string>
 </resources>

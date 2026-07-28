@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">Envoyer</string>
     <string name="settings_backup_sync_pull_button">Récupérer</string>
     <string name="settings_backup_auto_sync_label">Envoi automatique</string>
-    <string name="settings_backup_auto_sync_hint">Renvoie la sauvegarde chiffrée quelques minutes après un changement de réglages, plus un rattrapage quotidien. Nécessite de conserver votre mot de passe de sauvegarde (chiffré) sur cet appareil pour que les envois s’exécutent en arrière-plan. La récupération reste toujours manuelle.</string>
+    <string name="settings_backup_auto_sync_hint">Renvoie la sauvegarde chiffrée quelques minutes après un changement de réglages, plus un rattrapage quotidien. Nécessite de conserver votre phrase secrète (chiffrée) sur cet appareil pour que les envois s\'exécutent en arrière-plan. La récupération automatique est une option distincte ci-dessous.</string>
     <string name="settings_backup_auto_sync_dialog_title">Activer l’envoi automatique</string>
     <string name="settings_backup_auto_sync_dialog_description">Définissez le mot de passe qui chiffrera chaque sauvegarde automatique. Il est conservé chiffré sur cet appareil — désactiver l’envoi automatique le supprime.</string>
     <string name="settings_export_backup_title">Exporter la sauvegarde</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">Comble les carrés noirs visibles sur certains bureaux RDP Windows en décodant les tuiles d\'affinage RemoteFX-Progressive. Expérimental (#418) — si l\'image se dégrade, désactivez cette option</string>
     <string name="settings_rdp_avc_title">RDP : décodage H.264/AVC420</string>
     <string name="settings_rdp_avc_subtitle">Activé par défaut. Décode les graphismes H.264 afin que les serveurs ne parlant que H.264 — notamment KRDP (le serveur RDP de KDE) — s\'affichent au lieu d\'un écran noir ; décodage matériel sur l\'appareil via MediaCodec. Désactivez si un bureau Windows ou xrdp s\'affiche mal (#425)</string>
+    <string name="settings_backup_auto_pull_label">Récupérer automatiquement</string>
+    <string name="settings_backup_auto_pull_hint">Récupère périodiquement la dernière sauvegarde et la restaure. Si vous modifiez aussi des connexions sur cet appareil, les modifications locales non enregistrées peuvent être écrasées (le distant applique la dernière écriture).</string>
+    <string name="settings_backup_auto_pull_dialog_title">Activer la récupération automatique</string>
+    <string name="settings_backup_auto_pull_dialog_description">Saisissez la phrase secrète de la sauvegarde. Elle est conservée chiffrée sur cet appareil pour récupérer les sauvegardes en arrière-plan — désactiver la récupération automatique la supprime.</string>
+    <string name="settings_backup_auto_pull_interval_label">Intervalle de récupération</string>
+    <string name="settings_backup_auto_pull_interval_15m">15 minutes</string>
+    <string name="settings_backup_auto_pull_interval_1h">1 heure</string>
+    <string name="settings_backup_auto_pull_interval_6h">6 heures</string>
+    <string name="settings_backup_auto_pull_interval_24h">24 heures</string>
+    <string name="settings_backup_remember_password_label">Mémoriser ce mot de passe</string>
 </resources>

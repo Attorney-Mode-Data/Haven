@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">Push</string>
     <string name="settings_backup_sync_pull_button">Pull</string>
     <string name="settings_backup_auto_sync_label">Automatisch pushen</string>
-    <string name="settings_backup_auto_sync_hint">Pusht die verschlüsselte Sicherung einige Minuten nach Einstellungsänderungen erneut, dazu täglich ein Auffang-Push. Erfordert, dass dein Backup-Passwort (verschlüsselt) auf diesem Gerät gespeichert wird, damit Pushes im Hintergrund laufen können. Pull bleibt immer manuell.</string>
+    <string name="settings_backup_auto_sync_hint">Überträgt das verschlüsselte Backup einige Minuten nach einer Einstellungsänderung erneut, plus täglicher Nachlauf. Erfordert, dass deine Backup-Passphrase (verschlüsselt) auf diesem Gerät gespeichert wird, damit Übertragungen im Hintergrund laufen. Automatisches Abrufen ist eine separate Option unten.</string>
     <string name="settings_backup_auto_sync_dialog_title">Automatischen Push aktivieren</string>
     <string name="settings_backup_auto_sync_dialog_description">Lege das Passwort fest, mit dem jede automatische Sicherung verschlüsselt wird. Es wird verschlüsselt auf diesem Gerät gespeichert — beim Deaktivieren des Auto-Push wird es gelöscht.</string>
     <string name="settings_export_backup_title">Sicherung exportieren</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">Füllt die schwarzen Rechtecke, die auf manchen Windows-RDP-Desktops auftreten, durch Dekodieren von RemoteFX-Progressive-Verfeinerungskacheln. Experimentell (#418) — wenn das Bild schlechter aussieht, deaktivieren Sie dies</string>
     <string name="settings_rdp_avc_title">RDP: H.264/AVC420-Dekodierung</string>
     <string name="settings_rdp_avc_subtitle">Standardmäßig aktiviert. Dekodiert H.264-Grafik, damit Server, die nur H.264 sprechen — insbesondere KRDP (KDEs RDP-Server) — statt eines schwarzen Bildschirms korrekt dargestellt werden; hardwaredekodiert auf dem Gerät über MediaCodec. Deaktivieren, wenn ein Windows- oder xrdp-Desktop falsch dargestellt wird (#425)</string>
+    <string name="settings_backup_auto_pull_label">Automatisch abrufen</string>
+    <string name="settings_backup_auto_pull_hint">Ruft regelmäßig das neueste Backup ab und stellt es wieder her. Wenn du Verbindungen auch auf diesem Gerät bearbeitest, können ungespeicherte lokale Änderungen überschrieben werden (auf der Gegenstelle gilt der letzte Schreibvorgang).</string>
+    <string name="settings_backup_auto_pull_dialog_title">Automatisches Abrufen aktivieren</string>
+    <string name="settings_backup_auto_pull_dialog_description">Gib die Backup-Passphrase ein. Sie wird verschlüsselt auf diesem Gerät gespeichert, um Backups im Hintergrund abzurufen — beim Deaktivieren des automatischen Abrufs wird sie gelöscht.</string>
+    <string name="settings_backup_auto_pull_interval_label">Abrufintervall</string>
+    <string name="settings_backup_auto_pull_interval_15m">15 Minuten</string>
+    <string name="settings_backup_auto_pull_interval_1h">1 Stunde</string>
+    <string name="settings_backup_auto_pull_interval_6h">6 Stunden</string>
+    <string name="settings_backup_auto_pull_interval_24h">24 Stunden</string>
+    <string name="settings_backup_remember_password_label">Dieses Passwort merken</string>
 </resources>

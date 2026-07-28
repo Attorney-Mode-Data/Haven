@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">Отправить</string>
     <string name="settings_backup_sync_pull_button">Загрузить</string>
     <string name="settings_backup_auto_sync_label">Отправлять автоматически</string>
-    <string name="settings_backup_auto_sync_hint">Повторно отправляет зашифрованную резервную копию через пару минут после изменения настроек, плюс ежедневная контрольная отправка. Для этого пароль резервной копии хранится (в зашифрованном виде) на этом устройстве, чтобы отправка работала в фоне. Загрузка всегда выполняется вручную.</string>
+    <string name="settings_backup_auto_sync_hint">Повторно отправляет зашифрованную резервную копию через пару минут после изменения настроек, плюс ежедневная досылка. Требует хранения парольной фразы (в зашифрованном виде) на этом устройстве для фоновой отправки. Автоматическая загрузка — отдельная опция ниже.</string>
     <string name="settings_backup_auto_sync_dialog_title">Включить автоматическую отправку</string>
     <string name="settings_backup_auto_sync_dialog_description">Задайте пароль, которым будет шифроваться каждая автоматическая резервная копия. Он хранится в зашифрованном виде на этом устройстве — при отключении автоотправки он удаляется.</string>
     <string name="settings_export_backup_title">Экспорт резервной копии</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">Заполняет чёрные квадраты, появляющиеся на некоторых рабочих столах Windows RDP, декодируя уточняющие плитки RemoteFX-Progressive. Экспериментально (#418) — если изображение стало хуже, отключите это</string>
     <string name="settings_rdp_avc_title">RDP: декодирование H.264/AVC420</string>
     <string name="settings_rdp_avc_subtitle">Включено по умолчанию. Декодирует графику H.264, чтобы серверы, поддерживающие только H.264 — в частности KRDP (RDP-сервер KDE) — отображались вместо чёрного экрана; аппаратное декодирование на устройстве через MediaCodec. Отключите, если рабочий стол Windows или xrdp отображается неправильно (#425)</string>
+    <string name="settings_backup_auto_pull_label">Загружать автоматически</string>
+    <string name="settings_backup_auto_pull_hint">Периодически загружает последнюю резервную копию и восстанавливает её. Если вы также редактируете подключения на этом устройстве, несохранённые локальные изменения могут быть перезаписаны (на удалённой стороне побеждает последняя запись).</string>
+    <string name="settings_backup_auto_pull_dialog_title">Включить автозагрузку</string>
+    <string name="settings_backup_auto_pull_dialog_description">Введите парольную фразу резервной копии. Она хранится в зашифрованном виде на этом устройстве для фоновой загрузки — при отключении автозагрузки она удаляется.</string>
+    <string name="settings_backup_auto_pull_interval_label">Интервал загрузки</string>
+    <string name="settings_backup_auto_pull_interval_15m">15 минут</string>
+    <string name="settings_backup_auto_pull_interval_1h">1 час</string>
+    <string name="settings_backup_auto_pull_interval_6h">6 часов</string>
+    <string name="settings_backup_auto_pull_interval_24h">24 часа</string>
+    <string name="settings_backup_remember_password_label">Запомнить этот пароль</string>
 </resources>

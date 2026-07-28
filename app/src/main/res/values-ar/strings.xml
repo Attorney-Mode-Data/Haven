@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">عامة (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">مخصّصة</string>
     <string name="app_desktop_dns_description">خوادم الأسماء التي يستخدمها ضيف Linux المحلي. إذا تعطّل تثبيت الحزم على هذه الشبكة، فقد تكون تحجب DNS العام \u2014 استخدم محلّل الشبكة نفسها.</string>
+    <string name="shortcut_pull_backup_label">سحب النسخة الاحتياطية الآن</string>
+    <string name="backup_sync_channel_name">مزامنة النسخ الاحتياطي</string>
+    <string name="backup_pull_restored_count">العناصر المستعادة: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (أخطاء: %1$d)</string>
+    <string name="backup_pull_notify_success_title">تمت استعادة النسخة الاحتياطية</string>
+    <string name="backup_pull_notify_failure_title">فشلت استعادة النسخة الاحتياطية</string>
+    <string name="backup_pull_toast_success">تمت استعادة النسخة الاحتياطية</string>
+    <string name="backup_pull_toast_failure">فشل سحب النسخة الاحتياطية: %1$s</string>
 </resources>

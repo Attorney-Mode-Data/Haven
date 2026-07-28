@@ -112,7 +112,7 @@
     <string name="settings_backup_sync_push_button">푸시</string>
     <string name="settings_backup_sync_pull_button">풀</string>
     <string name="settings_backup_auto_sync_label">자동 푸시</string>
-    <string name="settings_backup_auto_sync_hint">설정이 변경되면 몇 분 후 암호화된 백업을 다시 푸시하고, 매일 한 번 보충 푸시를 실행합니다. 백그라운드에서 푸시하려면 백업 비밀번호를 (암호화하여) 이 기기에 저장해야 합니다. 풀은 항상 수동입니다.</string>
+    <string name="settings_backup_auto_sync_hint">설정 변경 몇 분 후 암호화된 백업을 다시 푸시하고 매일 보완합니다. 백그라운드에서 푸시하려면 백업 암호를 (암호화하여) 이 기기에 저장해야 합니다. 자동 가져오기는 아래의 별도 옵션입니다.</string>
     <string name="settings_backup_auto_sync_dialog_title">자동 푸시 사용</string>
     <string name="settings_backup_auto_sync_dialog_description">모든 자동 백업을 암호화할 비밀번호를 설정하세요. 비밀번호는 이 기기에 암호화되어 저장되며, 자동 푸시를 끄면 삭제됩니다.</string>
     <string name="settings_export_backup_title">백업 내보내기</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive 정밀화 타일을 디코딩하여 일부 Windows RDP 데스크톱에서 나타나는 검은 사각형을 채웁니다. 실험적 기능(#418) — 화면이 오히려 나빠지면 이 옵션을 끄세요</string>
     <string name="settings_rdp_avc_title">RDP: H.264/AVC420 디코딩</string>
     <string name="settings_rdp_avc_subtitle">기본적으로 켜져 있습니다. H.264 그래픽을 디코딩하여 H.264만 지원하는 서버 — 특히 KRDP(KDE의 RDP 서버) — 가 검은 화면 대신 정상적으로 표시되도록 합니다. 기기에서 MediaCodec으로 하드웨어 디코딩됩니다. Windows나 xrdp 데스크톱이 잘못 표시되면 끄세요(#425)</string>
+    <string name="settings_backup_auto_pull_label">자동으로 가져오기</string>
+    <string name="settings_backup_auto_pull_hint">주기적으로 최신 백업을 가져와 복원합니다. 이 기기에서도 연결을 편집한다면 저장하지 않은 로컬 변경이 덮어써질 수 있습니다(원격은 마지막 쓰기가 우선입니다).</string>
+    <string name="settings_backup_auto_pull_dialog_title">자동 가져오기 사용</string>
+    <string name="settings_backup_auto_pull_dialog_description">백업 암호를 입력하세요. 백그라운드에서 백업을 가져오기 위해 이 기기에 암호화되어 저장되며, 자동 가져오기를 끄면 삭제됩니다.</string>
+    <string name="settings_backup_auto_pull_interval_label">가져오기 주기</string>
+    <string name="settings_backup_auto_pull_interval_15m">15분</string>
+    <string name="settings_backup_auto_pull_interval_1h">1시간</string>
+    <string name="settings_backup_auto_pull_interval_6h">6시간</string>
+    <string name="settings_backup_auto_pull_interval_24h">24시간</string>
+    <string name="settings_backup_remember_password_label">이 비밀번호 기억하기</string>
 </resources>

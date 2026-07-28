@@ -298,4 +298,12 @@
     <string name="app_desktop_dns_mode_public">パブリック (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">カスタム</string>
     <string name="app_desktop_dns_description">ローカル Linux ゲストが使用するネームサーバー。このネットワークでパッケージのインストールが止まる場合、公開 DNS がブロックされている可能性があります \u2014 ネットワーク自身のリゾルバーを使ってください。</string>
+    <string name="shortcut_pull_backup_label">今すぐバックアップを取得</string>
+    <string name="backup_sync_channel_name">バックアップ同期</string>
+    <string name="backup_pull_restored_count">復元した項目: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (エラー: %1$d)</string>
+    <string name="backup_pull_notify_success_title">バックアップを復元しました</string>
+    <string name="backup_pull_notify_failure_title">バックアップの復元に失敗しました</string>
+    <string name="backup_pull_toast_success">バックアップを復元しました</string>
+    <string name="backup_pull_toast_failure">バックアップの取得に失敗しました: %1$s</string>
 </resources>

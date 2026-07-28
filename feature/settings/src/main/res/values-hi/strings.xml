@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">पुश</string>
     <string name="settings_backup_sync_pull_button">पुल</string>
     <string name="settings_backup_auto_sync_label">अपने आप पुश करें</string>
-    <string name="settings_backup_auto_sync_hint">सेटिंग बदलने के कुछ मिनट बाद एन्क्रिप्टेड बैकअप फिर से पुश करता है, साथ ही रोज़ एक कैच-अप पुश। बैकग्राउंड में पुश चलाने के लिए आपका बैकअप पासवर्ड (एन्क्रिप्ट करके) इस डिवाइस पर रखना ज़रूरी है। पुल हमेशा मैनुअल रहता है।</string>
+    <string name="settings_backup_auto_sync_hint">सेटिंग्स बदलने के कुछ मिनट बाद एन्क्रिप्टेड बैकअप दोबारा भेजता है, साथ में दैनिक कैच-अप। पृष्ठभूमि में भेजने के लिए आपका पासफ़्रेज़ (एन्क्रिप्टेड) इस डिवाइस पर रखना ज़रूरी है। स्वचालित पुल नीचे एक अलग विकल्प है।</string>
     <string name="settings_backup_auto_sync_dialog_title">ऑटो पुश चालू करें</string>
     <string name="settings_backup_auto_sync_dialog_description">वह पासवर्ड सेट करें जिससे हर ऑटो बैकअप एन्क्रिप्ट होगा। यह इस डिवाइस पर एन्क्रिप्ट करके रखा जाता है — ऑटो पुश बंद करने पर यह हट जाता है।</string>
     <string name="settings_export_backup_title">बैकअप निर्यात करें</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive रिफाइनमेंट टाइलों को डिकोड करके कुछ Windows RDP डेस्कटॉप पर दिखने वाले काले वर्गों को भरता है। प्रयोगात्मक (#418) — यदि तस्वीर और खराब दिखे, तो इसे बंद कर दें</string>
     <string name="settings_rdp_avc_title">RDP: H.264/AVC420 डिकोडिंग</string>
     <string name="settings_rdp_avc_subtitle">डिफ़ॉल्ट रूप से चालू। H.264 ग्राफ़िक्स को डिकोड करता है ताकि केवल H.264 बोलने वाले सर्वर — विशेष रूप से KRDP (KDE का RDP सर्वर) — काली स्क्रीन के बजाय सही ढंग से दिखें; डिवाइस पर MediaCodec के ज़रिए हार्डवेयर-डिकोड किया जाता है। यदि कोई Windows या xrdp डेस्कटॉप गलत दिखे तो बंद कर दें (#425)</string>
+    <string name="settings_backup_auto_pull_label">स्वचालित रूप से खींचें</string>
+    <string name="settings_backup_auto_pull_hint">समय-समय पर नवीनतम बैकअप खींचकर पुनर्स्थापित करता है। यदि आप इस डिवाइस पर भी कनेक्शन संपादित करते हैं, तो सहेजे न गए स्थानीय बदलाव अधिलेखित हो सकते हैं (रिमोट पर अंतिम लेखन ही मान्य होता है)।</string>
+    <string name="settings_backup_auto_pull_dialog_title">स्वचालित पुल सक्षम करें</string>
+    <string name="settings_backup_auto_pull_dialog_description">बैकअप पासफ़्रेज़ दर्ज करें। पृष्ठभूमि में बैकअप खींचने के लिए इसे इस डिवाइस पर एन्क्रिप्टेड रखा जाता है — स्वचालित पुल बंद करने पर यह हट जाता है।</string>
+    <string name="settings_backup_auto_pull_interval_label">पुल अंतराल</string>
+    <string name="settings_backup_auto_pull_interval_15m">15 मिनट</string>
+    <string name="settings_backup_auto_pull_interval_1h">1 घंटा</string>
+    <string name="settings_backup_auto_pull_interval_6h">6 घंटे</string>
+    <string name="settings_backup_auto_pull_interval_24h">24 घंटे</string>
+    <string name="settings_backup_remember_password_label">यह पासवर्ड याद रखें</string>
 </resources>

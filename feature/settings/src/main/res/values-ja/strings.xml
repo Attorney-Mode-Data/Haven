@@ -100,7 +100,7 @@
     <string name="settings_backup_sync_push_button">プッシュ</string>
     <string name="settings_backup_sync_pull_button">プル</string>
     <string name="settings_backup_auto_sync_label">自動プッシュ</string>
-    <string name="settings_backup_auto_sync_hint">設定変更の数分後に暗号化バックアップを自動で再プッシュし、さらに毎日1回まとめてプッシュします。バックグラウンドでプッシュを実行するため、バックアップのパスワードを（暗号化して）この端末に保存する必要があります。プルは常に手動です。</string>
+    <string name="settings_backup_auto_sync_hint">設定変更の数分後に暗号化バックアップを再送信し、毎日の追従も行います。バックグラウンドで送信するため、パスフレーズを（暗号化して）この端末に保存する必要があります。自動取得は下の別のオプションです。</string>
     <string name="settings_backup_auto_sync_dialog_title">自動プッシュを有効にする</string>
     <string name="settings_backup_auto_sync_dialog_description">自動バックアップごとに暗号化に使うパスワードを設定します。パスワードは暗号化してこの端末に保存され、自動プッシュをオフにすると削除されます。</string>
     <string name="settings_export_backup_title">バックアップをエクスポート</string>
@@ -447,4 +447,14 @@
     <string name="settings_rdp_progressive_upgrade_subtitle">RemoteFX-Progressive の精細化タイルをデコードして、一部の Windows RDP デスクトップで見られる黒い四角を埋めます。実験的機能（#418）——画面がかえって悪化する場合はオフにしてください</string>
     <string name="settings_rdp_avc_title">RDP：H.264/AVC420 デコード</string>
     <string name="settings_rdp_avc_subtitle">既定でオン。H.264 グラフィックスをデコードし、H.264 のみに対応するサーバー——特に KRDP（KDE の RDP サーバー）——が黒画面ではなく正しく表示されるようにします。デバイス上で MediaCodec によりハードウェアデコードされます。Windows や xrdp のデスクトップが正しく表示されない場合はオフにしてください（#425）</string>
+    <string name="settings_backup_auto_pull_label">自動で取得</string>
+    <string name="settings_backup_auto_pull_hint">定期的に最新のバックアップを取得して復元します。この端末でも接続を編集している場合、保存していないローカルの変更が上書きされることがあります（リモートは最後の書き込みが優先されます）。</string>
+    <string name="settings_backup_auto_pull_dialog_title">自動取得を有効にする</string>
+    <string name="settings_backup_auto_pull_dialog_description">バックアップのパスフレーズを入力してください。バックグラウンドで取得するためこの端末に暗号化して保存されます。自動取得をオフにすると削除されます。</string>
+    <string name="settings_backup_auto_pull_interval_label">取得間隔</string>
+    <string name="settings_backup_auto_pull_interval_15m">15分</string>
+    <string name="settings_backup_auto_pull_interval_1h">1時間</string>
+    <string name="settings_backup_auto_pull_interval_6h">6時間</string>
+    <string name="settings_backup_auto_pull_interval_24h">24時間</string>
+    <string name="settings_backup_remember_password_label">このパスワードを保存する</string>
 </resources>

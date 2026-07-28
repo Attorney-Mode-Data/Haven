@@ -308,4 +308,12 @@
     <string name="app_desktop_dns_mode_public">공용 (Google + Cloudflare)</string>
     <string name="app_desktop_dns_mode_custom">사용자 지정</string>
     <string name="app_desktop_dns_description">로컬 Linux 게스트가 사용하는 네임 서버입니다. 이 네트워크에서 패키지 설치가 멈춘다면 공용 DNS가 차단된 것일 수 있습니다 \u2014 네트워크 자체 리졸버를 사용하세요.</string>
+    <string name="shortcut_pull_backup_label">지금 백업 가져오기</string>
+    <string name="backup_sync_channel_name">백업 동기화</string>
+    <string name="backup_pull_restored_count">복원된 항목: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (오류: %1$d)</string>
+    <string name="backup_pull_notify_success_title">백업이 복원됨</string>
+    <string name="backup_pull_notify_failure_title">백업 복원 실패</string>
+    <string name="backup_pull_toast_success">백업이 복원됨</string>
+    <string name="backup_pull_toast_failure">백업 가져오기 실패: %1$s</string>
 </resources>

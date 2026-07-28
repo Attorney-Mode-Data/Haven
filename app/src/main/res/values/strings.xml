@@ -329,4 +329,13 @@
 
     <!-- App shortcuts -->
     <string name="shortcut_pull_backup_label">Pull Backup Now</string>
+    <!-- Backup pull worker: notification, Toast and channel text (#458). Counts are
+         phrased as "label: N" rather than "N items" so no language needs plurals. -->
+    <string name="backup_sync_channel_name">Backup sync</string>
+    <string name="backup_pull_restored_count">Items restored: %1$d</string>
+    <string name="backup_pull_errors_suffix"> (errors: %1$d)</string>
+    <string name="backup_pull_notify_success_title">Backup restored</string>
+    <string name="backup_pull_notify_failure_title">Backup restore failed</string>
+    <string name="backup_pull_toast_success">Backup restored</string>
+    <string name="backup_pull_toast_failure">Backup pull failed: %1$s</string>
 </resources>
