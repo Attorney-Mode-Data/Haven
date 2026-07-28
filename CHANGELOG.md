@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.84.5
+
+📦 **F-Droid: unblock the builds that have kept that version a month behind** — installing from F-Droid has been getting 5.81.7 while more than a dozen releases went out, and the reason was not the usual queue lag. F-Droid's build server fetches FFmpeg's source straight from `git.ffmpeg.org` during the build, that host stopped answering it, and the connection timed out after more than two minutes — so the whole build failed and nothing was published. Haven now fetches FFmpeg from the official GitHub mirror first and falls back to the original host, rather than depending on one machine being reachable. Both serve the identical commit for the pinned version, so nothing about what gets built changes. If every mirror is unreachable the build now stops with a clear message instead of continuing without the source.
+
+This only helps versions tagged after it, so this release is the first F-Droid can pick up. Nothing changes for anyone installing from GitHub releases or Obtainium.
+
 ## v5.84.4
 
 🔐 **SSH: a second attempt at the sshlib key-exchange failure (#451)** — the fix in v5.83.20 moved Android's key store out of the way when it was answering a lookup it can only ever refuse. The reporter's log shows it ran exactly as intended and the connection failed anyway, which ruled out its own explanation: moving a provider to the end of the list cannot help when it is the *only* one offering the algorithm, because last place is still first place. Haven now detects that case and registers its bundled cryptography provider ahead of the key store, so the lookup has a working implementation to land on. That step runs only on a device that has already proved it cannot resolve the algorithm any other way — on every other device nothing is touched, as before. Haven's own hardware-backed keys are unaffected either way, since they ask for the key store by name.

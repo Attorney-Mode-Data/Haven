@@ -466,10 +466,26 @@ build_mbedtls
 mkdir -p "$SCRIPT_DIR/src"
 FFMPEG_SRC="$SCRIPT_DIR/src/ffmpeg"
 if [ ! -d "$FFMPEG_SRC/.git" ]; then
-    echo "=== Cloning FFmpeg $FFMPEG_REF ==="
+    # git.ffmpeg.org is a single point of failure for the whole release: it
+    # timed out from the F-Droid buildserver (134s, port 443) and failed the
+    # 5.83.12 build, which is why F-Droid users sat on 5.81.7 while a dozen
+    # releases went out. Try the official GitHub mirror first and fall back.
+    # Both serve n8.0 at a4044e04 (verified), so which one answers changes
+    # nothing about what gets built.
+    FFMPEG_MIRRORS="${FFMPEG_MIRRORS:-https://github.com/FFmpeg/FFmpeg.git https://git.ffmpeg.org/ffmpeg.git}"
     rm -rf "$FFMPEG_SRC"
-    git clone --depth 1 --branch "$FFMPEG_REF" \
-        https://git.ffmpeg.org/ffmpeg.git "$FFMPEG_SRC"
+    for repo in $FFMPEG_MIRRORS; do
+        echo "=== Cloning FFmpeg $FFMPEG_REF from $repo ==="
+        if git clone --depth 1 --branch "$FFMPEG_REF" "$repo" "$FFMPEG_SRC"; then
+            break
+        fi
+        echo "  clone from $repo failed — trying the next mirror" >&2
+        rm -rf "$FFMPEG_SRC"
+    done
+    if [ ! -d "$FFMPEG_SRC/.git" ]; then
+        echo "FFmpeg clone failed from every mirror: $FFMPEG_MIRRORS" >&2
+        exit 1
+    fi
 else
     echo "=== FFmpeg source already present at $FFMPEG_SRC ==="
     (cd "$FFMPEG_SRC" && git fetch --depth 1 origin "$FFMPEG_REF" 2>/dev/null || true)
