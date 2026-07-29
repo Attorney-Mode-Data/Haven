@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.85.1
+
+🖥️ **RDP: a username like `MicrosoftAccount\you@example.com` now logs you in** — if you entered a qualified username, Haven sent the whole string as the username and left the domain empty. Windows accepted the credentials, then showed the lock screen and asked you to sign in again, because the logon itself never received a name it recognised. Haven now splits a qualified username at the backslash into the two fields the protocol actually carries, which is what other RDP clients do.
+
+A plain `you@example.com` is deliberately left untouched. That form is also how Active Directory logins are written, and there is no way to tell the two apart from the text alone — so Haven changes only what you have explicitly qualified, rather than guessing and breaking domain sign-ins to fix a Microsoft-account one. If you sign in to Windows with an email address and land on the lock screen, entering the username as `MicrosoftAccount\you@example.com` now works. (#461, thanks skeezmoe)
+
 ## v5.85.0
 
 🔄 **Backup: pull automatically, if you want it** — backup sync could already push on its own, but pulling stayed manual, because an unattended pull can overwrite work you did on this device. That trade-off is wrong for a phone that only ever *consumes* a backup written somewhere else. There is now a separate **Pull automatically** switch next to the existing push one, off by default, with an interval of 15 minutes, 1 hour, 6 hours or 24 hours. The warning is worth reading before turning it on: if you also edit connections here, unsaved local changes can be overwritten, because the remote copy wins. Enabling it stores your backup passphrase encrypted on the device, and turning it off deletes it again — unless automatic push is still using it.
