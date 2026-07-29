@@ -112,6 +112,8 @@ class UserPreferencesRepository @Inject constructor(
     private val reorderHintShownKey = booleanPreferencesKey("reorder_hint_shown")
     private val screenOrderKey = stringPreferencesKey("screen_order")
     private val sshKeyOrderKey = stringPreferencesKey("ssh_key_order")
+    private val keysSortModeKey = stringPreferencesKey("keys_sort_mode")
+    private val keysCollapsedSectionsKey = stringPreferencesKey("keys_collapsed_sections")
     private val waylandShellCommandKey = stringPreferencesKey("wayland_shell_command")
     private val batteryPromptDismissedKey = booleanPreferencesKey("battery_prompt_dismissed")
     private val showLinuxVmCardKey = booleanPreferencesKey("show_linux_vm_card")
@@ -758,6 +760,37 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSshKeyOrder(ids: List<String>) {
         dataStore.edit { prefs ->
             prefs[sshKeyOrderKey] = ids.joinToString(",")
+        }
+    }
+
+    /**
+     * How the Keys tab sorts the SSH-key list — a `KeySort` enum name, with
+     * the interpretation (including the fallback for an unknown value) owned
+     * by `feature:keys`. Stored as the bare name so this module needs no
+     * dependency on that enum. (#460)
+     */
+    val keysSortMode: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[keysSortModeKey]
+    }
+
+    suspend fun setKeysSortMode(name: String) {
+        dataStore.edit { prefs ->
+            prefs[keysSortModeKey] = name
+        }
+    }
+
+    /**
+     * Section ids the user has collapsed on the Keys tab (#460). Persisted
+     * because the whole point is reclaiming vertical space on a small phone,
+     * and a collapse that resets on every visit to the tab does not.
+     */
+    val keysCollapsedSections: Flow<Set<String>> = dataStore.data.map { prefs ->
+        prefs[keysCollapsedSectionsKey]?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+    }
+
+    suspend fun setKeysCollapsedSections(ids: Set<String>) {
+        dataStore.edit { prefs ->
+            prefs[keysCollapsedSectionsKey] = ids.joinToString(",")
         }
     }
 

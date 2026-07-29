@@ -20745,6 +20745,119 @@
       "ru": "Остаётся открытым, пока ключ безопасности не ответит.",
       "zh": "在安全密钥响应之前保持打开。"
      }
+    },
+    {
+     "name": "keys_section_collapse",
+     "en": "Collapse %1$s",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "keys_section_expand",
+     "en": "Expand %1$s",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "keys_sort",
+     "en": "Sort keys",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_sort_manual",
+     "en": "My order",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_sort_label_asc",
+     "en": "Name (A–Z)",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_sort_label_desc",
+     "en": "Name (Z–A)",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_sort_newest",
+     "en": "Newest first",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_sort_oldest",
+     "en": "Oldest first",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_select",
+     "en": "Select…",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_selected_count",
+     "en": "%1$d selected",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [
+      "%1$d"
+     ],
+     "t": {}
+    },
+    {
+     "name": "keys_select_all",
+     "en": "Select all",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_selection_cancel",
+     "en": "Leave selection mode",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_selection_delete",
+     "en": "Delete selected keys",
+     "comment": "#460: sorting, collapsible sections and multi-select delete",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_bulk_delete_body",
+     "en": "This cannot be undone. The private key material is erased from the keystore.",
+     "comment": "Selection mode can legitimately hold one key, so this needs a real plural — \"Delete 1 keys?\" was what the first device run showed.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "keys_bulk_delete_in_use",
+     "en": "In use by a saved connection: %1$s. Those connections will stop authenticating with a key.",
+     "comment": "Selection mode can legitimately hold one key, so this needs a real plural — \"Delete 1 keys?\" was what the first device run showed.",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
     }
    ]
   },

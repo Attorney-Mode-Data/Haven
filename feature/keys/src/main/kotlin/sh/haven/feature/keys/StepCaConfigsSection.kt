@@ -1,5 +1,6 @@
 package sh.haven.feature.keys
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.VpnKey
@@ -66,6 +69,9 @@ import sh.haven.core.stepca.StepCaApiClient
 @Composable
 internal fun StepCaConfigsSectionContent(
     viewModel: StepCaConfigsViewModel = hiltViewModel(),
+    /** Collapsible like the other Keys-tab sections (#460). */
+    expanded: Boolean = true,
+    onToggleExpanded: () -> Unit = {},
 ) {
     val configs by viewModel.configs.collectAsState()
     val testResults by viewModel.testResults.collectAsState()
@@ -76,20 +82,32 @@ internal fun StepCaConfigsSectionContent(
     var pendingDelete by remember { mutableStateOf<StepCaConfig?>(null) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        val sectionLabel = stringResource(
+            R.string.keys_section_certificate_authorities,
+            configs.size,
+        )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleExpanded),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stringResource(
-                    R.string.keys_section_certificate_authorities,
-                    configs.size,
+            Icon(
+                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = stringResource(
+                    if (expanded) R.string.keys_section_collapse else R.string.keys_section_expand,
+                    sectionLabel,
                 ),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp),
+            )
+            Text(
+                text = sectionLabel,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 8.dp, vertical = 12.dp),
             )
             IconButton(onClick = { addOpen = true }) {
                 Icon(
@@ -98,7 +116,9 @@ internal fun StepCaConfigsSectionContent(
                 )
             }
         }
-        configs.forEach { config ->
+        // Collapsing hides the rows, not the "add" action — a collapsed
+        // section must still be a way in (the #133 lesson).
+        (if (expanded) configs else emptyList()).forEach { config ->
             StepCaConfigRow(
                 config = config,
                 testResult = testResults[config.id],

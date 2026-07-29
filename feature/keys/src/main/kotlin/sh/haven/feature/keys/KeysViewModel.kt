@@ -157,21 +157,74 @@ class KeysViewModel @Inject constructor(
         viewModelScope.launch { sshIdentityRepository.delete(id) }
     }
 
+    /** How the list is sorted (#460). [KeySort.MANUAL] = the #238 order. */
+    val sortMode: StateFlow<KeySort> = preferencesRepository.keysSortMode
+        .map { KeySort.parse(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), KeySort.MANUAL)
+
+    fun setSortMode(sort: KeySort) {
+        viewModelScope.launch { preferencesRepository.setKeysSortMode(sort.name) }
+    }
+
     val keys: StateFlow<List<SshKey>> = combine(
         repository.observeAll(),
         preferencesRepository.sshKeyOrder,
-    ) { list, order ->
-        sh.haven.core.data.preferences.KeyOrdering.applyOrder(list, order) { it.id }
+        preferencesRepository.keysSortMode,
+    ) { list, order, sortName ->
+        // Manual order first, then the sort as a view on top of it (#460) —
+        // KeySort.MANUAL is the identity, so the #238 order is what shows
+        // when no sort is chosen.
+        sortKeys(
+            sh.haven.core.data.preferences.KeyOrdering.applyOrder(list, order) { it.id },
+            KeySort.parse(sortName),
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /** Move a key one step up/down in the user-defined order (#238). */
+    /**
+     * Move a key one step up/down in the user-defined order (#238).
+     *
+     * Refuses under a non-manual sort: [keys] is then a computed view, so
+     * persisting its order as the manual order would overwrite the user's
+     * arrangement with the sort's — and the move itself would be invisible.
+     * The UI hides the actions in that mode; this is the backstop.
+     */
     fun moveKey(keyId: String, up: Boolean) {
+        if (sortMode.value != KeySort.MANUAL) return
         viewModelScope.launch {
             val currentIds = keys.value.map { it.id }
             val newOrder = sh.haven.core.data.preferences.KeyOrdering.move(currentIds, keyId, up)
             if (newOrder != currentIds) preferencesRepository.setSshKeyOrder(newOrder)
         }
     }
+
+    /** Section ids the user has collapsed on this screen (#460). */
+    val collapsedSections: StateFlow<Set<String>> = preferencesRepository.keysCollapsedSections
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun toggleSection(id: String) {
+        viewModelScope.launch {
+            val current = collapsedSections.value
+            preferencesRepository.setKeysCollapsedSections(
+                if (id in current) current - id else current + id,
+            )
+        }
+    }
+
+    /**
+     * Ids of keys some saved connection authenticates with — so the
+     * multi-select delete confirmation can name them instead of quietly
+     * breaking those profiles (#460). Reads [ConnectionProfile.authMethodSpecs],
+     * which folds in the legacy `authType`/`keyId` pair for pre-#166 rows.
+     */
+    val keysInUse: StateFlow<Set<String>> = connectionRepository.observeAll()
+        .map { profiles ->
+            profiles.flatMap { profile ->
+                profile.authMethodSpecs
+                    .filterIsInstance<sh.haven.core.data.db.entities.ConnectionProfile.AuthMethodSpec.Key>()
+                    .mapNotNull { it.keyId?.takeIf(String::isNotBlank) }
+            }.toSet()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     /**
      * Per-SK-key verify-required (PIN) state, for the Keys-tab toggle. Derived
@@ -859,6 +912,17 @@ class KeysViewModel @Inject constructor(
     fun deleteKey(id: String) {
         viewModelScope.launch {
             repository.delete(id)
+        }
+    }
+
+    /**
+     * Delete a multi-select selection (#460). Sequential, in one coroutine —
+     * Room emits per delete, so the list shrinks a row at a time rather than
+     * all at once.
+     */
+    fun deleteKeys(ids: Set<String>) {
+        viewModelScope.launch {
+            ids.forEach { repository.delete(it) }
         }
     }
 

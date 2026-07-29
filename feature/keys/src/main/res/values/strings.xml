@@ -229,4 +229,27 @@
     <string name="keys_fido_touch_nfc_title">Hold your security key</string>
     <string name="keys_fido_touch_nfc_body">Keep the security key against the back of the device for two seconds. Moving it away early aborts the exchange.</string>
     <string name="keys_fido_cancel_hint">Stays open until the security key responds.</string>
+
+    <!-- #460: sorting, collapsible sections and multi-select delete -->
+    <string name="keys_section_collapse">Collapse %1$s</string>
+    <string name="keys_section_expand">Expand %1$s</string>
+    <string name="keys_sort">Sort keys</string>
+    <string name="keys_sort_manual">My order</string>
+    <string name="keys_sort_label_asc">Name (A–Z)</string>
+    <string name="keys_sort_label_desc">Name (Z–A)</string>
+    <string name="keys_sort_newest">Newest first</string>
+    <string name="keys_sort_oldest">Oldest first</string>
+    <string name="keys_select">Select…</string>
+    <string name="keys_selected_count">%1$d selected</string>
+    <string name="keys_select_all">Select all</string>
+    <string name="keys_selection_cancel">Leave selection mode</string>
+    <string name="keys_selection_delete">Delete selected keys</string>
+    <!-- Selection mode can legitimately hold one key, so this needs a real
+         plural — "Delete 1 keys?" was what the first device run showed. -->
+    <plurals name="keys_bulk_delete_title">
+        <item quantity="one">Delete this key?</item>
+        <item quantity="other">Delete %1$d keys?</item>
+    </plurals>
+    <string name="keys_bulk_delete_body">This cannot be undone. The private key material is erased from the keystore.</string>
+    <string name="keys_bulk_delete_in_use">In use by a saved connection: %1$s. Those connections will stop authenticating with a key.</string>
 </resources>

@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,14 +29,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Fingerprint
@@ -84,6 +90,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import sh.haven.core.ui.PasswordField
 import androidx.compose.ui.unit.dp
@@ -107,6 +114,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Section ids for the collapsed-set preference (#460). Stable strings, not
+// enum ordinals or resource ids — they are persisted.
+private const val SECTION_CA = "ca"
+private const val SECTION_SSH = "ssh"
+private const val SECTION_PASSWORDS = "passwords"
+private const val SECTION_TOTP = "totp"
+private const val SECTION_AGE = "age"
+private const val SECTION_IDENTITIES = "identities"
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun KeysScreen(
@@ -126,6 +142,13 @@ fun KeysScreen(
     val pendingCertKeyId by viewModel.pendingCertKeyId.collectAsState()
     var pendingPasswordWipe by remember { mutableStateOf<KeystoreEntry?>(null) }
     var renameTarget by remember { mutableStateOf<SshKey?>(null) }
+    // #460. Null = not in multi-select mode; a set (possibly empty) = in it.
+    var selection by remember { mutableStateOf<Set<String>?>(null) }
+    var pendingBulkDelete by remember { mutableStateOf<Set<String>?>(null) }
+    val sortMode by viewModel.sortMode.collectAsState()
+    val collapsedSections by viewModel.collapsedSections.collectAsState()
+    val keysInUse by viewModel.keysInUse.collectAsState()
+    val sshExpanded = SECTION_SSH !in collapsedSections
     var pendingStorePassphrase by remember { mutableStateOf<SshKey?>(null) }
 
     var showAddKeyDialog by remember { mutableStateOf(false) }
@@ -288,7 +311,11 @@ fun KeysScreen(
                 .padding(innerPadding),
         ) {
             item(key = "stepca-ca-section") {
-                StepCaConfigsSectionContent(viewModel = stepCaConfigsViewModel)
+                StepCaConfigsSectionContent(
+                    viewModel = stepCaConfigsViewModel,
+                    expanded = SECTION_CA !in collapsedSections,
+                    onToggleExpanded = { viewModel.toggleSection(SECTION_CA) },
+                )
                 HorizontalDivider()
             }
             if (nothingButCa) {
@@ -322,9 +349,32 @@ fun KeysScreen(
             }
             if (keys.isNotEmpty()) {
                     item(key = "ssh-header") {
-                        SectionHeader(stringResource(R.string.keys_section_ssh, keys.size))
+                        val current = selection
+                        if (current != null) {
+                            KeySelectionBar(
+                                count = current.size,
+                                onSelectAll = { selection = keys.map { it.id }.toSet() },
+                                onDelete = { pendingBulkDelete = current },
+                                onCancel = { selection = null },
+                            )
+                        } else {
+                            SectionHeader(
+                                label = stringResource(R.string.keys_section_ssh, keys.size),
+                                expanded = sshExpanded,
+                                onToggle = { viewModel.toggleSection(SECTION_SSH) },
+                                trailing = {
+                                    KeySortMenu(
+                                        current = sortMode,
+                                        onSelect = { viewModel.setSortMode(it) },
+                                    )
+                                },
+                            )
+                        }
                     }
-                    itemsIndexed(keys, key = { _, k -> k.id }) { index, sshKey ->
+                    itemsIndexed(
+                        if (sshExpanded) keys else emptyList(),
+                        key = { _, k -> k.id },
+                    ) { index, sshKey ->
                         SshKeyAuditRow(
                             sshKey = sshKey,
                             entry = keyEntries[sshKey.id],
@@ -354,19 +404,36 @@ fun KeysScreen(
                             onRemoveCertificate = { viewModel.removeCertificate(sshKey.id) },
                             onExportCertificate = { viewModel.requestCertExport(sshKey.id) },
                             onRegenerateViaStepCa = { viewModel.regenerateViaStepCa(sshKey.id) },
-                            canMoveUp = index > 0,
-                            canMoveDown = index < keys.lastIndex,
+                            // Reordering only makes sense under the manual
+                            // order — under a sort the move would be computed
+                            // away, so the actions are hidden (#460).
+                            canMoveUp = sortMode == KeySort.MANUAL && index > 0,
+                            canMoveDown = sortMode == KeySort.MANUAL && index < keys.lastIndex,
                             onMoveUp = { viewModel.moveKey(sshKey.id, up = true) },
                             onMoveDown = { viewModel.moveKey(sshKey.id, up = false) },
+                            selected = selection?.let { sshKey.id in it },
+                            onStartSelection = { selection = setOf(sshKey.id) },
+                            onToggleSelected = {
+                                selection = selection?.let {
+                                    if (sshKey.id in it) it - sshKey.id else it + sshKey.id
+                                }
+                            },
                         )
                         HorizontalDivider()
                     }
                 }
                 if (passwordEntries.isNotEmpty()) {
                     item(key = "password-header") {
-                        SectionHeader(stringResource(R.string.keys_section_passwords, passwordEntries.size))
+                        SectionHeader(
+                            label = stringResource(R.string.keys_section_passwords, passwordEntries.size),
+                            expanded = SECTION_PASSWORDS !in collapsedSections,
+                            onToggle = { viewModel.toggleSection(SECTION_PASSWORDS) },
+                        )
                     }
-                    items(passwordEntries, key = { "pw-${it.id}" }) { entry ->
+                    items(
+                        if (SECTION_PASSWORDS in collapsedSections) emptyList() else passwordEntries,
+                        key = { "pw-${it.id}" },
+                    ) { entry ->
                         PasswordAuditRow(
                             entry = entry,
                             onWipeRequested = { pendingPasswordWipe = entry },
@@ -376,27 +443,48 @@ fun KeysScreen(
                 }
             if (totpSecrets.isNotEmpty()) {
                 item(key = "totp-header") {
-                    SectionHeader(stringResource(R.string.keys_totp_section_header, totpSecrets.size))
+                    SectionHeader(
+                        label = stringResource(R.string.keys_totp_section_header, totpSecrets.size),
+                        expanded = SECTION_TOTP !in collapsedSections,
+                        onToggle = { viewModel.toggleSection(SECTION_TOTP) },
+                    )
                 }
-                items(totpSecrets, key = { "totp-${it.id}" }) { secret ->
+                items(
+                    if (SECTION_TOTP in collapsedSections) emptyList() else totpSecrets,
+                    key = { "totp-${it.id}" },
+                ) { secret ->
                     TotpSecretRow(secret = secret, onDelete = { viewModel.deleteTotp(secret.id) })
                     HorizontalDivider()
                 }
             }
             if (ageIdentities.isNotEmpty()) {
                 item(key = "age-header") {
-                    SectionHeader(stringResource(R.string.keys_age_section_header, ageIdentities.size))
+                    SectionHeader(
+                        label = stringResource(R.string.keys_age_section_header, ageIdentities.size),
+                        expanded = SECTION_AGE !in collapsedSections,
+                        onToggle = { viewModel.toggleSection(SECTION_AGE) },
+                    )
                 }
-                items(ageIdentities, key = { "age-${it.id}" }) { id ->
+                items(
+                    if (SECTION_AGE in collapsedSections) emptyList() else ageIdentities,
+                    key = { "age-${it.id}" },
+                ) { id ->
                     AgeIdentityRow(identity = id, onDelete = { viewModel.deleteAgeIdentity(id.id) })
                     HorizontalDivider()
                 }
             }
             if (sshIdentities.isNotEmpty()) {
                 item(key = "identity-header") {
-                    SectionHeader(stringResource(R.string.keys_identity_section_header, sshIdentities.size))
+                    SectionHeader(
+                        label = stringResource(R.string.keys_identity_section_header, sshIdentities.size),
+                        expanded = SECTION_IDENTITIES !in collapsedSections,
+                        onToggle = { viewModel.toggleSection(SECTION_IDENTITIES) },
+                    )
                 }
-                items(sshIdentities, key = { "identity-${it.id}" }) { ident ->
+                items(
+                    if (SECTION_IDENTITIES in collapsedSections) emptyList() else sshIdentities,
+                    key = { "identity-${it.id}" },
+                ) { ident ->
                     SshIdentityRow(
                         identity = ident,
                         keyLabel = keys.firstOrNull { it.id == ident.keyId }?.label,
@@ -437,6 +525,57 @@ fun KeysScreen(
             },
             dismissButton = {
                 TextButton(onClick = { pendingPasswordWipe = null }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
+    // Bulk-delete confirmation (#460). Names every key going, and calls out
+    // the ones a saved connection authenticates with — deleting several at
+    // once is where "which one was that?" costs the most.
+    pendingBulkDelete?.let { ids ->
+        val doomed = keys.filter { it.id in ids }
+        val inUse = doomed.filter { it.id in keysInUse }
+        AlertDialog(
+            onDismissRequest = { pendingBulkDelete = null },
+            title = {
+                Text(pluralStringResource(R.plurals.keys_bulk_delete_title, doomed.size, doomed.size))
+            },
+            text = {
+                // Scrolls: the whole point of this dialog is deleting many at
+                // once, and an unscrollable list would clip the tail on a phone.
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(stringResource(R.string.keys_bulk_delete_body))
+                    Spacer(Modifier.height(8.dp))
+                    doomed.forEach { key ->
+                        Text(
+                            text = "• ${key.label}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    if (inUse.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.keys_bulk_delete_in_use,
+                                inUse.joinToString(", ") { it.label },
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingBulkDelete = null
+                    selection = null
+                    viewModel.deleteKeys(ids)
+                }) { Text(stringResource(R.string.common_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingBulkDelete = null }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             },
@@ -1330,16 +1469,127 @@ private fun formatDate(timestamp: Long): String {
     return sdf.format(Date(timestamp))
 }
 
+/**
+ * A section heading that collapses its contents when tapped (#460). The
+ * count stays in [label] while collapsed, so a collapsed section still says
+ * how much is hidden behind it.
+ */
 @Composable
-private fun SectionHeader(label: String) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+private fun SectionHeader(
+    label: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    trailing: @Composable () -> Unit = {},
+) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-    )
+            .clickable(onClick = onToggle),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = stringResource(
+                if (expanded) R.string.keys_section_collapse else R.string.keys_section_expand,
+                label,
+            ),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 16.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+        )
+        trailing()
+    }
+}
+
+/** Sort picker for the SSH-keys section (#460). One entry per field. */
+@Composable
+private fun KeySortMenu(current: KeySort, onSelect: (KeySort) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(
+                Icons.AutoMirrored.Filled.Sort,
+                contentDescription = stringResource(R.string.keys_sort),
+            )
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            @Composable
+            fun item(labelRes: Int, field: KeySort) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(labelRes)) },
+                    onClick = { onSelect(current.select(field)); open = false },
+                    // A check marks the active field; the label itself names
+                    // the direction, so the two together say "sorted by name,
+                    // Z first" without a second row per field.
+                    leadingIcon = {
+                        if (current == field || current == field.flipped()) {
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                        }
+                    },
+                )
+            }
+            item(R.string.keys_sort_manual, KeySort.MANUAL)
+            item(
+                if (current == KeySort.LABEL_DESC) R.string.keys_sort_label_desc
+                else R.string.keys_sort_label_asc,
+                KeySort.LABEL_ASC,
+            )
+            item(
+                if (current == KeySort.OLDEST_FIRST) R.string.keys_sort_oldest
+                else R.string.keys_sort_newest,
+                KeySort.NEWEST_FIRST,
+            )
+        }
+    }
+}
+
+/**
+ * Replaces the SSH-keys section header while a multi-select is in progress
+ * (#460). Delete is disabled at zero selected rather than hidden, so the
+ * bar's shape does not change under the user's thumb.
+ */
+@Composable
+private fun KeySelectionBar(
+    count: Int,
+    onSelectAll: () -> Unit,
+    onDelete: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onCancel) {
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = stringResource(R.string.keys_selection_cancel),
+            )
+        }
+        Text(
+            text = stringResource(R.string.keys_selected_count, count),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onSelectAll) {
+            Text(stringResource(R.string.keys_select_all))
+        }
+        IconButton(onClick = onDelete, enabled = count > 0) {
+            Icon(
+                Icons.Filled.Delete,
+                contentDescription = stringResource(R.string.keys_selection_delete),
+                tint = if (count > 0) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
@@ -1368,22 +1618,46 @@ private fun SshKeyAuditRow(
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    /** Null when not in multi-select mode, else this row's selected state (#460). */
+    selected: Boolean? = null,
+    onStartSelection: () -> Unit = {},
+    onToggleSelected: () -> Unit = {},
 ) {
     val flags = entry?.flags ?: emptySet()
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onCopyPublic, onLongClick = onMenuOpen),
+            .then(
+                if (selected == true) Modifier.background(MaterialTheme.colorScheme.secondaryContainer)
+                else Modifier,
+            )
+            // In selection mode a tap toggles the row instead of copying the
+            // public key, and long-press does nothing — the ⋮ actions apply
+            // to one key, so offering them mid-selection is ambiguous.
+            .combinedClickable(
+                onClick = if (selected != null) onToggleSelected else onCopyPublic,
+                onLongClick = if (selected != null) null else onMenuOpen,
+            ),
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if (sshKey.keyType.startsWith("sk-")) Icons.Filled.Key
-                    else Icons.Filled.VpnKey,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 12.dp),
-                )
+                if (selected != null) {
+                    // onCheckedChange = null: the row's own click owns the
+                    // toggle, so the box is not a second, smaller hit target.
+                    Checkbox(
+                        checked = selected,
+                        onCheckedChange = null,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (sshKey.keyType.startsWith("sk-")) Icons.Filled.Key
+                        else Icons.Filled.VpnKey,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     // Explicit onSurface — this Box/Column row has no Surface/ListItem
                     // ancestor, so the default content colour is black and the name
@@ -1455,6 +1729,15 @@ private fun SshKeyAuditRow(
                 text = { Text(stringResource(R.string.keys_rename)) },
                 onClick = { onMenuDismiss(); onRename() },
                 leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+            )
+            // Multi-select starts here rather than from a long-press (#460
+            // suggested long-press): long-press already opens this menu
+            // (#238), and an explicit menu item also satisfies "must not be
+            // reachable by accident" better than a gesture does.
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.keys_select)) },
+                onClick = { onMenuDismiss(); onStartSelection() },
+                leadingIcon = { Icon(Icons.Filled.Checklist, contentDescription = null) },
             )
             // Reorder the key in the list (#238). Disabled at the edges; the menu
             // stays open so several moves can be chained.

@@ -5,6 +5,16 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.0
+
+🔑 **Keys tab: sorting, collapsible sections, and multi-select delete** — the Keys tab was built for someone holding a handful of credentials and stopped scaling above that. Three changes, all suggested by onatio22 after importing seven resident credentials off a YubiKey.
+
+**Sorting.** The SSH-keys section has a sort control: by name (A–Z / Z–A), by creation date (newest / oldest first), or "My order" — the manual arrangement you build with move up / move down. Tapping the field you are already sorted by flips its direction. Sorting is a *view* on top of your manual order rather than a replacement for it, so switching to a sort and back leaves your arrangement exactly as you left it. While a sort is active, move up / move down are hidden: reordering a list whose order is computed cannot show a result, and letting it through would quietly overwrite your arrangement with the sort's.
+
+**Collapsible sections.** Every section heading — Certificate authorities, SSH keys, Stored passwords, Authenticators, age identities, SSH identities — collapses and expands when tapped. The count stays visible while collapsed, so a folded section still tells you how much is behind it, and the "add" action on a collapsed section stays reachable. Which sections you collapsed is remembered, because reclaiming vertical space on a small phone is the point and a collapse that resets on every visit would not do that.
+
+**Multi-select delete.** A key's ⋮ menu has a "Select…" entry that turns the section into a selection list: tap rows to add or remove them, "Select all" for the lot, then delete. Deleting several keys at once is irreversible in a way that deleting one at a time is not, so the confirmation names every key going, and separately calls out any key a saved connection authenticates with rather than removing it silently. Selection starts from the menu rather than a long-press because long-press already opens that menu — and an explicit menu item is harder to reach by accident than a gesture. (#460, suggested by onatio22)
+
 ## v5.85.2
 
 ⌨️ **RDP: arrow keys press the key you actually pressed** — the arrows, Home, End, Page Up, Page Down, Insert, Delete and the Windows key were all sent as the wrong key. On a keyboard these live in the navigation cluster and are marked differently on the wire from their numeric-keypad twins, and Haven was sending the twins: pressing Down sent numpad-2 instead. Most servers quietly accept it, which is why this went unnoticed. VirtualBox's RDP server does not — it closes the connection, so a few presses in a VirtualBox VM would drop the session entirely. Reproduced against a real VirtualBox server and confirmed fixed on the same setup: eight arrow presses used to kill the connection, thirty-three no longer do. (#422, thanks pawlosck)
