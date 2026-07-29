@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.85.2
+
+⌨️ **RDP: arrow keys press the key you actually pressed** — the arrows, Home, End, Page Up, Page Down, Insert, Delete and the Windows key were all sent as the wrong key. On a keyboard these live in the navigation cluster and are marked differently on the wire from their numeric-keypad twins, and Haven was sending the twins: pressing Down sent numpad-2 instead. Most servers quietly accept it, which is why this went unnoticed. VirtualBox's RDP server does not — it closes the connection, so a few presses in a VirtualBox VM would drop the session entirely. Reproduced against a real VirtualBox server and confirmed fixed on the same setup: eight arrow presses used to kill the connection, thirty-three no longer do. (#422, thanks pawlosck)
+
+🎨 **Dark theme: stored password names are readable again** — names in the Keys tab's stored-password list were drawn in black on the dark background, effectively invisible. The cause was not that list: several screens make their background transparent so the wallpaper opacity setting shows through, and that left the default text colour unset, falling back to black. Fixed on every screen that does this — Keys, Files, Connections and Mail — so any text without its own colour is readable rather than only the one place it was noticed. Light theme is unchanged.
+
 ## v5.85.1
 
 🖥️ **RDP: a username like `MicrosoftAccount\you@example.com` now logs you in** — if you entered a qualified username, Haven sent the whole string as the username and left the domain empty. Windows accepted the credentials, then showed the lock screen and asked you to sign in again, because the logon itself never received a name it recognised. Haven now splits a qualified username at the backslash into the two fields the protocol actually carries, which is what other RDP clients do.
