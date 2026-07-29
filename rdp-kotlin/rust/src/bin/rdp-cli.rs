@@ -147,8 +147,23 @@ fn main() -> ExitCode {
         return ExitCode::from(1);
     }
 
+    // #422: RDP_KEYS = space/comma-separated hex scancodes sent as press +
+    // release pairs after connect (0xE000 marker = extended, matching the
+    // Kotlin SC_* constants). RDP_KEY_DELAY = seconds to wait first (default
+    // 2, the reporter pressed ~30s in). e.g. RDP_KEYS="e050 e050 e050".
+    let keys_after: Vec<u16> = std::env::var("RDP_KEYS")
+        .map(|s| {
+            s.split([' ', ','])
+                .filter(|t| !t.is_empty())
+                .filter_map(|t| u16::from_str_radix(t.trim_start_matches("0x"), 16).ok())
+                .collect()
+        })
+        .unwrap_or_default();
+    let key_delay: u64 = std::env::var("RDP_KEY_DELAY").ok().and_then(|s| s.parse().ok()).unwrap_or(2);
+
     let deadline = Instant::now() + Duration::from_secs(seconds);
     let mut typed = type_after.is_empty();
+    let mut keyed = keys_after.is_empty();
     while Instant::now() < deadline {
         if error.load(Ordering::Acquire) {
             client.disconnect();
@@ -168,6 +183,17 @@ fn main() -> ExitCode {
                 std::thread::sleep(Duration::from_millis(80));
             }
             typed = true;
+        }
+        if !keyed && connected.load(Ordering::Acquire) {
+            std::thread::sleep(Duration::from_secs(key_delay));
+            for &sc in &keys_after {
+                eprintln!("[key] {sc:#06x}");
+                client.send_key(sc, true);
+                std::thread::sleep(Duration::from_millis(40));
+                client.send_key(sc, false);
+                std::thread::sleep(Duration::from_millis(110));
+            }
+            keyed = true;
         }
         std::thread::sleep(Duration::from_millis(200));
     }

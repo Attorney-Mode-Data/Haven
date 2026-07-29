@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.1
+
+🖥️ **RDP: VirtualBox sessions survive key presses now, actually** — v5.85.2 claimed this and pawlosck disproved it within hours: the same arrow press still dropped the connection. The arrow-key correction in that release was real but it was not what VirtualBox objects to. VirtualBox's RDP server never advertises fast-path input, and its own log shows it terminating the connection the moment a client sends the 4-byte fast-path packet a single key press produces — "Network packet length is incorrect". Typed text and mouse input make longer packets, which is why only keys like arrows, Enter or Escape killed sessions. Clients that honour the server's declared input support fall back to the older slow-path input format, which is why every other RDP client works against VirtualBox; Haven now does the same for any server that doesn't offer fast-path input. Reproduced against a real VirtualBox VRDE server: before, the first arrow press ended the session; after, arrows in all four directions, Enter and typed text leave it connected with the screen still updating, and VirtualBox's log stays clean. (#422, thanks pawlosck — for the precision and the persistence)
+
 ## v5.86.0
 
 🔑 **Keys tab: sorting, collapsible sections, and multi-select delete** — the Keys tab was built for someone holding a handful of credentials and stopped scaling above that. Three changes, all suggested by onatio22 after importing seven resident credentials off a YubiKey.

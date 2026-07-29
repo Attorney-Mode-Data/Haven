@@ -7,10 +7,12 @@ import org.junit.Test
 /**
  * #422: arrow keys were sent as bare Set-1 scancodes. Those values are the
  * *numpad* twins of the navigation cluster — the real keys are E0-prefixed —
- * so Haven pressed the wrong key, and VirtualBox's RDP server responded by
- * closing the connection (reproduced on device: eight arrow presses killed
- * the session; with the extended marker set, 33 presses left it alive with
- * frames still flowing).
+ * so Haven pressed the wrong key on every server.
+ *
+ * (The marker was NOT what made VirtualBox drop connections — VRDP rejects
+ * any lone fast-path scancode PDU because it never advertises fast-path
+ * input; the native layer handles that separately with a slow-path input
+ * fallback. The marker is still required to press the right key.)
  *
  * The native layer detects extended keys with `code and 0xE000 == 0xE000`
  * (ironrdp `Scancode::from_u16`) and sets KBDFLAGS_EXTENDED from it, so the

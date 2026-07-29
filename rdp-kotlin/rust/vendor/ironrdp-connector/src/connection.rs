@@ -24,6 +24,10 @@ pub struct ConnectionResult {
     pub share_id: u32,
     pub static_channels: StaticChannelSet,
     pub desktop_size: DesktopSize,
+    /// Haven patch (#422): the server's Input capability flags from Demand Active.
+    /// Fast-path input must not be sent unless the server advertised
+    /// `INPUT_FLAG_FASTPATH_INPUT` / `INPUT_FLAG_FASTPATH_INPUT2`.
+    pub input_flags: rdp::capability_sets::InputFlags,
     pub enable_server_pointer: bool,
     pub pointer_software_rendering: bool,
     pub connection_activation: ConnectionActivationSequence,
@@ -579,6 +583,7 @@ impl Sequence for ClientConnector {
                             user_channel_id,
                             desktop_size,
                             share_id,
+                            input_flags,
                             enable_server_pointer,
                             pointer_software_rendering,
                         } => ClientConnectorState::Connected {
@@ -588,6 +593,7 @@ impl Sequence for ClientConnector {
                                 share_id,
                                 static_channels: mem::take(&mut self.static_channels),
                                 desktop_size,
+                                input_flags,
                                 enable_server_pointer,
                                 pointer_software_rendering,
                                 connection_activation,

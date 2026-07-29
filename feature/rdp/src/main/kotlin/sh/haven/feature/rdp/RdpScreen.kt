@@ -1460,8 +1460,13 @@ private fun androidKeyToScancode(key: Key): Int? = when (key) {
 // real keyboard; the bare codes below 0xE000 are their *numpad* twins. The
 // native layer reads the 0xE000 marker (ironrdp Scancode::from_u16 treats
 // `code & 0xE000 == 0xE000` as extended) and sets KBDFLAGS_EXTENDED, so
-// sending the bare value silently presses the wrong key. VirtualBox's RDP
-// server closes the connection outright when it gets one (#422).
+// sending the bare value silently presses the wrong key.
+//
+// NB (#422): the marker fixes which key is pressed, but it was NOT what made
+// VirtualBox drop connections — VRDP rejects any lone fast-path scancode PDU
+// ("Network packet length is incorrect 0x0004" in VBox.log) because it never
+// advertises fast-path input. The native layer now falls back to slow-path
+// TS_INPUT_PDUs for such servers.
 internal const val EXT = 0xE000
 internal const val SC_ESCAPE = 0x01
 internal const val SC_BACKSPACE = 0x0E

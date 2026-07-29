@@ -1018,6 +1018,54 @@ mod tls_pin_tests {
 /// user rather than swallowing every failure into a generic "Connection
 /// failed" — which is what happened before and produced the "nothing
 /// happens, empty Desktop screen" symptom in #106.
+/// #422: re-express a fast-path input event as its slow-path TS_INPUT_EVENT
+/// twin, for servers that never negotiated fast-path input (VirtualBox VRDP).
+/// The mouse PDU bodies are byte-identical between the two paths; keyboard and
+/// sync events just carry their flags in different positions/widths. QoE has
+/// no slow-path equivalent and is dropped.
+fn slow_path_input_event(
+    ev: &ironrdp_pdu::input::fast_path::FastPathInputEvent,
+) -> Option<ironrdp_pdu::input::InputEvent> {
+    use ironrdp_pdu::input::fast_path::{FastPathInputEvent as Fp, KeyboardFlags as FpKb};
+    use ironrdp_pdu::input::{InputEvent, scan_code, sync, unicode};
+
+    Some(match ev {
+        Fp::KeyboardEvent(flags, code) => {
+            let mut kf = scan_code::KeyboardFlags::empty();
+            if flags.contains(FpKb::RELEASE) {
+                kf |= scan_code::KeyboardFlags::RELEASE;
+            }
+            if flags.contains(FpKb::EXTENDED) {
+                kf |= scan_code::KeyboardFlags::EXTENDED;
+            }
+            if flags.contains(FpKb::EXTENDED1) {
+                kf |= scan_code::KeyboardFlags::EXTENDED_1;
+            }
+            InputEvent::ScanCode(scan_code::ScanCodePdu {
+                flags: kf,
+                key_code: u16::from(*code),
+            })
+        }
+        Fp::UnicodeKeyboardEvent(flags, code) => {
+            let mut kf = unicode::KeyboardFlags::empty();
+            if flags.contains(FpKb::RELEASE) {
+                kf |= unicode::KeyboardFlags::RELEASE;
+            }
+            InputEvent::Unicode(unicode::UnicodePdu {
+                flags: kf,
+                unicode_code: *code,
+            })
+        }
+        Fp::MouseEvent(pdu) => InputEvent::Mouse(pdu.clone()),
+        Fp::MouseEventEx(pdu) => InputEvent::MouseX(pdu.clone()),
+        Fp::MouseEventRel(pdu) => InputEvent::MouseRel(pdu.clone()),
+        Fp::SyncEvent(flags) => InputEvent::Sync(sync::SyncPdu {
+            flags: sync::SyncToggleFlags::from_bits_retain(u32::from(flags.bits())),
+        }),
+        Fp::QoeEvent(_) => return None,
+    })
+}
+
 fn run_rdp_session(
     stream: TcpStream,
     config: &RdpConfig,
@@ -1214,6 +1262,23 @@ fn run_rdp_session(
     // Server Demand Active (FreeRDP shadow skips the preceding Deactivate
     // All) can re-enter the activation state machine mid-session.
     let activation_template = connection_result.connection_activation.reset_clone();
+
+    // #422: fast-path input is only legal when the server advertised it
+    // (MS-RDPBCGR 2.2.8.1.2). VirtualBox VRDP advertises SCANCODES only and
+    // closes the connection on a lone fast-path scancode event ("Network
+    // packet length is incorrect 0x0004" in VBox.log) — the reason arrow
+    // keys killed VRDE sessions. Such servers get slow-path TS_INPUT_PDUs,
+    // as mstsc/FreeRDP do.
+    let fastpath_input_supported = {
+        use ironrdp_pdu::rdp::capability_sets::InputFlags;
+        let flags = connection_result.input_flags;
+        let supported = flags.intersects(InputFlags::FASTPATH_INPUT | InputFlags::FASTPATH_INPUT_2);
+        if !supported {
+            info!("Server did not advertise fast-path input ({flags:?}); using slow-path input PDUs");
+        }
+        supported
+    };
+
     let mut active_stage = ActiveStage::new(connection_result);
 
     // Handshake is done; shrink the read timeout to 100ms so the session
@@ -1305,18 +1370,39 @@ fn run_rdp_session(
             };
 
             if !fastpath_events.is_empty() {
-                match active_stage.process_fastpath_input(&mut image, &fastpath_events) {
-                    Ok(outputs) => {
-                        for output in outputs {
-                            if let ActiveStageOutput::ResponseFrame(frame) = output {
-                                if let Err(e) = tls_framed.write_all(&frame) {
+                if !fastpath_input_supported {
+                    // #422: slow-path input for servers that never negotiated
+                    // fast-path (VirtualBox VRDP). One TS_INPUT_PDU per apply.
+                    let events: Vec<_> = fastpath_events.iter().filter_map(slow_path_input_event).collect();
+                    if !events.is_empty() {
+                        use ironrdp_pdu::input::InputEventPdu;
+                        use ironrdp_pdu::rdp::headers::ShareDataPdu;
+                        let mut buf = ironrdp_core::WriteBuf::new();
+                        match active_stage.encode_static(&mut buf, ShareDataPdu::Input(InputEventPdu(events))) {
+                            Ok(_) => {
+                                if let Err(e) = tls_framed.write_all(buf.filled()) {
                                     error!("Write input error: {:?}", e);
                                 }
                             }
+                            Err(e) => {
+                                error!("Slow-path input encode error: {:?}", e);
+                            }
                         }
                     }
-                    Err(e) => {
-                        error!("Input processing error: {:?}", e);
+                } else {
+                    match active_stage.process_fastpath_input(&mut image, &fastpath_events) {
+                        Ok(outputs) => {
+                            for output in outputs {
+                                if let ActiveStageOutput::ResponseFrame(frame) = output {
+                                    if let Err(e) = tls_framed.write_all(&frame) {
+                                        error!("Write input error: {:?}", e);
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            error!("Input processing error: {:?}", e);
+                        }
                     }
                 }
             }
@@ -1807,6 +1893,10 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
             user_channel_id,
             desktop_size,
             share_id,
+            // #422: a reactivation could in principle renegotiate input flags,
+            // but no known server flips fast-path support mid-session; the
+            // connect-time decision stands.
+            input_flags: _,
             enable_server_pointer,
             pointer_software_rendering,
         } => {

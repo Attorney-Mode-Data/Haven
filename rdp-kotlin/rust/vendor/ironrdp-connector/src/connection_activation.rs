@@ -160,6 +160,18 @@ impl Sequence for ConnectionActivationSequence {
                     }
                 }
 
+                // Haven patch (#422): keep the server's Input capability flags so the
+                // session layer can tell whether fast-path input was negotiated.
+                // Servers that omit INPUT_FLAG_FASTPATH_INPUT* (VirtualBox VRDP) may
+                // reject fast-path input PDUs outright.
+                let input_flags = capability_sets
+                    .iter()
+                    .find_map(|c| match c {
+                        CapabilitySet::Input(i) => Some(i.input_flags),
+                        _ => None,
+                    })
+                    .unwrap_or_else(rdp::capability_sets::InputFlags::empty);
+
                 // At this point we have already sent a requested desktop size to the server -- either as a part of the
                 // [`TS_UD_CS_CORE`] (on initial connection) or the [`DISPLAYCONTROL_MONITOR_LAYOUT`] (on resize event).
                 //
@@ -206,6 +218,7 @@ impl Sequence for ConnectionActivationSequence {
                         user_channel_id,
                         desktop_size,
                         share_id,
+                        input_flags,
                         connection_finalization: ConnectionFinalizationSequence::new(
                             io_channel_id,
                             user_channel_id,
@@ -219,6 +232,7 @@ impl Sequence for ConnectionActivationSequence {
                 user_channel_id,
                 desktop_size,
                 share_id,
+                input_flags,
                 mut connection_finalization,
             } => {
                 debug!("Connection Finalization");
@@ -231,6 +245,7 @@ impl Sequence for ConnectionActivationSequence {
                         user_channel_id,
                         desktop_size,
                         share_id,
+                        input_flags,
                         connection_finalization,
                     }
                 } else {
@@ -239,6 +254,7 @@ impl Sequence for ConnectionActivationSequence {
                         user_channel_id,
                         desktop_size,
                         share_id,
+                        input_flags,
                         enable_server_pointer: self.config.enable_server_pointer,
                         pointer_software_rendering: self.config.pointer_software_rendering,
                     }
@@ -267,6 +283,8 @@ pub enum ConnectionActivationState {
         user_channel_id: u16,
         desktop_size: DesktopSize,
         share_id: u32,
+        /// Haven patch (#422): the server's Input capability flags from Demand Active.
+        input_flags: rdp::capability_sets::InputFlags,
         connection_finalization: ConnectionFinalizationSequence,
     },
     Finalized {
@@ -274,6 +292,8 @@ pub enum ConnectionActivationState {
         user_channel_id: u16,
         desktop_size: DesktopSize,
         share_id: u32,
+        /// Haven patch (#422): the server's Input capability flags from Demand Active.
+        input_flags: rdp::capability_sets::InputFlags,
         enable_server_pointer: bool,
         pointer_software_rendering: bool,
     },
