@@ -132,10 +132,15 @@ class RdpSession(
             val pinnedCert = tlsCertVerifier?.let { v ->
                 kotlinx.coroutines.runBlocking { v.pinnedFingerprint(certHost, certPort) }
             }
+            // #461: a `MicrosoftAccount\you@example.com` or `CORP\alice` typed
+            // into the username box has to reach the Client Info PDU as two
+            // fields, or Windows authenticates the transport and then shows the
+            // lock screen. Splitting only — a bare UPN is left alone.
+            val logon = qualifyRdpLogon(username, domain)
             val config = RdpConfig(
-                username = username,
+                username = logon.username,
                 password = password,
-                domain = domain,
+                domain = logon.domain,
                 width = width.toUShort(),
                 height = height.toUShort(),
                 // Per-profile colour depth (#109). Default 16 is xrdp-
