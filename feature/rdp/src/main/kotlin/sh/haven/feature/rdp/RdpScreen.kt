@@ -1454,26 +1454,34 @@ private fun androidKeyToScancode(key: Key): Int? = when (key) {
 }
 
 
-// Windows scancodes (Set 1 / AT keyboard)
-private const val SC_ESCAPE = 0x01
-private const val SC_BACKSPACE = 0x0E
-private const val SC_TAB = 0x0F
-private const val SC_RETURN = 0x1C
-private const val SC_CTRL_L = 0x1D
-private const val SC_SHIFT_L = 0x2A
-private const val SC_ALT_L = 0x38
-private const val SC_DELETE = 0x53
-private const val SC_INSERT = 0x52
-private const val SC_HOME = 0x47
-private const val SC_END = 0x4F
-private const val SC_PGUP = 0x49
-private const val SC_PGDN = 0x51
-private const val SC_UP = 0x48
-private const val SC_DOWN = 0x50
-private const val SC_LEFT = 0x4B
-private const val SC_RIGHT = 0x4D
-private const val SC_WIN_L = 0x5B
-private const val SC_F1 = 0x3B
+// Windows scancodes (Set 1 / AT keyboard).
+//
+// Keys in the navigation cluster and the Windows key are E0-prefixed on a
+// real keyboard; the bare codes below 0xE000 are their *numpad* twins. The
+// native layer reads the 0xE000 marker (ironrdp Scancode::from_u16 treats
+// `code & 0xE000 == 0xE000` as extended) and sets KBDFLAGS_EXTENDED, so
+// sending the bare value silently presses the wrong key. VirtualBox's RDP
+// server closes the connection outright when it gets one (#422).
+internal const val EXT = 0xE000
+internal const val SC_ESCAPE = 0x01
+internal const val SC_BACKSPACE = 0x0E
+internal const val SC_TAB = 0x0F
+internal const val SC_RETURN = 0x1C
+internal const val SC_CTRL_L = 0x1D
+internal const val SC_SHIFT_L = 0x2A
+internal const val SC_ALT_L = 0x38
+internal const val SC_DELETE = EXT or 0x53
+internal const val SC_INSERT = EXT or 0x52
+internal const val SC_HOME = EXT or 0x47
+internal const val SC_END = EXT or 0x4F
+internal const val SC_PGUP = EXT or 0x49
+internal const val SC_PGDN = EXT or 0x51
+internal const val SC_UP = EXT or 0x48
+internal const val SC_DOWN = EXT or 0x50
+internal const val SC_LEFT = EXT or 0x4B
+internal const val SC_RIGHT = EXT or 0x4D
+internal const val SC_WIN_L = EXT or 0x5B
+internal const val SC_F1 = 0x3B
 private const val SC_F2 = 0x3C
 private const val SC_F3 = 0x3D
 private const val SC_F4 = 0x3E
@@ -1484,7 +1492,7 @@ private const val SC_F8 = 0x42
 private const val SC_F9 = 0x43
 private const val SC_F10 = 0x44
 private const val SC_F11 = 0x57
-private const val SC_F12 = 0x58
+internal const val SC_F12 = 0x58
 
 /** A friendly diagnosis layered on top of an opaque server error string. */
 internal data class RdpErrorHint(
