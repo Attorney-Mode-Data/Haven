@@ -210,6 +210,10 @@ fun MailScreen(
     Scaffold(
         modifier = mailModifier.fillMaxSize(),
         containerColor = Color.Transparent,
+        // contentColorFor(Transparent) has no scheme match and resolves to
+        // Unspecified, so any Text without an explicit colour falls back to
+        // black — invisible in dark theme. Pin it to onSurface.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             if (ui.view == MailViewModel.View.MESSAGES && ui.selectionMode) {
                 MailSelectionTopBar(
@@ -714,6 +718,10 @@ private fun ComposeView(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
+        // contentColorFor(Transparent) has no scheme match and resolves to
+        // Unspecified, so any Text without an explicit colour falls back to
+        // black — invisible in dark theme. Pin it to onSurface.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = {

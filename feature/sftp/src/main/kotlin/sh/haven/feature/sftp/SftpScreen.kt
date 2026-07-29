@@ -464,6 +464,10 @@ fun SftpScreen(
         // Defer to the app Scaffold background so the global background-opacity
         // (wallpaper see-through) applies here too.
         containerColor = Color.Transparent,
+        // contentColorFor(Transparent) has no scheme match and resolves to
+        // Unspecified, so any Text without an explicit colour falls back to
+        // black — invisible in dark theme. Pin it to onSurface.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         // The outer pager already has .imePadding() on its modifier; letting
         // this inner Scaffold's contentWindowInsets also include WindowInsets.ime
         // (the default) creates a double-source: both the outer imePadding and

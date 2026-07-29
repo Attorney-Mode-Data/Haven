@@ -253,6 +253,10 @@ fun KeysScreen(
         // Defer to the app Scaffold background so the global background-opacity
         // (wallpaper see-through) applies here too.
         containerColor = Color.Transparent,
+        // contentColorFor(Transparent) has no scheme match and resolves to
+        // Unspecified, so any Text without an explicit colour falls back to
+        // black — invisible in dark theme. Pin it to onSurface.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddKeyDialog = true }) {

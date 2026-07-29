@@ -966,6 +966,10 @@ fun ConnectionsScreen(
         // Defer to the app Scaffold's background so the global background-opacity
         // (wallpaper see-through) applies here too instead of being covered.
         containerColor = Color.Transparent,
+        // contentColorFor(Transparent) has no scheme match and resolves to
+        // Unspecified, so any Text without an explicit colour falls back to
+        // black — invisible in dark theme. Pin it to onSurface.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.connections_title)) },
