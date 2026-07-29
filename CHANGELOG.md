@@ -5,6 +5,16 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.85.0
+
+🔄 **Backup: pull automatically, if you want it** — backup sync could already push on its own, but pulling stayed manual, because an unattended pull can overwrite work you did on this device. That trade-off is wrong for a phone that only ever *consumes* a backup written somewhere else. There is now a separate **Pull automatically** switch next to the existing push one, off by default, with an interval of 15 minutes, 1 hour, 6 hours or 24 hours. The warning is worth reading before turning it on: if you also edit connections here, unsaved local changes can be overwritten, because the remote copy wins. Enabling it stores your backup passphrase encrypted on the device, and turning it off deletes it again — unless automatic push is still using it.
+
+🔐 **Backup: remember the restore passphrase, and a one-tap pull** — the Restore Backup dialog has a **Remember this password** checkbox, so a manual restore no longer means retyping the passphrase every time. It is unticked by default, unticking it again deletes the stored value, and restoring still requires tapping Restore, so nothing happens without you asking. Long-pressing Haven's launcher icon also gains a **Pull Backup Now** shortcut, which runs a single pull in the background and tells you how it went. If no passphrase is saved yet it opens the password dialog rather than failing quietly. (#458, thanks kanazawahere)
+
+🌍 **The new backup settings speak every language Haven does** — all of the above, including the notification and toast text, is translated into the eleven supported languages rather than appearing in English. The description under "Push automatically" has also been corrected in every language: it still claimed that pulling always stays manual, which this release makes untrue.
+
+🔑 **SSH: jsch updated to 2.28.5** — the default engine picks up a fix contributed upstream from Haven for accepting host certificates signed by an RSA certificate authority, along with exit-signal reporting. The experimental sshlib engine is unaffected.
+
 ## v5.84.5
 
 📦 **F-Droid: unblock the builds that have kept that version a month behind** — installing from F-Droid has been getting 5.81.7 while more than a dozen releases went out, and the reason was not the usual queue lag. F-Droid's build server fetches FFmpeg's source straight from `git.ffmpeg.org` during the build, that host stopped answering it, and the connection timed out after more than two minutes — so the whole build failed and nothing was published. Haven now fetches FFmpeg from the official GitHub mirror first and falls back to the original host, rather than depending on one machine being reachable. Both serve the identical commit for the pinned version, so nothing about what gets built changes. If every mirror is unreachable the build now stops with a clear message instead of continuing without the source.
