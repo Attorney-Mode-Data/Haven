@@ -23,6 +23,7 @@ core-ktx = "1.17.0"
 activity-compose = "1.13.0"
 shizuku-api = "13.1.5"
 ksp = "2.3.10"
+gradle-test-retry = "1.6.5"
 androidx-browser = "1.10.0"
 androidx-work = "2.9.0"
 androidx-hilt-work = "1.4.0"
@@ -151,3 +152,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+gradle-test-retry = { id = "org.gradle.test-retry", version.ref = "gradle-test-retry" }

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.gradle.test.retry)
 }
 
 android {
@@ -88,5 +89,14 @@ dependencies {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+// Mitigate flaky test SshlibExecContractTest due to upstream sshlib CHANNEL_CLOSE race (#448)
+tasks.withType<Test> {
+    retry {
+        maxRetries.set(2)
+        maxFailures.set(20)
+        failOnPassedAfterRetry.set(true)
     }
 }

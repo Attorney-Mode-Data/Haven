@@ -59,6 +59,8 @@ internal object SshlibExec {
                 // receivers are waiting before the command can produce anything.
                 // Narrows the window rather than closing it; the residual race
                 // is upstream's (see the GAP probe in SshlibCapabilitySpikeTest).
+                // Mitigated on the build layer via org.gradle.test-retry (maxRetries=2)
+                // in core/ssh/build.gradle.kts to absorb flaky CI runs.
                 val outDeferred = async(start = CoroutineStart.UNDISPATCHED) { drain(session.stdout) }
                 val errDeferred = async(start = CoroutineStart.UNDISPATCHED) { drain(session.stderr) }
                 if (!session.requestExec(command)) {
