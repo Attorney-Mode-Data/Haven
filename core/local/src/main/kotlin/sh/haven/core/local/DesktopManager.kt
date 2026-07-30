@@ -1039,17 +1039,23 @@ class DesktopManager @Inject constructor(
         // Haven's own process where libEGL reaches Mali). Idempotent — the JNI
         // tracks a single global server, so this shares the one already used by
         // the native compositor. Gated on the .so being present (only arm64
-        // ships it); on x86_64 it skips and the cage stays on llvmpipe. The
-        // compositor itself stays on pixman; only the app's GL is accelerated.
+        // ships it) AND on the labwc JNI lib having loaded — calling the
+        // native method without it throws UnsatisfiedLinkError and killed
+        // the whole cage/present_app start (#469). Either way the skip is
+        // soft: the cage stays on llvmpipe. The compositor itself stays on
+        // pixman; only the app's GL is accelerated.
         val virglBin = File(
             context.applicationInfo.nativeLibraryDir, "libvirgl_test_server.so",
         )
-        val virglEnv = if (virglBin.canExecute()) {
+        val virglEnv = if (WaylandBridge.available && virglBin.canExecute()) {
             WaylandBridge.nativeStartVirglServer(
                 virglBin.absolutePath, File(context.cacheDir, ".virgl_test").absolutePath,
             )
             gpuPassthroughEnv(" ; ")
         } else {
+            if (!WaylandBridge.available) {
+                Log.w(TAG, "virgl skipped — labwc lib unavailable (${WaylandBridge.loadError}); cage app stays on llvmpipe")
+            }
             ""
         }
 

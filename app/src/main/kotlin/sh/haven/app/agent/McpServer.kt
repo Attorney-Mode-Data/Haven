@@ -1259,7 +1259,11 @@ class McpServer @Inject constructor(
             outcome = AgentAuditEvent.Outcome.ERROR
             errorMessage = e.message
             if (isNotification) "" else jsonRpcError(id, e.code, e.message ?: "Error")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Throwable, not Exception: a JNI-backed handler can throw an
+            // Error (#469 — UnsatisfiedLinkError when a native lib failed
+            // to load), and letting it unwind past here kills the client's
+            // socket with no response instead of a JSON-RPC error.
             Log.e(TAG, "dispatch failed for method=$method", e)
             outcome = AgentAuditEvent.Outcome.ERROR
             errorMessage = e.message

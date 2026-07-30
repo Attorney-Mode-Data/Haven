@@ -21,13 +21,20 @@ object WaylandBridge {
     var available: Boolean = false
         private set
 
+    /** When [available] is false: the loadLibrary failure reason, so gate
+     *  logs can say WHY the native desktop is disabled (#469). */
+    @JvmStatic
+    var loadError: String? = null
+        private set
+
     init {
         try {
             System.loadLibrary("labwc_android")
             available = true
             Log.i(TAG, "liblabwc_android.so loaded")
         } catch (e: UnsatisfiedLinkError) {
-            Log.w(TAG, "liblabwc_android.so not present on this ABI — native Wayland desktop disabled")
+            loadError = e.message
+            Log.w(TAG, "liblabwc_android.so failed to load — native Wayland desktop disabled: ${e.message}")
         }
     }
 
