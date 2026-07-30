@@ -1320,6 +1320,15 @@ class DesktopManager @Inject constructor(
         // runs the app fullscreen with no chrome and exits sway when the app
         // closes, matching cage's lifecycle. sway also starts Xwayland, so X11
         // GUIs work too. The config lives under cacheDir (bound to /tmp).
+        // The app + exit hook go through a launcher script, not inline in the
+        // config: sway's parser splits an `exec a; b` line at the ';' and
+        // rejected `swaymsg exit` as an unknown config command (#471) — the
+        // app half still ran, so nobody noticed that exit-on-app-close never
+        // registered and every self-closing app leaked its kiosk. A script
+        // also sidesteps quoting arbitrary commands. SWAYSOCK is inherited
+        // from sway, so swaymsg reaches the right compositor.
+        val kioskRun = File(context.cacheDir, "haven-kiosk-$display.run")
+        kioskRun.writeText("$execCommand\nswaymsg exit\n")
         val kioskConfig = File(context.cacheDir, "haven-kiosk-$display.config")
         kioskConfig.writeText(
             """
@@ -1333,7 +1342,7 @@ class DesktopManager @Inject constructor(
             |gaps outer 0
             |for_window [app_id=".*"] fullscreen enable
             |for_window [class=".*"] fullscreen enable
-            |exec $execCommand; swaymsg exit
+            |exec sh /tmp/haven-kiosk-$display.run
             |""".trimMargin(),
         )
         val compositorCmd = "sway -c /tmp/haven-kiosk-$display.config"
