@@ -144,12 +144,17 @@ object GuestAppCatalog {
                 stanza = "[Output]\ncurrent_plugin=pulse",
             ),
             // Open the whole deck on first run (qmmp defaults the playlist
-            // and EQ closed). The append-once guard matches the `[Skinned]`
-            // header, so once qmmp has written its own section — i.e. the
-            // user has run it and made choices — this never overrides them.
+            // and EQ closed) at the skin engine's native pixel-double size —
+            // the deck's width comes from HERE, not from a compositor output
+            // scale: fractional wlroots scale breaks the Xwayland coordinate
+            // space (X screen stays physical px, output is logical), so Qt
+            // clamps menus into space outside the output and sway dies on the
+            // cascade. The append-once guard matches the `[Skinned]` header,
+            // so once qmmp has written its own section — i.e. the user has
+            // run it and made choices — this never overrides them.
             PackConfigWrite(
                 path = "/root/.qmmp/qmmprc",
-                stanza = "[Skinned]\npl_visible=true\neq_visible=true",
+                stanza = "[Skinned]\npl_visible=true\neq_visible=true\ndouble_size=true",
             ),
         ),
         needsAudioBridge = true,
@@ -162,19 +167,18 @@ object GuestAppCatalog {
         // The skinned UI is a three-window deck (main/EQ/playlist); under the
         // kiosk's forced fullscreen they stack and only one is visible.
         multiWindow = true,
-        // Winamp-classic stack, top-left: main deck, playlist, EQ. Each
-        // window is 275x116 at scale 1; qmmp can't place its own windows
+        // Winamp-classic stack, top-left: main deck, playlist, EQ — each
+        // 550x232 in double-size mode. qmmp can't place its own windows
         // under sway (client position requests are ignored at map), and its
         // position save doesn't survive the overlay's force-kill teardown.
+        // Output stays at scale 1 / "auto" resolution: see the config-write
+        // comment for why fractional output scale is a crash, and cover-fill
+        // crops any pinned aspect that differs from the screen.
         swayRules = listOf(
             """for_window [title="^Qmmp$"] move position 20 20""",
-            """for_window [title="^Playlist$"] move position 20 136""",
-            """for_window [title="^Equalizer$"] move position 20 252""",
+            """for_window [title="^Playlist$"] move position 20 252""",
+            """for_window [title="^Equalizer$"] move position 20 484""",
         ),
-        // "auto" output (screen aspect — a pinned 320x400 got cover-fill
-        // CROPPED in fullscreen) + scale 2.25 → 320 logical px across, so
-        // the 275px deck + 20px margin fills ~93% of the width, uncropped.
-        scale = 2.25f,
         assets = listOf(
             PackAsset(
                 url = "https://archive.org/download/winampskin_Pika_Amp/Pika_Amp.wsz",
