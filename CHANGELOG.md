@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.6
+
+📦 **Guest app catalog: one-tap installer packs for app windows** — recreating a working guest app used to mean knowing the whole recipe: which distro family packages it, the config defaults that fail silently in proot, the audio bridge, the app-window registration. A curated pack now collates all of it, and two new agent verbs (`list_app_packs`, `install_app_pack`) run the lot as one background job: package install, idempotent config drops, sha256-pinned asset fetches, verify-binary check, app-window registration, audio bridge. Ships with the device-verified qmmp pack (Winamp-style player: the pulse output fix, a starter skin, fullscreen app window — install was verified end-to-end from a clean guest, and re-running it doesn't duplicate config) plus a declared-but-unverified Audacious pack. The catalog is compiled into the release — packs execute shell in the guest, so trust rides on the APK signature. The "Add from catalog" screen is the next #470 phase; agents can drive it today. (#470)
+
 ## v5.86.5
 
 🔳 **The app-window toolbar no longer hides its tail on portrait phones** — the popup viewer's bottom toolbar packs ~10 controls into one row (close, keyboard, orientation, the L/M/R mouse toggles, input mode, minimize, PiP, fullscreen), which is wider than a portrait phone. A plain Row silently clipped whatever fell off the right edge — most visibly the fullscreen button, reported missing while driving qmmp in a `present_app` popup minutes after v5.86.4 landed. The toolbar now wraps onto a second line when it runs out of width; verified on-device that "Enter fullscreen" is back in the sheet.
