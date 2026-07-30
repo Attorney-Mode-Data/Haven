@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.5
+
+🔳 **The app-window toolbar no longer hides its tail on portrait phones** — the popup viewer's bottom toolbar packs ~10 controls into one row (close, keyboard, orientation, the L/M/R mouse toggles, input mode, minimize, PiP, fullscreen), which is wider than a portrait phone. A plain Row silently clipped whatever fell off the right edge — most visibly the fullscreen button, reported missing while driving qmmp in a `present_app` popup minutes after v5.86.4 landed. The toolbar now wraps onto a second line when it runs out of width; verified on-device that "Enter fullscreen" is back in the sheet.
+
 ## v5.86.4
 
 🪟 **Cage app windows and `present_app` popups work again** — starting the cage desktop or a `present_app` window crashed on devices where the labwc native library fails to load: the GPU-acceleration step added in v5.86.1 called straight into JNI without checking the library had actually loaded, throwing `UnsatisfiedLinkError` and aborting the launch. The call is now gated on the library the way `WaylandBridge`'s own contract demands, and a skipped virgl just leaves the app on the software renderer — verified on the failing device that a cage on llvmpipe runs fine. The skip is logged with the library's real load-failure reason, so the next report from a device in this state carries its own diagnosis. Found live while driving qmmp into a cage popup over MCP. (#469)
