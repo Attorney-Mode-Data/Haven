@@ -40,6 +40,8 @@ import sh.haven.core.ffmpeg.FfmpegExecutor
 import sh.haven.core.ffmpeg.HlsStreamServer
 import sh.haven.core.ffmpeg.TranscodeCommand
 import sh.haven.core.local.WaylandSocketHelper
+import sh.haven.core.local.proot.GuestAppCatalog
+import sh.haven.core.local.proot.buildPackInstallScript
 import sh.haven.core.rclone.RcloneClient
 import sh.haven.core.security.posixShellQuote
 import sh.haven.core.ssh.SessionManagerRegistry
@@ -1287,6 +1289,26 @@ internal class McpTools(
                 else "Let the agent run in the guest: ${args.optString("command").take(120)}"
             },
         ) { args -> runInProot(args) },
+
+        "list_app_packs" to ToolHandler(
+            description = "List the curated guest-app installer packs (#470) — one-tap recipes that collate everything a working cage/app-window app needs: guest packages per package family, config drops that fix silent-failure defaults (e.g. qmmp's ALSA-in-proot output), the audio-bridge requirement, the app-window def to register, and optional sha256-pinned assets (e.g. Winamp skins). Each entry reports whether it's compatible with the ACTIVE distro's family, whether it looks installed there (verify binary present), whether its app window is already registered, and which families are device-verified. Read-only; install with install_app_pack.",
+            inputSchema = emptyObjectSchema(),
+        ) { _ -> listAppPacks() },
+
+        "install_app_pack" to ToolHandler(
+            description = "Install a curated guest-app pack (from list_app_packs) into the ACTIVE distro: package install via the distro's package manager, idempotent config drops, optional pinned-asset downloads, then — app-side — a verify-binary check, app-window def registration (so the app appears in Installed Apps / present_app-launchable), and audio-bridge start if the pack needs it. Long-running (a package install): returns { jobId, status: \"running\" } immediately; poll by calling again with that jobId — the response carries accumulated output and, once finished, the exitCode (0 = installed AND registered; non-zero = a phase failed, see output tail). Requires an installed active distro whose family the pack supports.",
+            inputSchema = objectSchema {
+                string("id", "Pack id from list_app_packs (e.g. \"qmmp\"). Required unless polling via jobId.")
+                boolean("includeAssets", "Also fetch the pack's optional pinned assets (skins, sample content). Default true.")
+                string("jobId", "Poll a previously started install job. When set, `id` is ignored.")
+            },
+            consentLevel = ConsentLevel.ONCE_PER_SESSION,
+            summarise = { args ->
+                val jid = args.optString("jobId").takeIf { it.isNotBlank() }
+                if (jid != null) "Let the agent read app-pack install progress"
+                else "Install the '${args.optString("id")}' app pack into the guest"
+            },
+        ) { args -> installAppPack(args) },
 
         "register_guest_service" to ToolHandler(
             description = "Register a long-lived helper process to run inside the ACTIVE distro's proot guest — typically an app-native MCP server (KiCad/FreeCAD/OpenSCAD) the agent drives for structured control. Haven supervises it: starts it (if autostart) when the MCP endpoint comes up, re-launches it after an app restart, and — when an MCP reverse-tunnel endpoint is configured — multiplexes its loopback `port` back to the remote MCP client alongside Haven's own endpoint (no adb forward needed). The registry is persisted per-distro. Returns the generated service id. Use start_guest_service to launch it now.",
@@ -6471,6 +6493,112 @@ internal class McpTools(
             }
         }
         return jobId
+    }
+
+    // --- guest app packs (#470) ---
+
+    /** Live background `install_app_pack` jobs, keyed by jobId. */
+    private val packJobs = java.util.concurrent.ConcurrentHashMap<String, ProotJob>()
+
+    private suspend fun listAppPacks(): JSONObject {
+        val family = prootManager.activeDistro.family
+        val defs = preferencesRepository.appWindowDefs.first().items
+        val arr = JSONArray()
+        for (p in GuestAppCatalog.PACKS) {
+            arr.put(JSONObject().apply {
+                put("id", p.id)
+                put("label", p.label)
+                put("description", p.description)
+                put("families", JSONArray().apply { p.packages.keys.forEach { put(it.name) } })
+                put("verifiedFamilies", JSONArray().apply { p.verifiedFamilies.forEach { put(it.name) } })
+                put("compatibleWithActive", p.packages.containsKey(family))
+                put("installedOnActive", File(prootManager.activeRootfsDir, p.verifyBinary).exists())
+                put("appWindowRegistered", defs.any { it.command == p.appCommand })
+                put("needsAudioBridge", p.needsAudioBridge)
+                put("assetCount", p.assets.size)
+            })
+        }
+        return JSONObject().apply {
+            put("activeDistroId", prootManager.activeDistroId)
+            put("activeFamily", family.name)
+            put("count", arr.length())
+            put("packs", arr)
+        }
+    }
+
+    private suspend fun installAppPack(args: JSONObject): JSONObject {
+        val jid = args.optString("jobId").takeIf { it.isNotBlank() }
+        if (jid != null) {
+            val job = packJobs[jid] ?: throw McpError(-32602, "Unknown app-pack jobId: $jid")
+            return JSONObject().apply {
+                put("jobId", jid)
+                put("status", if (job.running) "running" else "done")
+                job.exitCode?.let { put("exitCode", it) }
+                put("output", synchronized(job.output) { job.output.toString() }.takeLast(8000))
+            }
+        }
+        val id = args.optString("id").ifEmpty { throw McpError(-32602, "Missing required argument: id") }
+        val pack = GuestAppCatalog.byId(id)
+            ?: throw McpError(-32602, "Unknown pack '$id' — see list_app_packs")
+        if (!prootManager.isRootfsInstalled) {
+            throw McpError(-32603, "Active distro '${prootManager.activeDistroId}' has no installed rootfs")
+        }
+        val family = prootManager.activeDistro.family
+        val pkgs = pack.packages[family] ?: throw McpError(
+            -32602,
+            "Pack '$id' has no package list for $family (active distro " +
+                "'${prootManager.activeDistroId}') — compatible families: ${pack.packages.keys.joinToString()}",
+        )
+        val script = buildPackInstallScript(pack, pkgs, family, args.optBoolean("includeAssets", true))
+        val jobId = java.util.UUID.randomUUID().toString()
+        val job = ProotJob()
+        packJobs[jobId] = job
+        backgroundScope.launch {
+            try {
+                val proc = prootManager.startCommandInProot(script)
+                proc.inputStream.bufferedReader().forEachLine { line ->
+                    synchronized(job.output) { job.output.append(line).append('\n') }
+                }
+                val code = proc.waitFor()
+                if (code != 0) {
+                    synchronized(job.output) { job.output.append("\n[pack] guest phase failed (exit $code)\n") }
+                    job.exitCode = code
+                    return@launch
+                }
+                if (!File(prootManager.activeRootfsDir, pack.verifyBinary).exists()) {
+                    synchronized(job.output) {
+                        job.output.append("\n[pack] verify failed: ${pack.verifyBinary} missing after install\n")
+                    }
+                    job.exitCode = 1
+                    return@launch
+                }
+                preferencesRepository.upsertAppWindowDef(
+                    label = pack.appLabel,
+                    command = pack.appCommand,
+                    createdBy = sh.haven.core.data.preferences.AppWindowOrigin.AGENT,
+                    fullscreen = pack.fullscreen,
+                )
+                if (pack.needsAudioBridge) localSessionManager.audioBridge.start()
+                synchronized(job.output) {
+                    job.output.append("\n[pack] ${pack.id} installed; app window '${pack.appLabel}' registered")
+                    if (pack.needsAudioBridge) job.output.append("; audio bridge starting")
+                    job.output.append('\n')
+                }
+                job.exitCode = 0
+            } catch (e: Exception) {
+                synchronized(job.output) { job.output.append("\n[pack] install error: ${e.message}\n") }
+                job.exitCode = -1
+            } finally {
+                job.running = false
+            }
+        }
+        return JSONObject().apply {
+            put("jobId", jobId)
+            put("status", "running")
+            put("pack", pack.id)
+            put("family", family.name)
+            put("poll", "install_app_pack with jobId=$jobId")
+        }
     }
 
     private fun distroToJson(

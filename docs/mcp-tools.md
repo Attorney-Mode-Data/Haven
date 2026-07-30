@@ -42,8 +42,8 @@ expand one for its description and arguments. The tag after each name is its
 consent level:
 
 - **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (68 tools).
-- **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (49 tools).
-- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (83 tools).
+- **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (50 tools).
+- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (84 tools).
 
 ## Sections
 
@@ -52,7 +52,7 @@ consent level:
 - [**Files, media & clipboard**](#sec-files) — 19 tools
 - [**Cloud storage (rclone)**](#sec-rclone) — 15 tools
 - [**Email**](#sec-email) — 15 tools
-- [**Linux guest (proot) & desktops**](#sec-linux) — 44 tools
+- [**Linux guest (proot) & desktops**](#sec-linux) — 46 tools
 - [**Networking — tunnels & port forwarding**](#sec-networking) — 14 tools
 - [**USB & host-device brokers**](#sec-usb) — 17 tools
 - [**Security — SSH keys, host keys, TOTP & age**](#sec-security) — 14 tools
@@ -1028,7 +1028,7 @@ Send a plain-text email from a connected EMAIL profile. Pass profileId (from lis
 
 <a id="sec-linux"></a>
 
-## Linux guest (proot) & desktops (44)
+## Linux guest (proot) & desktops (46)
 
 The on-device Linux distros, their desktop environments and windows, guest services, the audio bridge, and guest-file access.
 
@@ -1159,6 +1159,17 @@ Single rich read of the proot subsystem: active distro id, every Distro (id, lab
 </details>
 
 <details markdown="1">
+<summary><code>install_app_pack</code> · asks once per session</summary>
+
+Install a curated guest-app pack (from list_app_packs) into the ACTIVE distro: package install via the distro's package manager, idempotent config drops, optional pinned-asset downloads, then — app-side — a verify-binary check, app-window def registration (so the app appears in Installed Apps / present_app-launchable), and audio-bridge start if the pack needs it. Long-running (a package install): returns { jobId, status: "running" } immediately; poll by calling again with that jobId — the response carries accumulated output and, once finished, the exitCode (0 = installed AND registered; non-zero = a phase failed, see output tail). Requires an installed active distro whose family the pack supports.
+
+- `id` (string) — Pack id from list_app_packs (e.g. "qmmp"). Required unless polling via jobId.
+- `includeAssets` (boolean) — Also fetch the pack's optional pinned assets (skins, sample content). Default true.
+- `jobId` (string) — Poll a previously started install job. When set, `id` is ignored.
+
+</details>
+
+<details markdown="1">
 <summary><code>install_desktop</code> · asks every call</summary>
 
 Install a desktop environment on the active distro. Calls ProotManager.setupDesktop which downloads packages, configures VNC, and writes the launcher. Poll `inspect_proot.desktopSetupState` for progress. Failures are attributed to a DePhase (Packages / VncConfig / Marker) in both the state and the install log.
@@ -1186,6 +1197,13 @@ Launch a GUI application into a RUNNING desktop (deId). X11/VNC desktops get DIS
 - `deId` (string, required) — Desktop environment id (e.g. "xfce4") of a RUNNING X11/VNC desktop.
 - `timeoutMs` (integer) — Max ms to wait for the window. Default 15000, clamped 0..60000. 0 = launch and return without waiting.
 - `waitForWindowTitle` (string) — If set, poll until a window whose title contains this substring (case-insensitive) appears; otherwise return the first new window seen.
+
+</details>
+
+<details markdown="1">
+<summary><code>list_app_packs</code> · no per-call prompt</summary>
+
+List the curated guest-app installer packs (#470) — one-tap recipes that collate everything a working cage/app-window app needs: guest packages per package family, config drops that fix silent-failure defaults (e.g. qmmp's ALSA-in-proot output), the audio-bridge requirement, the app-window def to register, and optional sha256-pinned assets (e.g. Winamp skins). Each entry reports whether it's compatible with the ACTIVE distro's family, whether it looks installed there (verify binary present), whether its app window is already registered, and which families are device-verified. Read-only; install with install_app_pack.
 
 </details>
 
