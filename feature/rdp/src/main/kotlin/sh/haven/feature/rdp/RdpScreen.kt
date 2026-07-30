@@ -1541,5 +1541,20 @@ internal fun rdpErrorHint(error: String): RdpErrorHint? = when {
         titleRes = R.string.rdp_hint_tls_ciphers_title,
         bodyRes = R.string.rdp_hint_tls_ciphers_body,
     )
+    // RDP_NEG_FAILURE HYBRID_REQUIRED_BY_SERVER (MS-RDPBCGR 2.2.1.2.2): the
+    // server insists on NLA and this profile has it off (#461).
+    "FailureCode(5)" in error -> RdpErrorHint(
+        titleRes = R.string.rdp_hint_nla_required_title,
+        bodyRes = R.string.rdp_hint_nla_required_body,
+    )
+    // sspi-rs Username parser: MicrosoftAccount\you@example.com is refused as
+    // MixedFormat, and a bare email is truncated at the @ (#461,
+    // Devolutions/sspi-rs#718). Only NLA goes through that parser.
+    "MixedFormat" in error || "invalid username" in error -> RdpErrorHint(
+        titleRes = R.string.rdp_hint_mixed_username_title,
+        bodyRes = R.string.rdp_hint_mixed_username_body,
+        linkLabelRes = R.string.rdp_hint_mixed_username_link,
+        linkUrl = "https://github.com/GlassHaven/Haven/issues/461",
+    )
     else -> null
 }
