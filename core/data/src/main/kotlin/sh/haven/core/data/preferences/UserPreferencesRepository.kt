@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import sh.haven.core.security.CredentialEncryption
-import java.security.GeneralSecurityException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -423,7 +422,13 @@ class UserPreferencesRepository @Inject constructor(
     private fun decryptSyncPassphraseOrNull(encrypted: String): String? =
         try {
             CredentialEncryption.decrypt(context, encrypted)
-        } catch (e: GeneralSecurityException) {
+        } catch (_: Exception) {
+            // Broad on purpose: a lost Keystore key surfaces as
+            // GeneralSecurityException, a corrupt stored value as
+            // IllegalArgumentException (Base64), and an unparseable restored
+            // Tink keyset as IOException — all mean the same thing here, and
+            // any of them uncaught is the same launch crash-loop. Mirrors
+            // CredentialEncryption.isEncrypted's catch.
             null
         }
 
