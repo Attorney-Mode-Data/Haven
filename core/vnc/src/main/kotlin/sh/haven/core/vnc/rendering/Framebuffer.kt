@@ -159,9 +159,22 @@ class Framebuffer(private val session: VncSession) {
         val d = DataInputStream(input)
         val srcX = d.readUnsignedShort()
         val srcY = d.readUnsignedShort()
-        val src = Bitmap.createBitmap(frame, srcX, srcY, rect.width, rect.height)
-        canvas.drawBitmap(src, rect.x.toFloat(), rect.y.toFloat(), null)
-        src.recycle()
+        // Clamp to the live framebuffer (#471): a stale CopyRect racing a
+        // desktop resize — or a buggy server — can reference geometry beyond
+        // the frame, and createBitmap answers that with the raw
+        // "y + height must be <= bitmap.height()" IllegalArgumentException,
+        // which then surfaces verbatim as the tab's error. Blit what's in
+        // bounds; drop the rest. (The rect's 4 payload bytes are already
+        // consumed, so skipping keeps the protocol stream aligned.)
+        val w = minOf(rect.width, frame.width - srcX, frame.width - rect.x)
+        val h = minOf(rect.height, frame.height - srcY, frame.height - rect.y)
+        if (w <= 0 || h <= 0) return
+        // Buffered pixel copy, not createBitmap+canvas: no intermediate
+        // bitmap allocation, and safe when source and destination overlap
+        // (scrolling is CopyRect's whole job).
+        val buf = IntArray(w * h)
+        frame.getPixels(buf, 0, w, srcX, srcY, w, h)
+        frame.setPixels(buf, 0, w, rect.x, rect.y, w, h)
     }
 
     // ---- RRE encoding ----
