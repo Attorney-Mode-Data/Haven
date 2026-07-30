@@ -56,6 +56,20 @@ data class GuestAppPack(
     val appLabel: String,
     val appCommand: String,
     val fullscreen: Boolean = true,
+    /** Float the app's windows instead of kiosk-fullscreening them — needed
+     *  by apps that open several toplevels (see AppWindowDef.multiWindow). */
+    val multiWindow: Boolean = false,
+    /** Per-title sway placement rules for [multiWindow] apps — sway centers
+     *  every floating window, so without these a deck maps stacked. */
+    val swayRules: List<String> = emptyList(),
+    /** Cage output size: null = the global default ("auto" fits the phone
+     *  screen aspect — the safe choice: a pinned "WxH" whose aspect differs
+     *  from the screen gets CROPPED by the viewer's cover-fill). */
+    val resolution: String? = null,
+    /** Cage output scale (wlroots HiDPI): shrinks the LOGICAL canvas so a
+     *  small fixed-size app (a 275px-wide skinned deck) fills the screen
+     *  without pinning the output aspect. null = global default (1.0). */
+    val scale: Float? = null,
     val assets: List<PackAsset> = emptyList(),
     /**
      * Families where this pack has been verified end-to-end on a real
@@ -129,6 +143,14 @@ object GuestAppCatalog {
                 path = "/root/.qmmp/qmmprc",
                 stanza = "[Output]\ncurrent_plugin=pulse",
             ),
+            // Open the whole deck on first run (qmmp defaults the playlist
+            // and EQ closed). The append-once guard matches the `[Skinned]`
+            // header, so once qmmp has written its own section — i.e. the
+            // user has run it and made choices — this never overrides them.
+            PackConfigWrite(
+                path = "/root/.qmmp/qmmprc",
+                stanza = "[Skinned]\npl_visible=true\neq_visible=true",
+            ),
         ),
         needsAudioBridge = true,
         appLabel = "Qmmp",
@@ -137,6 +159,22 @@ object GuestAppCatalog {
         // connection broke") — via Xwayland both UIs work. Device-verified.
         appCommand = "env QT_QPA_PLATFORM=xcb qmmp",
         fullscreen = true,
+        // The skinned UI is a three-window deck (main/EQ/playlist); under the
+        // kiosk's forced fullscreen they stack and only one is visible.
+        multiWindow = true,
+        // Winamp-classic stack, top-left: main deck, playlist, EQ. Each
+        // window is 275x116 at scale 1; qmmp can't place its own windows
+        // under sway (client position requests are ignored at map), and its
+        // position save doesn't survive the overlay's force-kill teardown.
+        swayRules = listOf(
+            """for_window [title="^Qmmp$"] move position 20 20""",
+            """for_window [title="^Playlist$"] move position 20 136""",
+            """for_window [title="^Equalizer$"] move position 20 252""",
+        ),
+        // "auto" output (screen aspect — a pinned 320x400 got cover-fill
+        // CROPPED in fullscreen) + scale 2.25 → 320 logical px across, so
+        // the 275px deck + 20px margin fills ~93% of the width, uncropped.
+        scale = 2.25f,
         assets = listOf(
             PackAsset(
                 url = "https://archive.org/download/winampskin_Pika_Amp/Pika_Amp.wsz",

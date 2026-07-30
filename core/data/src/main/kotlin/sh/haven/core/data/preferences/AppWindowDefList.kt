@@ -40,6 +40,22 @@ data class AppWindowDef(
      * the compositor as a non-root user (sway won't start as root).
      */
     val runAsRoot: Boolean = false,
+    /**
+     * Float the app's windows instead of force-fullscreening them (#471
+     * follow-up). Multi-window apps (qmmp's skinned main/EQ/playlist deck)
+     * stack unusably under the kiosk's fullscreen-everything rule — only the
+     * last-raised window is visible. Floating lets the app's own window
+     * placement (Winamp-style docking) work.
+     */
+    val multiWindow: Boolean = false,
+    /**
+     * Extra sway config lines appended to the generated kiosk config —
+     * app-specific window placement for [multiWindow] apps (sway centers
+     * every floating window, stacking a multi-window deck; and apps can't
+     * reliably place themselves). E.g.
+     * `for_window [title="^Playlist$"] move position 20 136`.
+     */
+    val swayRules: List<String> = emptyList(),
 )
 
 /** Persisted ordered list of [AppWindowDef], JSON-encoded into DataStore. */
@@ -59,6 +75,10 @@ data class AppWindowDefList(val items: List<AppWindowDef>) {
                     if (d.resolution != null) put("resolution", d.resolution)
                     if (d.scale != null) put("scale", d.scale.toDouble())
                     if (d.runAsRoot) put("runAsRoot", true)
+                    if (d.multiWindow) put("multiWindow", true)
+                    if (d.swayRules.isNotEmpty()) {
+                        put("swayRules", JSONArray().apply { d.swayRules.forEach { put(it) } })
+                    }
                 },
             )
         }
@@ -84,6 +104,10 @@ data class AppWindowDefList(val items: List<AppWindowDef>) {
                     resolution = o.optString("resolution", "").ifEmpty { null },
                     scale = if (o.has("scale")) o.optDouble("scale", 1.0).toFloat() else null,
                     runAsRoot = o.optBoolean("runAsRoot", false),
+                    multiWindow = o.optBoolean("multiWindow", false),
+                    swayRules = o.optJSONArray("swayRules")?.let { arr ->
+                        (0 until arr.length()).mapNotNull { j -> arr.optString(j).ifEmpty { null } }
+                    } ?: emptyList(),
                 )
             }
             AppWindowDefList(items)

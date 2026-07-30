@@ -53,10 +53,26 @@ class GuestAppCatalogTest {
      *  reintroduce a player that looks fine and plays nothing. */
     @Test
     fun `qmmp pack keeps the pulse output config write`() {
-        val w = GuestAppCatalog.QMMP.configWrites.single()
+        val w = GuestAppCatalog.QMMP.configWrites.first { it.stanza.startsWith("[Output]") }
         assertEquals("/root/.qmmp/qmmprc", w.path)
         assertTrue(w.stanza.contains("current_plugin=pulse"))
+        // And the deck opens whole on first run (PL/EQ default closed).
+        assertTrue(
+            GuestAppCatalog.QMMP.configWrites.any {
+                it.stanza.startsWith("[Skinned]") && it.stanza.contains("pl_visible=true")
+            },
+        )
         assertTrue(GuestAppCatalog.QMMP.needsAudioBridge)
+        // Skinned UI needs xcb (native Wayland kills the compositor) and the
+        // three-window deck needs floating, not kiosk fullscreen.
+        assertTrue(GuestAppCatalog.QMMP.appCommand.contains("QT_QPA_PLATFORM=xcb"))
+        assertTrue(GuestAppCatalog.QMMP.multiWindow)
+        // Placement rules for all three deck windows — sway centers floating
+        // windows, so without these the deck maps as a stack.
+        assertEquals(3, GuestAppCatalog.QMMP.swayRules.size)
+        for (title in listOf("Qmmp", "Playlist", "Equalizer")) {
+            assertTrue(GuestAppCatalog.QMMP.swayRules.any { it.contains(title) && it.contains("move position") })
+        }
     }
 
     @Test

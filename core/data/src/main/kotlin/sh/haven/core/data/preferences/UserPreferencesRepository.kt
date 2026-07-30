@@ -1466,6 +1466,8 @@ class UserPreferencesRepository @Inject constructor(
         resolution: String? = null,
         scale: Float? = null,
         runAsRoot: Boolean? = null,
+        multiWindow: Boolean? = null,
+        swayRules: List<String>? = null,
     ) {
         dataStore.edit { prefs ->
             val current = prefs[appWindowDefsKey]?.let { AppWindowDefList.fromJson(it) }
@@ -1483,6 +1485,8 @@ class UserPreferencesRepository @Inject constructor(
                             resolution = resolution ?: it.resolution,
                             scale = scale ?: it.scale,
                             runAsRoot = runAsRoot ?: it.runAsRoot,
+                            multiWindow = multiWindow ?: it.multiWindow,
+                            swayRules = swayRules ?: it.swayRules,
                         )
                     } else it
                 }
@@ -1496,6 +1500,8 @@ class UserPreferencesRepository @Inject constructor(
                     resolution = resolution,
                     scale = scale,
                     runAsRoot = runAsRoot ?: false,
+                    multiWindow = multiWindow ?: false,
+                    swayRules = swayRules ?: emptyList(),
                 )
             }
             prefs[appWindowDefsKey] = AppWindowDefList(items).toJson()

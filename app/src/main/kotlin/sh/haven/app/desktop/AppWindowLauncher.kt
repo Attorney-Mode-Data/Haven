@@ -66,7 +66,7 @@ class AppWindowLauncher @Inject constructor(
             }
         }
         val rooted = if (def.runAsRoot) desktopManager.ensureRunAsRoot() else false
-        val session = desktopManager.startAppWindow(def.command, resolution, scale, runAsRoot = rooted)
+        val session = desktopManager.startAppWindow(def.command, resolution, scale, runAsRoot = rooted, multiWindow = def.multiWindow, swayRules = def.swayRules)
         if (session.state != DesktopManager.DesktopState.RUNNING) {
             return@withContext "Couldn't launch ${def.label}: ${session.errorMessage ?: "failed to start"}"
         }

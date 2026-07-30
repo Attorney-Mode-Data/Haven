@@ -502,6 +502,8 @@ internal class McpTools(
                 string("resolution", "Cage display resolution: 'auto' (portrait, fills the screen — default) or a 'WxH' token like '1280x720'. Lower resolution = bigger fonts.")
                 number("scale", "Output scale factor (wlroots HiDPI; foot/GTK honour it). 1.0 default; 1.5/2 enlarge fonts + UI.")
                 boolean("runAsRoot", "Run the app as root via fakeroot-tcp (the cage compositor itself runs non-root, so system tools like package managers go read-only otherwise). Installs fakeroot if missing. APT distros only today. Default false.")
+                boolean("multiWindow", "Float the app's windows instead of force-fullscreening them. Required for apps that open several toplevels (qmmp's skinned main/EQ/playlist deck) — under the default kiosk rule they stack and only the last-raised window is visible. Default false.")
+                stringArray("swayRules", "Extra sway config lines appended to the kiosk config — per-title placement for multiWindow apps (sway centers every floating window, stacking a deck), e.g. 'for_window [title=\"^Playlist$\"] move position 20 136'.")
             },
             consentLevel = ConsentLevel.ONCE_PER_SESSION,
             summarise = { args ->
@@ -3011,6 +3013,10 @@ internal class McpTools(
         val resolutionArg = args.optString("resolution", "").ifEmpty { null }
         val scaleArg = if (args.has("scale")) args.optDouble("scale").toFloat() else null
         val runAsRoot = args.optBoolean("runAsRoot", false)
+        val multiWindow = args.optBoolean("multiWindow", false)
+        val swayRules = args.optJSONArray("swayRules")?.let { arr ->
+            (0 until arr.length()).mapNotNull { i -> arr.optString(i).ifEmpty { null } }
+        } ?: emptyList()
         if (!prootManager.isRootfsInstalled) {
             throw McpError(-32603, "Active distro '${prootManager.activeDistroId}' has no installed rootfs")
         }
@@ -3023,7 +3029,7 @@ internal class McpTools(
             throw McpError(-32603, "the cage runtime (sway/wayvnc) isn't installed for '${prootManager.activeDistroId}' and couldn't be installed automatically")
         }
         val rooted = if (runAsRoot) dm.ensureRunAsRoot() else false
-        val session = withContext(Dispatchers.IO) { dm.startAppWindow(command, resolution, scale, runAsRoot = rooted) }
+        val session = withContext(Dispatchers.IO) { dm.startAppWindow(command, resolution, scale, runAsRoot = rooted, multiWindow = multiWindow, swayRules = swayRules) }
         if (session.state == sh.haven.core.local.DesktopManager.DesktopState.RUNNING) {
             presentationManager.presentAppWindow(
                 host = "127.0.0.1",
@@ -3046,6 +3052,8 @@ internal class McpTools(
                     resolution = resolutionArg,
                     scale = scaleArg,
                     runAsRoot = if (runAsRoot) true else null,
+                    multiWindow = if (multiWindow) true else null,
+                    swayRules = swayRules.ifEmpty { null },
                 )
             }
             return JSONObject().apply {
@@ -6577,6 +6585,10 @@ internal class McpTools(
                     command = pack.appCommand,
                     createdBy = sh.haven.core.data.preferences.AppWindowOrigin.AGENT,
                     fullscreen = pack.fullscreen,
+                    multiWindow = if (pack.multiWindow) true else null,
+                    swayRules = pack.swayRules.ifEmpty { null },
+                    resolution = pack.resolution,
+                    scale = pack.scale,
                 )
                 if (pack.needsAudioBridge) localSessionManager.audioBridge.start()
                 synchronized(job.output) {

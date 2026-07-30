@@ -28,6 +28,20 @@ class AppWindowDefListTest {
                     createdBy = AppWindowOrigin.AGENT,
                     lastUsed = 2000L,
                 ),
+                AppWindowDef(
+                    id = "id-3",
+                    label = "Deck",
+                    command = "env QT_QPA_PLATFORM=xcb qmmp",
+                    createdBy = AppWindowOrigin.AGENT,
+                    lastUsed = 3000L,
+                    fullscreen = true,
+                    runAsRoot = true,
+                    multiWindow = true,
+                    swayRules = listOf(
+                        """for_window [title="^Qmmp$"] move position 20 20""",
+                        """for_window [title="^Playlist$"] move position 20 136""",
+                    ),
+                ),
             ),
         )
         val restored = AppWindowDefList.fromJson(list.toJson())

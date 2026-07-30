@@ -1977,9 +1977,11 @@ Show the user a LIVE, interactive single application window inline in Haven. Lau
 - `command` (string, required) — Guest shell command for the GUI app cage runs, e.g. 'imv /root/x.png'.
 - `caption` (string) — Optional one-line caption shown above the window.
 - `fullscreen` (boolean) — Open the window filling the whole screen (immersive) instead of the bottom sheet. Default false.
+- `multiWindow` (boolean) — Float the app's windows instead of force-fullscreening them. Required for apps that open several toplevels (qmmp's skinned main/EQ/playlist deck) — under the default kiosk rule they stack and only the last-raised window is visible. Default false.
 - `resolution` (string) — Cage display resolution: 'auto' (portrait, fills the screen — default) or a 'WxH' token like '1280x720'. Lower resolution = bigger fonts.
 - `runAsRoot` (boolean) — Run the app as root via fakeroot-tcp (the cage compositor itself runs non-root, so system tools like package managers go read-only otherwise). Installs fakeroot if missing. APT distros only today. Default false.
 - `scale` (number) — Output scale factor (wlroots HiDPI; foot/GTK honour it). 1.0 default; 1.5/2 enlarge fonts + UI.
+- `swayRules` (string[]) — Extra sway config lines appended to the kiosk config — per-title placement for multiWindow apps (sway centers every floating window, stacking a deck), e.g. 'for_window [title="^Playlist$"] move position 20 136'.
 
 </details>
 
