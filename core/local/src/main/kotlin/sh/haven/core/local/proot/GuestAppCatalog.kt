@@ -132,7 +132,10 @@ object GuestAppCatalog {
         ),
         needsAudioBridge = true,
         appLabel = "Qmmp",
-        appCommand = "qmmp",
+        // xcb, not native Wayland: qmmp's skinned (Winamp) UI on the wayland
+        // platform takes the app-window compositor down with it ("The Wayland
+        // connection broke") — via Xwayland both UIs work. Device-verified.
+        appCommand = "env QT_QPA_PLATFORM=xcb qmmp",
         fullscreen = true,
         assets = listOf(
             PackAsset(
