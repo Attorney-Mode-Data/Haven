@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -1207,11 +1208,16 @@ private fun VncViewer(
                 color = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
-            Row(
+            // FlowRow, not Row: an app window's toolbar carries ~10 buttons
+            // (close/keyboard/orientation/L-M-R/input-mode/minimize/PiP/
+            // fullscreen), which is wider than a portrait phone. A plain Row
+            // silently clipped the tail — users reported the fullscreen
+            // button as missing. Overflow now wraps to a second line.
+            FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.Center,
             ) {
                 IconButton(onClick = onDisconnect) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.vnc_cd_disconnect))
