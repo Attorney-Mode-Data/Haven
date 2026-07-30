@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import sh.haven.core.security.CredentialEncryption
+import java.security.GeneralSecurityException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -408,12 +409,23 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     val backupSyncPassphraseFlow: Flow<String?> = dataStore.data.map { prefs ->
-        prefs[backupSyncPassphraseKey]?.let { CredentialEncryption.decrypt(context, it) }
+        prefs[backupSyncPassphraseKey]?.let { decryptSyncPassphraseOrNull(it) }
     }
 
-    /** The stored auto-sync passphrase, decrypted; null when auto-sync is off. */
+    /** The stored auto-sync passphrase, decrypted; null when auto-sync is off or the
+     *  stored ciphertext can no longer be decrypted (e.g. the Android Keystore key
+     *  didn't survive an app reinstall / device restore — Keystore keys are excluded
+     *  from Android's own backup mechanism by design, so a restored DataStore file
+     *  can carry ciphertext its own Keystore will never decrypt again). */
     suspend fun backupSyncPassphrase(): String? =
-        dataStore.data.first()[backupSyncPassphraseKey]?.let { CredentialEncryption.decrypt(context, it) }
+        dataStore.data.first()[backupSyncPassphraseKey]?.let { decryptSyncPassphraseOrNull(it) }
+
+    private fun decryptSyncPassphraseOrNull(encrypted: String): String? =
+        try {
+            CredentialEncryption.decrypt(context, encrypted)
+        } catch (e: GeneralSecurityException) {
+            null
+        }
 
     /**
      * Emits the current state on collect and again on every preferences write —
