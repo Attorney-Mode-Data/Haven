@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.4
+
+🪟 **Cage app windows and `present_app` popups work again** — starting the cage desktop or a `present_app` window crashed on devices where the labwc native library fails to load: the GPU-acceleration step added in v5.86.1 called straight into JNI without checking the library had actually loaded, throwing `UnsatisfiedLinkError` and aborting the launch. The call is now gated on the library the way `WaylandBridge`'s own contract demands, and a skipped virgl just leaves the app on the software renderer — verified on the failing device that a cage on llvmpipe runs fine. The skip is logged with the library's real load-failure reason, so the next report from a device in this state carries its own diagnosis. Found live while driving qmmp into a cage popup over MCP. (#469)
+
+🔌 **An MCP tool crash no longer takes the whole agent session with it** — the same error exposed a second hole: the JSON-RPC dispatcher only caught `Exception`, so a JNI `Error` unwound past the response writer and the client's socket simply died — no error reply, session over, twice in one afternoon. Dispatch now contains any `Throwable` and answers with a normal JSON-RPC error instead, pinned by a test that replays the exact on-device failure and fails on the old code. (#469)
+
 ## v5.86.3
 
 🛟 **Backup: a restored phone no longer crash-loops the app** — the auto-pull passphrase is stored encrypted with a key in the Android Keystore, and Keystore keys deliberately don't survive an app reinstall or a device-to-device restore. Android's own backup would faithfully restore the *encrypted* passphrase while the key to read it was gone forever — and Haven threw an uncaught error over it on every single launch, before any UI appeared, leaving the app unusable until its data was cleared. Found live on a real device by kanazawahere, who also diagnosed it: an undecryptable stored passphrase now simply means "auto-pull isn't configured", so the app starts normally and you re-enter the passphrase once in Settings if you still want it. The same treatment covers a corrupt stored value and an unreadable restored keyset — every way the stored secret can be beyond recovery, not just the one that was reported. (#464, thanks kanazawahere)
