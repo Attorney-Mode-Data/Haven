@@ -341,6 +341,41 @@ impl RdpClient {
         self.state.read().ok()?.framebuffer.clone()
     }
 
+    /// Tightly-packed RGBA for just `(x, y, w, h)` of the framebuffer.
+    ///
+    /// #422: the host repaints only the region the server changed, but had to
+    /// fetch the WHOLE framebuffer to get at it — on a 1920x1080 session that
+    /// is an 8.29 MB copy per update, for a median update of about 41 KB.
+    /// The rect is clipped to the framebuffer; `None` means there is nothing
+    /// to copy (no framebuffer, or an empty/out-of-bounds rect) and the caller
+    /// should fall back to a full repaint.
+    pub fn get_framebuffer_region(&self, x: u16, y: u16, w: u16, h: u16) -> Option<FrameData> {
+        let state = self.state.read().ok()?;
+        let fb = state.framebuffer.as_ref()?;
+        let (fb_w, fb_h) = (fb.width as usize, fb.height as usize);
+        let (x, y) = (x as usize, y as usize);
+        if x >= fb_w || y >= fb_h {
+            return None;
+        }
+        let w = (w as usize).min(fb_w - x);
+        let h = (h as usize).min(fb_h - y);
+        if w == 0 || h == 0 {
+            return None;
+        }
+        let stride = fb_w * 4;
+        let row_bytes = w * 4;
+        let mut pixels = Vec::with_capacity(row_bytes * h);
+        for row in 0..h {
+            let start = (y + row) * stride + x * 4;
+            pixels.extend_from_slice(&fb.pixels[start..start + row_bytes]);
+        }
+        Some(FrameData {
+            width: w as u16,
+            height: h as u16,
+            pixels,
+        })
+    }
+
     pub fn get_dirty_rects(&self) -> Vec<RdpRect> {
         if let Ok(mut s) = self.state.write() {
             std::mem::take(&mut s.dirty_rects)
@@ -2061,6 +2096,89 @@ fn socks5_connect(
     stream.read_exact(&mut bnd_skip)?;
 
     Ok(stream)
+}
+
+#[cfg(test)]
+mod region_tests {
+    use super::{FrameData, RdpClient, RdpConfig};
+
+    /// #422: the region fetch replaces an 8.29 MB full-framebuffer copy per
+    /// update, so it has to extract exactly the right rows — an off-by-one in
+    /// the stride would show as a smeared or shifted patch on screen.
+    fn client_with_framebuffer(w: u16, h: u16) -> RdpClient {
+        let client = RdpClient::new(RdpConfig {
+            username: String::new(),
+            password: String::new(),
+            domain: String::new(),
+            width: w,
+            height: h,
+            color_depth: 32,
+            enable_credssp: false,
+            pinned_cert_sha256: None,
+            progressive_upgrade: false,
+            avc_enabled: false,
+        });
+        // Distinct value per pixel so a wrong row or column is detectable.
+        let mut pixels = vec![0u8; w as usize * h as usize * 4];
+        for y in 0..h as usize {
+            for x in 0..w as usize {
+                let i = (y * w as usize + x) * 4;
+                pixels[i] = x as u8;
+                pixels[i + 1] = y as u8;
+                pixels[i + 2] = 0x5A;
+                pixels[i + 3] = 0xFF;
+            }
+        }
+        client.state.write().unwrap().framebuffer = Some(FrameData { width: w, height: h, pixels });
+        client
+    }
+
+    #[test]
+    fn region_extracts_the_requested_rows_and_columns() {
+        let client = client_with_framebuffer(64, 32);
+        let region = client.get_framebuffer_region(10, 4, 3, 2).expect("region");
+        assert_eq!((region.width, region.height), (3, 2));
+        assert_eq!(region.pixels.len(), 3 * 2 * 4);
+        // Row 0 of the region is framebuffer row 4, columns 10..13.
+        assert_eq!(&region.pixels[0..4], &[10, 4, 0x5A, 0xFF]);
+        assert_eq!(&region.pixels[4..8], &[11, 4, 0x5A, 0xFF]);
+        assert_eq!(&region.pixels[8..12], &[12, 4, 0x5A, 0xFF]);
+        // Row 1 is framebuffer row 5, same columns — proves the stride step.
+        assert_eq!(&region.pixels[12..16], &[10, 5, 0x5A, 0xFF]);
+    }
+
+    #[test]
+    fn region_is_clipped_to_the_framebuffer() {
+        let client = client_with_framebuffer(64, 32);
+        let region = client.get_framebuffer_region(60, 30, 100, 100).expect("clipped region");
+        assert_eq!((region.width, region.height), (4, 2));
+        assert_eq!(region.pixels.len(), 4 * 2 * 4);
+    }
+
+    #[test]
+    fn region_outside_or_empty_returns_none() {
+        let client = client_with_framebuffer(64, 32);
+        assert!(client.get_framebuffer_region(64, 0, 4, 4).is_none(), "x at the edge");
+        assert!(client.get_framebuffer_region(0, 32, 4, 4).is_none(), "y at the edge");
+        assert!(client.get_framebuffer_region(0, 0, 0, 4).is_none(), "zero width");
+    }
+
+    #[test]
+    fn region_without_a_framebuffer_returns_none() {
+        let client = RdpClient::new(RdpConfig {
+            username: String::new(),
+            password: String::new(),
+            domain: String::new(),
+            width: 8,
+            height: 8,
+            color_depth: 32,
+            enable_credssp: false,
+            pinned_cert_sha256: None,
+            progressive_upgrade: false,
+            avc_enabled: false,
+        });
+        assert!(client.get_framebuffer_region(0, 0, 4, 4).is_none());
+    }
 }
 
 #[cfg(test)]

@@ -69,6 +69,18 @@ class RdpSession(
     private var closed = false
     private var client: RdpClient? = null
     private var currentBitmap: Bitmap? = null
+
+    /**
+     * Framebuffer size as last announced by the server, so the dirty-rect path
+     * can tell whether [currentBitmap] is still the right size WITHOUT fetching
+     * the whole framebuffer to ask (#422). Updated from onConnected/onResize,
+     * which are the only things that change it.
+     */
+    @Volatile
+    private var fbWidth: Int = 0
+
+    @Volatile
+    private var fbHeight: Int = 0
     // #425: MediaCodec H.264 decoder, created only when AVC is enabled.
     private var avcDecoder: Avc420MediaCodecDecoder? = null
     private val startTime = System.currentTimeMillis()
@@ -210,6 +222,8 @@ class RdpSession(
                 override fun onResize(width: UShort, height: UShort) {
                     if (closed) return
                     log("D", "Desktop resized: ${width}x${height}")
+                    fbWidth = width.toInt()
+                    fbHeight = height.toInt()
                     try {
                         synchronized(this@RdpSession) {
                             // #425: don't recycle() — this bitmap may still be
@@ -233,6 +247,8 @@ class RdpSession(
                 override fun onConnected(width: UShort, height: UShort) {
                     if (closed) return
                     log("D", "RDP handshake complete: ${width}x${height}")
+                    fbWidth = width.toInt()
+                    fbHeight = height.toInt()
                     onConnected?.invoke(width.toInt(), height.toInt())
                 }
 
@@ -328,31 +344,38 @@ class RdpSession(
      */
     private fun refreshBitmap(dirty: RdpRect? = null) {
         val c = client ?: return
-        val frame = try {
-            c.getFramebuffer() ?: return
-        } catch (e: Exception) {
-            log("E", "getFramebuffer() failed: ${e.message}")
-            onError?.invoke(e)
-            return
-        }
-        val w = frame.width.toInt()
-        val h = frame.height.toInt()
         val bitmap = try {
             val existing = synchronized(this) { currentBitmap }
             val reusable = existing != null &&
                 !existing.isRecycled &&
-                existing.width == w &&
-                existing.height == h
-            if (reusable) {
-                // The common path: paint just the changed rows into the bitmap
-                // the viewer is already holding.
-                existing!!.also { writeRegion(it, frame, dirty) }
+                existing.width == fbWidth &&
+                existing.height == fbHeight
+            // The common path: fetch ONLY the changed region and paint it into
+            // the bitmap the viewer already holds. Fetching the whole
+            // framebuffer here was the last full-frame copy per update (#422).
+            val region = if (reusable && dirty != null) {
+                c.getFramebufferRegion(dirty.x, dirty.y, dirty.width, dirty.height)
             } else {
-                // First frame, or the desktop resized — full paint.
-                frameToBitmap(frame)
+                null
+            }
+            if (region != null) {
+                existing!!.also {
+                    drawTile(it, region, dirty!!.x.toInt(), dirty.y.toInt())
+                }
+            } else {
+                // First frame, a resize, or a rect the native side rejected:
+                // fall back to a full repaint.
+                val frame = c.getFramebuffer() ?: return
+                if (reusable && existing!!.width == frame.width.toInt() &&
+                    existing.height == frame.height.toInt()
+                ) {
+                    existing.also { it.copyPixelsFromBuffer(ByteBuffer.wrap(frame.pixels)) }
+                } else {
+                    frameToBitmap(frame)
+                }
             }
         } catch (e: Exception) {
-            log("E", "frame paint failed (${frame.width}x${frame.height}, ${frame.pixels.size} bytes): ${e.message}")
+            log("E", "frame paint failed (dirty=${dirty?.width}x${dirty?.height}): ${e.message}")
             onError?.invoke(e)
             return
         }
@@ -367,32 +390,20 @@ class RdpSession(
     }
 
     /**
-     * Copy [dirty] (or the whole frame when it is null or unusable) from the
-     * native framebuffer into [dst].
+     * Paint an already tightly-packed RGBA [region] into [dst] at ([x], [y]).
      *
      * Goes via a tile bitmap and [Canvas] rather than `setPixels`, because
      * `copyPixelsFromBuffer` keeps the same RGBA byte order the full-frame path
      * has always used — `setPixels` takes packed ARGB ints and would reintroduce
      * the red/blue swap of #212.
      */
-    private fun writeRegion(dst: Bitmap, frame: FrameData, dirty: RdpRect?) {
-        val fw = frame.width.toInt()
-        val fh = frame.height.toInt()
-        val rect = clipToFrame(dirty, fw, fh)
-        if (rect == null) {
-            dst.copyPixelsFromBuffer(ByteBuffer.wrap(frame.pixels))
-            return
-        }
-        val (x, y, w, h) = rect
-        val stride = fw * 4
-        val tileBytes = ByteBuffer.allocate(w * h * 4)
-        for (row in 0 until h) {
-            tileBytes.put(frame.pixels, (y + row) * stride + x * 4, w * 4)
-        }
-        tileBytes.rewind()
+    private fun drawTile(dst: Bitmap, region: FrameData, x: Int, y: Int) {
+        val w = region.width.toInt()
+        val h = region.height.toInt()
+        if (w <= 0 || h <= 0) return
         val tile = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         try {
-            tile.copyPixelsFromBuffer(tileBytes)
+            tile.copyPixelsFromBuffer(ByteBuffer.wrap(region.pixels))
             Canvas(dst).drawBitmap(tile, x.toFloat(), y.toFloat(), null)
         } finally {
             tile.recycle()
@@ -433,30 +444,6 @@ class RdpSession(
 
     /** Get the current frame as a Bitmap. */
     fun getFrame(): Bitmap? = synchronized(this) { currentBitmap }
-
-    /** A clipped, non-empty dirty region: (x, y, width, height). */
-    internal data class ClippedRect(val x: Int, val y: Int, val w: Int, val h: Int)
-
-    companion object {
-        /**
-         * Clip [dirty] to a [frameW] x [frameH] framebuffer, or return null to
-         * mean "repaint everything" — when there is no rect, when it is empty,
-         * or when it already covers the whole frame (a tile blit would then
-         * just be a slower full copy).
-         *
-         * Pure so the clipping is testable without a device (#422).
-         */
-        internal fun clipToFrame(dirty: RdpRect?, frameW: Int, frameH: Int): ClippedRect? {
-            if (dirty == null || frameW <= 0 || frameH <= 0) return null
-            val x = dirty.x.toInt().coerceIn(0, frameW)
-            val y = dirty.y.toInt().coerceIn(0, frameH)
-            val w = dirty.width.toInt().coerceAtLeast(0).coerceAtMost(frameW - x)
-            val h = dirty.height.toInt().coerceAtLeast(0).coerceAtMost(frameH - y)
-            if (w <= 0 || h <= 0) return null
-            if (x == 0 && y == 0 && w == frameW && h == frameH) return null
-            return ClippedRect(x, y, w, h)
-        }
-    }
 
     // --- Input forwarding ---
 

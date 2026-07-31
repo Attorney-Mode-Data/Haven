@@ -849,6 +849,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_rdp_transport_checksum_method_rdpclient_get_framebuffer(
     ): Int
+    external fun uniffi_rdp_transport_checksum_method_rdpclient_get_framebuffer_region(
+    ): Int
     external fun uniffi_rdp_transport_checksum_method_rdpclient_is_connected(
     ): Int
     external fun uniffi_rdp_transport_checksum_method_rdpclient_send_clipboard_text(
@@ -959,6 +961,8 @@ internal object UniffiLib {
     external fun uniffi_rdp_transport_fn_method_rdpclient_get_dirty_rects(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_rdp_transport_fn_method_rdpclient_get_framebuffer(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_rdp_transport_fn_method_rdpclient_get_framebuffer_region(`ptr`: Long,`x`: Short,`y`: Short,`w`: Short,`h`: Short,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_rdp_transport_fn_method_rdpclient_is_connected(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
@@ -1151,6 +1155,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_rdpclient_get_framebuffer() != 63545) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rdp_transport_checksum_method_rdpclient_get_framebuffer_region() != 57500) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_rdpclient_is_connected() != 48249) {
@@ -3136,6 +3143,18 @@ public interface RdpClientInterface {
     
     fun `getFramebuffer`(): FrameData?
     
+    /**
+     * Tightly-packed RGBA for just `(x, y, w, h)` of the framebuffer.
+     *
+     * #422: the host repaints only the region the server changed, but had to
+     * fetch the WHOLE framebuffer to get at it — on a 1920x1080 session that
+     * is an 8.29 MB copy per update, for a median update of about 41 KB.
+     * The rect is clipped to the framebuffer; `None` means there is nothing
+     * to copy (no framebuffer, or an empty/out-of-bounds rect) and the caller
+     * should fall back to a full repaint.
+     */
+    fun `getFramebufferRegion`(`x`: kotlin.UShort, `y`: kotlin.UShort, `w`: kotlin.UShort, `h`: kotlin.UShort): FrameData?
+    
     fun `isConnected`(): kotlin.Boolean
     
     fun `sendClipboardText`(`text`: kotlin.String)
@@ -3326,6 +3345,33 @@ open class RdpClient: Disposable, AutoCloseable, RdpClientInterface
     UniffiLib.uniffi_rdp_transport_fn_method_rdpclient_get_framebuffer(
         it,
         _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Tightly-packed RGBA for just `(x, y, w, h)` of the framebuffer.
+     *
+     * #422: the host repaints only the region the server changed, but had to
+     * fetch the WHOLE framebuffer to get at it — on a 1920x1080 session that
+     * is an 8.29 MB copy per update, for a median update of about 41 KB.
+     * The rect is clipped to the framebuffer; `None` means there is nothing
+     * to copy (no framebuffer, or an empty/out-of-bounds rect) and the caller
+     * should fall back to a full repaint.
+     */override fun `getFramebufferRegion`(`x`: kotlin.UShort, `y`: kotlin.UShort, `w`: kotlin.UShort, `h`: kotlin.UShort): FrameData? {
+            return FfiConverterOptionalTypeFrameData.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_rdp_transport_fn_method_rdpclient_get_framebuffer_region(
+        it,
+        
+        FfiConverterUShort.lower(`x`),
+        FfiConverterUShort.lower(`y`),
+        FfiConverterUShort.lower(`w`),
+        FfiConverterUShort.lower(`h`),_status)
 }
     }
     )
