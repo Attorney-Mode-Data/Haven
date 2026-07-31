@@ -92,11 +92,18 @@ kotlin {
     }
 }
 
-// Mitigate flaky test SshlibExecContractTest due to upstream sshlib CHANNEL_CLOSE race (#448)
+// Mitigate flaky test SshlibExecContractTest due to upstream sshlib CHANNEL_CLOSE race (#448).
+// failOnPassedAfterRetry=false (the plugin's own default) is required, not incidental: `true`
+// still fails the build on a test that passes on retry, which defeats the point of retrying a
+// known flake — GlassOnTin caught this in review with a standalone repro (PR #475) after our
+// first attempt shipped the plugin's example snippet (which sets it true) instead of reasoning
+// about what the flag does. Scoped to the one known-flaky class only, not the whole module —
+// #448 is real output loss, not test noise, so a genuinely new flake elsewhere in core:ssh must
+// still fail the build.
 tasks.withType<Test> {
     retry {
         maxRetries.set(2)
-        maxFailures.set(20)
-        failOnPassedAfterRetry.set(true)
+        failOnPassedAfterRetry.set(false)
+        filter { includeClasses.add("sh.haven.core.ssh.sshlib.SshlibExecContractTest") }
     }
 }
