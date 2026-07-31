@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.9
+
+🖥️ **High-resolution RDP desktops no longer render top-left-only** — KRDP (KDE Plasma's RDP server) agrees to the client's requested resolution during the handshake but then streams the physical monitor over the graphics channel; the real size only arrives in the EGFX ResetGraphics message, which Haven ignored. The framebuffer stayed at the handshake size, so on a 2560x1440 or 4K desktop everything beyond that was silently clipped — only the top-left crop was visible, with black filling the rest when zoomed out. The framebuffer now follows the size the server announces, and the viewer's existing unzoomed state fit-scales the whole desktop into view. Pinned by a regression test that replays the KRDP sequence (handshake at 1280x800, ResetGraphics at 2560x1440, fill outside the old bounds) and fails without the fix. Not yet re-verified against a live KRDP stream — reporters on #474/#467, a re-test would be appreciated. (#474, #467)
+
 ## v5.86.8
 
 📱 **Terminal crash on HyperOS/Android 16 warm return** — on Xiaomi's HyperOS, backgrounding the app with an SSH session open and the soft keyboard up, waiting a few minutes, and returning crashed instantly, every time: HyperOS freezes the Activity, and on the way back Compose flushes a deferred composition teardown while the terminal's hidden IME view still holds focus — Android's view-removal path then routes a focus request straight back into the half-disposed hierarchy ("Searching for active node in inactive hierarchy"). The IME view now surrenders focus for as long as its window is invisible and re-takes it just after return, past the frame where that flush runs — with the keyboard hidden nothing was ever focused, which is exactly why that case never crashed. Diagnosed from a reporter's excellent line-by-line trace of the disposal path; the fix is pinned by regression tests that caught two subtler focus-bounce behaviours of Android's own focus machinery along the way.
