@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.19
+
+🪟 **Windows RDP no longer dies mid-logon with H.264 enabled** — reported as needing "H.264/AVC420 decoding" switched off globally to connect to Windows at all, while Linux servers needed it on. The reporter's screenshot carried the real error: `Fast-Path: unexpected codec ID: 1`. Haven was advertising NSCodec among the bitmap codecs it claims to support, so Windows took it up and started sending screen updates encoded with it — down a path that can only decode three codecs, none of them that one, where an unrecognised codec is a fatal error rather than a skipped region. Haven does have NSCodec support, but it decodes a different container on the graphics channel, so the claim was simply wrong. It is no longer advertised, and Windows falls back to RemoteFX or plain bitmaps, both of which decode properly. That also explains why the H.264 switch appeared to matter: the graphics capabilities Haven advertises change how much Windows sends down the legacy path, so turning H.264 on pushed more content into the trap. Not yet confirmed against the reporter's Windows 11 host. (#461)
+
 ## v5.86.18
 
 🖱️ **Remote mouse movement reaches the server smoothly** — reported as a cursor that looks fine in Haven but moves in jumps and skips on the server itself. Haven can only hand queued input to the connection once per pass of its session loop, and each pass waits on the network for up to 100ms, so whenever the server had nothing to send your finger drag arrived as a burst of positions followed by nothing. Haven now checks far more often while you are actually interacting, and falls back to the relaxed timing shortly after you stop, so an idle session is not woken needlessly. This is the input half of #477 only — video playback still lags behind a native client, for a different reason tracked in #466. (#477)
