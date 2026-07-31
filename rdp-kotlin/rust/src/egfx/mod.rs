@@ -206,6 +206,7 @@ impl EgfxProcessor {
                     p.monitors.len()
                 );
                 self.surfaces.reset();
+                self.resize_framebuffer(p.width, p.height);
             }
             GfxPdu::CreateSurface(p) => {
                 debug!(
@@ -306,6 +307,34 @@ impl EgfxProcessor {
 }
 
 impl EgfxProcessor {
+    /// #474/#467: portal-mirroring servers (KRDP) echo the client's requested
+    /// size in Demand Active but stream the physical monitor over EGFX —
+    /// `ResetGraphics` carries the real output size. Reallocate the
+    /// framebuffer to match, else every blit past the old bounds is clipped
+    /// and a 2560x1440/4K desktop renders top-left-only.
+    fn resize_framebuffer(&self, width: u32, height: u32) {
+        // RDPGFX_RESET_GRAPHICS_PDU caps both at 32766, so u16 holds.
+        let (width, height) = (width as u16, height as u16);
+        let resize_cb = {
+            let Ok(mut s) = self.state.write() else { return };
+            if let Some(fb) = s.framebuffer.as_ref() {
+                if fb.width == width && fb.height == height {
+                    return;
+                }
+            }
+            s.framebuffer = Some(crate::FrameData {
+                width,
+                height,
+                pixels: vec![0u8; width as usize * height as usize * 4],
+            });
+            s.frame_callback.clone()
+        };
+        // Outside the lock — Kotlin handlers may call back into the client.
+        if let Some(cb) = resize_cb {
+            cb.on_resize(width, height);
+        }
+    }
+
     /// Drain dirty rects from `SurfaceManager`, project each through the
     /// surface's `MapSurfaceToOutput` mapping, and copy the corresponding
     /// pixels from the surface (RGBA8888) into `SessionState.framebuffer`
@@ -745,5 +774,112 @@ mod tests {
         assert_eq!(stream.rectangles.len(), 1, "one region rect");
         assert_eq!(stream.quant_qual_vals.len(), 1, "one quant/quality pair");
         assert_eq!(stream.data, &annex_b, "data is the trailing Annex-B AU");
+    }
+
+    /// #474/#467: KRDP echoes the client-requested size (1280x800) in Demand
+    /// Active but streams the physical 2560x1440 monitor over EGFX. The
+    /// framebuffer must follow ResetGraphics or everything past the old
+    /// bounds is clipped (top-left-only rendering).
+    #[test]
+    fn reset_graphics_resizes_framebuffer() {
+        use std::sync::Mutex;
+        use ironrdp_egfx::pdu::{
+            Color, CreateSurfacePdu, EndFramePdu, MapSurfaceToOutputPdu, PixelFormat as GfxPixelFormat,
+            ResetGraphicsPdu, SolidFillPdu,
+        };
+        use ironrdp_pdu::geometry::ExclusiveRectangle;
+
+        struct RecordingCb(Mutex<Vec<(u16, u16)>>);
+        impl crate::FrameCallback for RecordingCb {
+            fn on_frame_update(&self, _x: u16, _y: u16, _w: u16, _h: u16) {}
+            fn on_resize(&self, width: u16, height: u16) {
+                self.0.lock().unwrap().push((width, height));
+            }
+        }
+
+        let cb = Arc::new(RecordingCb(Mutex::new(Vec::new())));
+        let state = Arc::new(RwLock::new(crate::SessionState {
+            connected: true,
+            // What connect() allocates: the client-requested size the server
+            // echoed in Demand Active.
+            framebuffer: Some(crate::FrameData {
+                width: 1280,
+                height: 800,
+                pixels: vec![0u8; 1280 * 800 * 4],
+            }),
+            dirty_rects: Vec::new(),
+            frame_callback: Some(cb.clone()),
+            clipboard_callback: None,
+            session_callback: None,
+            pointer_callback: None,
+            avc_decoder: None,
+            shutdown: false,
+        }));
+        let mut proc = EgfxProcessor::new(state.clone(), false, true);
+        proc.capabilities_received = true;
+
+        let mut out = Vec::new();
+        proc.dispatch(
+            1,
+            &GfxPdu::ResetGraphics(ResetGraphicsPdu {
+                width: 2560,
+                height: 1440,
+                monitors: Vec::new(),
+            }),
+            &mut out,
+        );
+        assert_eq!(
+            *cb.0.lock().unwrap(),
+            vec![(2560, 1440)],
+            "on_resize must fire with the server's real output size"
+        );
+
+        // A fill in the bottom-right quadrant — entirely outside the old
+        // 1280x800 bounds — must land in the framebuffer.
+        proc.dispatch(
+            2,
+            &GfxPdu::CreateSurface(CreateSurfacePdu {
+                surface_id: 0,
+                width: 2560,
+                height: 1440,
+                pixel_format: GfxPixelFormat::XRgb,
+            }),
+            &mut out,
+        );
+        proc.dispatch(
+            3,
+            &GfxPdu::MapSurfaceToOutput(MapSurfaceToOutputPdu {
+                surface_id: 0,
+                output_origin_x: 0,
+                output_origin_y: 0,
+            }),
+            &mut out,
+        );
+        proc.dispatch(
+            4,
+            &GfxPdu::SolidFill(SolidFillPdu {
+                surface_id: 0,
+                fill_pixel: Color { b: 1, g: 2, r: 3, xa: 255 },
+                rectangles: vec![ExclusiveRectangle {
+                    left: 0,
+                    top: 0,
+                    right: 2560,
+                    bottom: 1440,
+                }],
+            }),
+            &mut out,
+        );
+        proc.dispatch(5, &GfxPdu::EndFrame(EndFramePdu { frame_id: 1 }), &mut out);
+
+        let s = state.read().unwrap();
+        let fb = s.framebuffer.as_ref().expect("framebuffer present");
+        assert_eq!((fb.width, fb.height), (2560, 1440), "framebuffer resized");
+        // Pixel at (2000, 1200): RGBA bytes of the fill colour, not black.
+        let off = (1200 * 2560 + 2000) * 4;
+        assert_eq!(
+            &fb.pixels[off..off + 4],
+            &[3, 2, 1, 255],
+            "content beyond the old 1280x800 clip must render"
+        );
     }
 }
