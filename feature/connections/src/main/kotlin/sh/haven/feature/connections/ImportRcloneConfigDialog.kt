@@ -49,7 +49,12 @@ fun ImportRcloneConfigDialog(
     val state by viewModel.importState.collectAsStateWithLifecycle()
     var pasted by remember { mutableStateOf("") }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    // OpenDocument (ACTION_OPEN_DOCUMENT), not GetContent: GET_CONTENT is
+    // resolved by whatever handler the ROM ships, which is how this started
+    // opening "a strange screen about intents" on some devices without any
+    // change on our side (#468). OPEN_DOCUMENT always lands in the system
+    // SAF picker.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             val text = runCatching {
                 context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
@@ -90,7 +95,7 @@ fun ImportRcloneConfigDialog(
                     RcloneConfigViewModel.ImportState.Idle -> {
                         Text(stringResource(R.string.rclone_import_intro), style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = { picker.launch("*/*") }) {
+                        OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }) {
                             Text(stringResource(R.string.rclone_import_pick_file))
                         }
                         Spacer(Modifier.height(8.dp))
