@@ -24,6 +24,8 @@ class TerminalViewModelTest {
     private lateinit var localSessionManager: LocalSessionManager
     private lateinit var btSerialSessionManager: sh.haven.core.btserial.BtSerialSessionManager
     private lateinit var bleSerialSessionManager: sh.haven.core.bleserial.BleSerialSessionManager
+    private lateinit var bleSerialSessions:
+        MutableStateFlow<Map<String, sh.haven.core.bleserial.BleSerialSessionManager.SessionState>>
     private lateinit var usbSerialSessionManager: sh.haven.core.usbserial.UsbSerialSessionManager
     private lateinit var sshEmulatorOwner: SshTerminalEmulatorOwner
     private lateinit var viewModel: TerminalViewModel
@@ -46,8 +48,15 @@ class TerminalViewModelTest {
         btSerialSessionManager = mockk(relaxed = true) {
             every { sessions } returns MutableStateFlow(emptyMap())
         }
+        // #465: stubbed ONCE here, then driven by mutating the flow. The
+        // ViewModel's init launches collectors that read these mocks, so a
+        // later `every { sessions } ...` would put MockK into recording mode
+        // while another thread is invoking the same mock — which throws
+        // MockKException rather than failing an assertion, and only when the
+        // collectors happen to be live (CI, loaded runner).
+        bleSerialSessions = MutableStateFlow(emptyMap())
         bleSerialSessionManager = mockk(relaxed = true) {
-            every { sessions } returns MutableStateFlow(emptyMap())
+            every { sessions } returns bleSerialSessions
         }
         usbSerialSessionManager = mockk(relaxed = true) {
             every { sessions } returns MutableStateFlow(emptyMap())
@@ -138,8 +147,8 @@ class TerminalViewModelTest {
         // serial session fell through to reticulum (no-op), stayed alive, and
         // syncSessions rebuilt its tab — the tab wouldn't close.
         val sessionId = "ble-1"
-        every { bleSerialSessionManager.sessions } returns
-            MutableStateFlow(mapOf(sessionId to mockk(relaxed = true)))
+        // Drive the already-stubbed flow rather than re-stubbing the mock (#465).
+        bleSerialSessions.value = mapOf(sessionId to mockk(relaxed = true))
 
         viewModel.closeTab(sessionId)
 
