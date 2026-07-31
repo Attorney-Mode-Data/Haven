@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.13
+
+🎞️ **H.264 remote desktops decode measurably faster** — a KRDP session at 3840x2160 was dropping after about a minute. The reporter's logs show why: Haven managed 1.78 frames per second against a server producing about 12, so it fell roughly 18x behind until the connection died. The cost was ~499ms per frame and, tellingly, the same for a 143-byte frame as for a 348KB one — fixed work proportional to the pixel count, namely an 8.3-megapixel colour conversion done per frame in software. Each chroma sample is shared by two pixels, so its scaled terms are now computed once per pair instead of twice, and the per-component clamp is a table lookup: 90ms → 35ms per 4K frame on a desktop JVM, with bit-identical output pinned by seven equivalence tests against the previous code. That is a ratio measured off-device, not a device timing, and it does not on its own make 4K comfortable — the remaining per-frame full-frame copies are the next target, tracked on the issue. Until then, configuring the server for a smaller stream (KRDP's `--virtual-monitor 1920x1080@1`) is the effective workaround. (#466)
+
 ## v5.86.12
 
 📁 **"Pick rclone.conf" opened a strange system screen on some devices** — the file picker used `ACTION_GET_CONTENT`, which Android resolves to whatever handler the ROM happens to ship, so the same unchanged code could land on an OEM file manager, a chooser, or an error screen depending on the device and its system updates — reported as "a strange screen appears (something about intents)" on a flow that worked when it shipped. It now uses `ACTION_OPEN_DOCUMENT`, which always opens the system file picker. Verified end-to-end on an emulator: picking a real rclone.conf from Downloads imports its remotes. The reporter's own device is still unconfirmed. (#468)
