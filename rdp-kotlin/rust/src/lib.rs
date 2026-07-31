@@ -1326,6 +1326,22 @@ fn run_rdp_session(
     // Input state tracking
     let mut input_db = ironrdp_input::Database::new();
 
+    // #477: queued input can only be flushed once per loop iteration, and each
+    // iteration blocks on the socket read above. At a flat 100ms that caps
+    // input at ~10 flushes/sec whenever the server is quiet, so a finger drag
+    // reaches the server as a burst of moves and then nothing — the local
+    // cursor looks smooth while the server's jumps and skips.
+    //
+    // Poll fast while the user is actually interacting and fall back to the
+    // idle timeout afterwards, so an untouched session is not woken 60+ times
+    // a second for nothing. Only issued when the value changes; set_read_timeout
+    // is a syscall.
+    const INPUT_ACTIVE_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(15);
+    const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(100);
+    const INPUT_ACTIVE_WINDOW: std::time::Duration = std::time::Duration::from_millis(500);
+    let mut last_input_at: Option<std::time::Instant> = None;
+    let mut current_timeout = IDLE_TIMEOUT;
+
     // Active session loop
     loop {
         // Check for shutdown
@@ -1343,6 +1359,19 @@ fn run_rdp_session(
                 Vec::new()
             }
         };
+
+        if !pending_inputs.is_empty() {
+            last_input_at = Some(std::time::Instant::now());
+        }
+        let want_timeout = match last_input_at {
+            Some(t) if t.elapsed() < INPUT_ACTIVE_WINDOW => INPUT_ACTIVE_TIMEOUT,
+            _ => IDLE_TIMEOUT,
+        };
+        if want_timeout != current_timeout
+            && stream_ctl.set_read_timeout(Some(want_timeout)).is_ok()
+        {
+            current_timeout = want_timeout;
+        }
 
         for event in pending_inputs {
             let fastpath_events = match event {
@@ -1523,7 +1552,10 @@ fn run_rdp_session(
                                         &mut tls_framed, &mut cas, None,
                                         &mut active_stage, &mut image, state,
                                     );
-                                    let _ = stream_ctl.set_read_timeout(Some(std::time::Duration::from_millis(100)));
+                                    let _ = stream_ctl.set_read_timeout(Some(IDLE_TIMEOUT));
+                                    // Keep the cached value honest, or the
+                                    // adaptive poll above stops re-arming (#477).
+                                    current_timeout = IDLE_TIMEOUT;
                                     res?;
                                     break;
                                 }
@@ -1585,7 +1617,8 @@ fn run_rdp_session(
                                 &mut tls_framed, &mut cas, Some(&frame),
                                 &mut active_stage, &mut image, state,
                             );
-                            let _ = stream_ctl.set_read_timeout(Some(std::time::Duration::from_millis(100)));
+                            let _ = stream_ctl.set_read_timeout(Some(IDLE_TIMEOUT));
+                            current_timeout = IDLE_TIMEOUT;
                             res?;
                         } else if msg.contains("unhandled") || msg.contains("unsupported") {
                             // Try to decode as slow-path bitmap update
