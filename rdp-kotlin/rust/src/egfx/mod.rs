@@ -12,7 +12,7 @@ use ironrdp_core::{impl_as_any, Decode as _, Encode, EncodeResult, ReadCursor, W
 use ironrdp_dvc::{DvcClientProcessor, DvcEncode, DvcMessage, DvcProcessor};
 use ironrdp_graphics::zgfx::Decompressor;
 use ironrdp_egfx::pdu::{
-    Avc420BitmapStream, CapabilitiesAdvertisePdu, CapabilitiesV10Flags, CapabilitiesV81Flags, CapabilitySet, GfxPdu, Codec1Type, Codec2Type, FrameAcknowledgePdu, QueueDepth, WireToSurface1Pdu, WireToSurface2Pdu,
+    Avc420BitmapStream, CapabilitiesAdvertisePdu, CapabilitiesV10Flags, CapabilitiesV81Flags, CapabilitySet, GfxPdu, Codec1Type, Codec2Type, FrameAcknowledgePdu, PixelFormat, QueueDepth, WireToSurface1Pdu, WireToSurface2Pdu,
 };
 use ironrdp_pdu::PduResult;
 use log::{debug, info, warn};
@@ -533,6 +533,45 @@ impl EgfxProcessor {
                 surface.blit_rgba(u32::from(r.left), u32::from(r.top), w, h, &tile);
                 self.surfaces.dirty.push((p.surface_id, r.clone()));
             }
+            Codec1Type::Uncompressed => {
+                // #462: RDPGFX_CODECID_UNCOMPRESSED is the baseline every EGFX
+                // server may fall back to for any region — MS-RDPEGFX 2.2.4.1
+                // calls it the trivially-correct encoding. Haven dropped it,
+                // and a dropped region is an axis-aligned rectangle that never
+                // paints: a missing chunk of a glyph run, a notch out of an
+                // avatar, a black square on the desktop.
+                //
+                // The payload is raw rows of the PDU's pixel format, top-down,
+                // no padding. Both formats are 32bpp little-endian BGRX/BGRA,
+                // so the channel order is B,G,R,(A) on the wire; surfaces hold
+                // RGBA, hence the swap. XRgb has no meaningful alpha byte, so
+                // it is forced opaque rather than trusted (#212 is the standing
+                // lesson on getting this order wrong).
+                let want = (w * h * 4) as usize;
+                if p.bitmap_data.len() < want {
+                    warn!(
+                        "EGFX[{n}]: Uncompressed tile too short: {} bytes for {w}x{h} (need {want})",
+                        p.bitmap_data.len()
+                    );
+                    return;
+                }
+                let opaque = matches!(p.pixel_format, PixelFormat::XRgb);
+                let mut tile = Vec::with_capacity(want);
+                for px in p.bitmap_data[..want].chunks_exact(4) {
+                    tile.extend_from_slice(&[
+                        px[2],
+                        px[1],
+                        px[0],
+                        if opaque { 0xFF } else { px[3] },
+                    ]);
+                }
+                let Some(surface) = self.surfaces.surface_mut(p.surface_id) else {
+                    warn!("EGFX[{n}]: WireToSurface1 unknown surface {}", p.surface_id);
+                    return;
+                };
+                surface.blit_rgba(u32::from(r.left), u32::from(r.top), w, h, &tile);
+                self.surfaces.dirty.push((p.surface_id, r.clone()));
+            }
             Codec1Type::Planar => {
                 let mut rgb = Vec::new();
                 if let Err(e) = self.planar_decoder.decode_bitmap_stream_to_rgb24(
@@ -617,8 +656,14 @@ impl EgfxProcessor {
                 }
             }
             other => {
-                debug!(
-                    "EGFX[{n}]: WireToSurface1 codec {other:?} not yet handled ({} bytes ignored)",
+                // warn!, not debug!: a dropped region leaves a rectangle of the
+                // screen unpainted, and at debug level that never reaches a bug
+                // report — #462 was diagnosed by reading this dispatch rather
+                // than any log. RemoteFx (0x3) and Alpha (0x0c) still land here.
+                warn!(
+                    "EGFX[{n}]: WireToSurface1 codec {other:?} not implemented —                      {w}x{h} region at ({},{}) left unpainted ({} bytes ignored)",
+                    r.left,
+                    r.top,
                     p.bitmap_data.len()
                 );
             }
@@ -751,6 +796,7 @@ fn pdu_kind_label(p: &GfxPdu) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ironrdp_pdu::geometry::ExclusiveRectangle;
 
     /// #425: verify the RFX_AVC420_BITMAP_STREAM header parse matches the wire
     /// format observed in real KRDP captures — 1 full-frame region (0,0,1280,
@@ -774,6 +820,118 @@ mod tests {
         assert_eq!(stream.rectangles.len(), 1, "one region rect");
         assert_eq!(stream.quant_qual_vals.len(), 1, "one quant/quality pair");
         assert_eq!(stream.data, &annex_b, "data is the trailing Annex-B AU");
+    }
+
+    /// A session with a framebuffer of the given size, as connect() leaves it.
+    fn test_state(w: u16, h: u16) -> Arc<RwLock<crate::SessionState>> {
+        Arc::new(RwLock::new(crate::SessionState {
+            connected: true,
+            framebuffer: Some(crate::FrameData {
+                width: w,
+                height: h,
+                pixels: vec![0u8; w as usize * h as usize * 4],
+            }),
+            dirty_rects: Vec::new(),
+            frame_callback: None,
+            clipboard_callback: None,
+            session_callback: None,
+            pointer_callback: None,
+            avc_decoder: None,
+            shutdown: false,
+        }))
+    }
+
+    /// Surface 0 covering the whole output, which is what a server sets up
+    /// before it starts sending tiles.
+    fn create_full_surface(proc: &mut EgfxProcessor, out: &mut Vec<DvcMessage>, w: u16, h: u16) {
+        proc.dispatch(
+            1,
+            &GfxPdu::CreateSurface(ironrdp_egfx::pdu::CreateSurfacePdu {
+                surface_id: 0,
+                width: w,
+                height: h,
+                pixel_format: PixelFormat::XRgb,
+            }),
+            out,
+        );
+        proc.dispatch(
+            2,
+            &GfxPdu::MapSurfaceToOutput(ironrdp_egfx::pdu::MapSurfaceToOutputPdu {
+                surface_id: 0,
+                output_origin_x: 0,
+                output_origin_y: 0,
+            }),
+            out,
+        );
+    }
+
+    /// #462: rectangular regions never painted on Windows 11. The dispatch
+    /// silently dropped RDPGFX_CODECID_UNCOMPRESSED — the baseline encoding a
+    /// server may fall back to for ANY region — so those regions stayed blank
+    /// or stale. These pin that the raw pixels land, in the right place, in the
+    /// right channel order.
+    #[test]
+    fn uncompressed_tile_is_painted_in_rgba_order() {
+        let state = test_state(64, 64);
+        let mut proc = EgfxProcessor::new(state.clone(), false, false);
+        proc.capabilities_received = true;
+        let mut out = Vec::new();
+        create_full_surface(&mut proc, &mut out, 64, 64);
+
+        // One 2x1 tile at (3,5). Wire order for XRgb is B,G,R,X.
+        let pixels: Vec<u8> = vec![0x10, 0x20, 0x30, 0x00, 0x40, 0x50, 0x60, 0x00];
+        proc.dispatch(
+            10,
+            &GfxPdu::WireToSurface1(WireToSurface1Pdu {
+                surface_id: 0,
+                codec_id: Codec1Type::Uncompressed,
+                pixel_format: PixelFormat::XRgb,
+                destination_rectangle: ExclusiveRectangle { left: 3, top: 5, right: 5, bottom: 6 },
+                bitmap_data: pixels,
+            }),
+            &mut out,
+        );
+
+        let surface = proc.surfaces.surface(0).expect("surface");
+        let at = |x: usize, y: usize| {
+            let i = (y * 64 + x) * 4;
+            surface.pixels[i..i + 4].to_vec()
+        };
+        // B,G,R,X on the wire becomes R,G,B,A in the surface; XRgb forces opaque.
+        assert_eq!(at(3, 5), vec![0x30, 0x20, 0x10, 0xFF], "first pixel");
+        assert_eq!(at(4, 5), vec![0x60, 0x50, 0x40, 0xFF], "second pixel");
+        // Neighbours untouched — the tile must not smear.
+        assert_eq!(at(5, 5), vec![0, 0, 0, 0], "pixel past the tile");
+        assert_eq!(at(3, 6), vec![0, 0, 0, 0], "pixel below the tile");
+    }
+
+    /// A short payload must be refused rather than read past its end.
+    #[test]
+    fn uncompressed_tile_shorter_than_its_rectangle_is_dropped() {
+        let state = test_state(64, 64);
+        let mut proc = EgfxProcessor::new(state.clone(), false, false);
+        proc.capabilities_received = true;
+        let mut out = Vec::new();
+        create_full_surface(&mut proc, &mut out, 64, 64);
+
+        proc.dispatch(
+            11,
+            &GfxPdu::WireToSurface1(WireToSurface1Pdu {
+                surface_id: 0,
+                codec_id: Codec1Type::Uncompressed,
+                pixel_format: PixelFormat::XRgb,
+                // Claims 4x4 (64 bytes) but carries 8.
+                destination_rectangle: ExclusiveRectangle { left: 0, top: 0, right: 4, bottom: 4 },
+                bitmap_data: vec![0xFF; 8],
+            }),
+            &mut out,
+        );
+
+        let surface = proc.surfaces.surface(0).expect("surface");
+        assert!(
+            surface.pixels.iter().all(|&b| b == 0),
+            "a truncated tile must paint nothing rather than partially blit",
+        );
     }
 
     /// #474/#467: KRDP echoes the client-requested size (1280x800) in Demand
