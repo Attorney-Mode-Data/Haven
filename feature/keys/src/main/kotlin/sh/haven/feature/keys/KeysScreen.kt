@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
@@ -1672,14 +1671,20 @@ private fun SshKeyAuditRow(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    SelectionContainer {
-                        Text(
-                            text = sshKey.fingerprintSha256,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    // NOT wrapped in a SelectionContainer (#460): making the
+                    // fingerprint text selectable put Android's own
+                    // mark/copy/paste handling on a row whose long-press already
+                    // means "open this key's menu", so one press produced both
+                    // popups at once. In a list, long-press belongs to the item.
+                    // Copying is on the menu ("Copy public key"); if copying the
+                    // fingerprint specifically is ever wanted, it belongs there
+                    // too rather than as text selection.
+                    Text(
+                        text = sshKey.fingerprintSha256,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
