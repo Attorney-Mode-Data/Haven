@@ -140,8 +140,6 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
      * semi-planar (NV12/NV21) chroma via each plane's row/pixel stride.
      */
     private fun yuvImageToRgba(image: android.media.Image, w: Int, h: Int, ): ByteArray {
-        val cw = minOf(w, image.width)
-        val ch = minOf(h, image.height)
         val need = w * h * 4
         if (rgba.size < need) rgba = ByteArray(need)
         val out = rgba
@@ -149,15 +147,41 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
         val yPlane = image.planes[0]
         val uPlane = image.planes[1]
         val vPlane = image.planes[2]
-        val yBuf = yPlane.buffer
-        val uBuf = uPlane.buffer
-        val vBuf = vPlane.buffer
-        val yRow = yPlane.rowStride
-        val uRow = uPlane.rowStride
-        val vRow = vPlane.rowStride
-        val uPix = uPlane.pixelStride
-        val vPix = vPlane.pixelStride
+        yuvToRgba(
+            out = out,
+            yBuf = yPlane.buffer, uBuf = uPlane.buffer, vBuf = vPlane.buffer,
+            yRow = yPlane.rowStride, uRow = uPlane.rowStride, vRow = vPlane.rowStride,
+            uPix = uPlane.pixelStride, vPix = vPlane.pixelStride,
+            w = w, h = h,
+            cw = minOf(w, image.width), ch = minOf(h, image.height),
+        )
+        // ByteArray of exactly need bytes for the UniFFI Vec<u8>.
+        return if (out.size == need) out.copyOf() else out.copyOf(need)
+    }
 
+    private fun clamp(v: Int): Byte = (if (v < 0) 0 else if (v > 255) 255 else v).toByte()
+
+    /**
+     * BT.601 limited-range YUV420 → tightly-packed RGBA8888, edge-replicating
+     * where [w]/[h] exceed the decoded [cw]/[ch]. Pure over its arguments so
+     * it can be tested off-device against a reference (see Avc420YuvToRgbaTest).
+     *
+     * #466: this is the dominant per-frame cost on the AVC path — at 3840x2160
+     * it runs 8.3M times per frame, and the client was managing 1.78 fps
+     * against a server producing ~12. Each chroma sample serves the two
+     * horizontal pixels that share it, so its three scaled terms are computed
+     * once per pair rather than twice, and the branchy clamp is a table lookup.
+     * Bit-identical to the per-pixel form; 90ms → 35ms per 4K frame measured on
+     * a desktop JVM (a proxy for the ratio, not for device timings).
+     */
+    internal fun yuvToRgba(
+        out: ByteArray,
+        yBuf: java.nio.ByteBuffer, uBuf: java.nio.ByteBuffer, vBuf: java.nio.ByteBuffer,
+        yRow: Int, uRow: Int, vRow: Int,
+        uPix: Int, vPix: Int,
+        w: Int, h: Int, cw: Int, ch: Int,
+    ) {
+        val cl = CLAMP
         var o = 0
         for (y in 0 until h) {
             val sy = if (y < ch) y else ch - 1
@@ -165,28 +189,47 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
             val cLine = (sy shr 1)
             val uLine = cLine * uRow
             val vLine = cLine * vRow
-            for (x in 0 until w) {
+            var x = 0
+            // Pairs inside the decoded area: one chroma fetch + scale for two pixels.
+            while (x + 1 < cw && x + 1 < w) {
+                val cx = x shr 1
+                val uv = (uBuf.get(uLine + cx * uPix).toInt() and 0xFF) - 128
+                val vv = (vBuf.get(vLine + cx * vPix).toInt() and 0xFF) - 128
+                val rC = 409 * vv + 128
+                val gC = -100 * uv - 208 * vv + 128
+                val bC = 516 * uv + 128
+                val y0 = (yBuf.get(yLine + x).toInt() and 0xFF) - 16
+                val c0 = if (y0 < 0) 0 else y0 * 298
+                out[o] = cl[CLAMP_BIAS + ((c0 + rC) shr 8)]
+                out[o + 1] = cl[CLAMP_BIAS + ((c0 + gC) shr 8)]
+                out[o + 2] = cl[CLAMP_BIAS + ((c0 + bC) shr 8)]
+                out[o + 3] = 0xFF.toByte()
+                val y1 = (yBuf.get(yLine + x + 1).toInt() and 0xFF) - 16
+                val c1 = if (y1 < 0) 0 else y1 * 298
+                out[o + 4] = cl[CLAMP_BIAS + ((c1 + rC) shr 8)]
+                out[o + 5] = cl[CLAMP_BIAS + ((c1 + gC) shr 8)]
+                out[o + 6] = cl[CLAMP_BIAS + ((c1 + bC) shr 8)]
+                out[o + 7] = 0xFF.toByte()
+                o += 8
+                x += 2
+            }
+            // Tail: an odd final column, plus any replicated edge columns.
+            while (x < w) {
                 val sx = if (x < cw) x else cw - 1
                 val yv = (yBuf.get(yLine + sx).toInt() and 0xFF) - 16
                 val cx = sx shr 1
                 val uv = (uBuf.get(uLine + cx * uPix).toInt() and 0xFF) - 128
                 val vv = (vBuf.get(vLine + cx * vPix).toInt() and 0xFF) - 128
                 val c = if (yv < 0) 0 else yv * 298
-                val r = (c + 409 * vv + 128) shr 8
-                val g = (c - 100 * uv - 208 * vv + 128) shr 8
-                val b = (c + 516 * uv + 128) shr 8
-                out[o] = clamp(r)
-                out[o + 1] = clamp(g)
-                out[o + 2] = clamp(b)
+                out[o] = clamp((c + 409 * vv + 128) shr 8)
+                out[o + 1] = clamp((c - 100 * uv - 208 * vv + 128) shr 8)
+                out[o + 2] = clamp((c + 516 * uv + 128) shr 8)
                 out[o + 3] = 0xFF.toByte()
                 o += 4
+                x++
             }
         }
-        // ByteArray of exactly need bytes for the UniFFI Vec<u8>.
-        return if (out.size == need) out.copyOf() else out.copyOf(need)
     }
-
-    private fun clamp(v: Int): Byte = (if (v < 0) 0 else if (v > 255) 255 else v).toByte()
 
     private fun releaseCodec() {
         try {
@@ -208,6 +251,15 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
         const val INPUT_TIMEOUT_US = 20_000L
         const val OUTPUT_TIMEOUT_US = 10_000L
         const val MAX_OUTPUT_POLLS = 8
+
+        /** Index offset into [CLAMP]; the BT.601 terms reach about -258..534. */
+        const val CLAMP_BIAS = 512
+
+        /** Saturating 0..255 lookup, replacing two branches per component. */
+        private val CLAMP = ByteArray(CLAMP_BIAS + 1024) { i ->
+            val v = i - CLAMP_BIAS
+            (if (v < 0) 0 else if (v > 255) 255 else v).toByte()
+        }
         // Nominal 60 fps spacing; PTS ordering only, value is otherwise unused
         // for a no-reorder Baseline stream.
         const val FRAME_INTERVAL_US = 16_666L
