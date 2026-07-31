@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.18
+
+🖱️ **Remote mouse movement reaches the server smoothly** — reported as a cursor that looks fine in Haven but moves in jumps and skips on the server itself. Haven can only hand queued input to the connection once per pass of its session loop, and each pass waits on the network for up to 100ms, so whenever the server had nothing to send your finger drag arrived as a burst of positions followed by nothing. Haven now checks far more often while you are actually interacting, and falls back to the relaxed timing shortly after you stop, so an idle session is not woken needlessly. This is the input half of #477 only — video playback still lags behind a native client, for a different reason tracked in #466. (#477)
+
+📄 **Importing an rclone.conf tells you when it goes wrong** — picking a file could fail completely silently: a cancelled pick, an unreadable file and an empty file all did nothing and said nothing, so a button that was failing looked exactly like one that was ignoring you. Every case now says what happened, launching the picker is guarded for devices where no working file picker is available, and the message appears above the pick-and-paste controls rather than replacing them, so you can paste the file without reopening the dialog. Note for the reporter's case specifically: another installed app was intercepting the system file picker, which Haven cannot override — but it will now say so instead of appearing dead, and pasting the config imports identically. (#468)
+
 ## v5.86.17
 
 🔑 **Long-pressing a key no longer opens two menus at once** — on the Keys screen, holding a key to enter multi-select also triggered Android's own mark/copy/paste popup, so both appeared together. The fingerprint line was selectable text, which hands long-press over it to the system's text-selection handling, on a row that already treats long-press as "open this key's menu" — two owners for one gesture. In a list, long-press belongs to the item, so the fingerprint is now plain text and only Haven's menu appears. Copying is unaffected ("Copy public key" is on that menu); if copying the fingerprint itself is wanted it will be added there rather than as text selection. Reported from testing on a Samsung S25+, where the sorting and collapsible sections were confirmed working. (#460)
