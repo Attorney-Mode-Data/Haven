@@ -158,4 +158,53 @@ class ConnectDeepLinkTest {
         val cmd = ConnectDeepLink.resolve(listOf(a, b), ConnectDeepLink.Params("h", "me", null, null, null))
         assertTrue(cmd is AgentUiCommand.PrefillNewConnection)
     }
+
+    @Test
+    fun `parse extracts id param`() {
+        val p = ConnectDeepLink.parse(query("host" to "h", "id" to "uuid-123"))!!
+        assertEquals("uuid-123", p.id)
+    }
+
+    @Test
+    fun `parse allows host to be missing when id is present`() {
+        val p = ConnectDeepLink.parse(query("id" to "uuid-123"))!!
+        assertEquals("uuid-123", p.id)
+        assertEquals("", p.host)
+    }
+
+    @Test
+    fun `matches handles exact match by id parameter`() {
+        val a = profile(id = "a", host = "h", username = "me")
+        val b = profile(id = "b", host = "h", username = "me")
+        val all = listOf(a, b)
+        
+        // matching with id="b" should return only "b", bypassing any ambiguity on host/user
+        val p = ConnectDeepLink.Params(host = "h", username = "me", port = null, transport = null, session = null, id = "b")
+        val result = ConnectDeepLink.matches(all, p)
+        assertEquals(1, result.size)
+        assertEquals("b", result[0].id)
+    }
+
+    @Test
+    fun `matches narrows ambiguous candidates using remoteCommand session and command substring match`() {
+        val a = profile(id = "a", host = "h", username = "me").copy(remoteCommand = "exec tmux new -s sess-a")
+        val b = profile(id = "b", host = "h", username = "me").copy(remoteCommand = "exec tmux new -s sess-b")
+        val all = listOf(a, b)
+
+        // If session = "sess-b", it should narrow to "b"
+        val p = ConnectDeepLink.Params(host = "h", username = "me", port = null, transport = null, session = "sess-b")
+        val result = ConnectDeepLink.matches(all, p)
+        assertEquals(1, result.size)
+        assertEquals("b", result[0].id)
+    }
+
+    @Test
+    fun `resolve connects exact match by id when candidates are ambiguous on host-user-port`() {
+        val a = profile(id = "a", host = "h", username = "me")
+        val b = profile(id = "b", host = "h", username = "me")
+        val cmd = ConnectDeepLink.resolve(listOf(a, b), ConnectDeepLink.Params("h", "me", null, null, null, null, "b"))
+        assertTrue(cmd is AgentUiCommand.ConnectFromDeepLink)
+        cmd as AgentUiCommand.ConnectFromDeepLink
+        assertEquals("b", cmd.profileId)
+    }
 }

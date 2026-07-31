@@ -26,22 +26,26 @@ object ConnectDeepLink {
         val session: String?,
         /** Optional remote command (Tin attach / clean tmux). `command` or `startupCommand` query. */
         val command: String? = null,
+        val id: String? = null,
     )
 
     /**
      * Build [Params] from a query-parameter getter (e.g. `uri::getQueryParameter`).
-     * Returns null when no `host` is present — a connect link without a host
-     * is a no-op rather than an error.
+     * Returns null when no `host` (and no `id`) is present — a connect link without
+     * a host or id is a no-op rather than an error.
      */
     fun parse(query: (String) -> String?): Params? {
-        val host = query("host")?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val host = query("host")?.trim()?.takeIf { it.isNotEmpty() }
+        val id = query("id")?.trim()?.takeIf { it.isNotEmpty() }
+        if (host == null && id == null) return null
         return Params(
-            host = host,
+            host = host ?: "",
             username = query("user")?.trim()?.takeIf { it.isNotEmpty() },
             port = query("port")?.trim()?.toIntOrNull(),
             transport = query("transport")?.trim()?.lowercase()?.takeIf { it.isNotEmpty() },
             session = query("session")?.trim()?.takeIf { it.isNotEmpty() },
             command = (query("command") ?: query("startupCommand"))?.trim()?.takeIf { it.isNotEmpty() },
+            id = id,
         )
     }
 
@@ -57,13 +61,39 @@ object ConnectDeepLink {
         }
 
     /** Saved profiles whose host (and any supplied user/port/transport) match [p]. */
-    fun matches(profiles: List<ConnectionProfile>, p: Params): List<ConnectionProfile> =
-        profiles.filter { prof ->
+    fun matches(profiles: List<ConnectionProfile>, p: Params): List<ConnectionProfile> {
+        if (p.id != null) {
+            return profiles.filter { it.id == p.id }
+        }
+        val candidates = profiles.filter { prof ->
             prof.host.equals(p.host, ignoreCase = true) &&
                 (p.username == null || prof.username.equals(p.username, ignoreCase = true)) &&
                 (p.port == null || prof.port == p.port) &&
                 (p.transport == null || matchesTransport(prof, p.transport))
         }
+        if (candidates.size <= 1) {
+            return candidates
+        }
+        val narrowCandidates = candidates.filter { prof ->
+            val cmd = prof.remoteCommand
+            if (cmd == null) {
+                false
+            } else {
+                val matchSession = p.session == null || cmd.contains(p.session, ignoreCase = true)
+                val matchCommand = p.command == null || cmd.contains(p.command, ignoreCase = true)
+                if (p.session == null && p.command == null) {
+                    false
+                } else {
+                    matchSession && matchCommand
+                }
+            }
+        }
+        return if (narrowCandidates.size == 1) {
+            narrowCandidates
+        } else {
+            candidates
+        }
+    }
 
     /**
      * The command to emit for [p]: connect a single matched profile, otherwise
