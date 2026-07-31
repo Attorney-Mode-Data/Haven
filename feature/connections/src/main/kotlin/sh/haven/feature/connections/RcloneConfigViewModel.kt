@@ -150,6 +150,19 @@ class RcloneConfigViewModel @Inject constructor(
     private val _importState = MutableStateFlow<ImportState>(ImportState.Idle)
     val importState: StateFlow<ImportState> = _importState.asStateFlow()
 
+    /**
+     * Surface a file-picking failure in the same place parse failures appear.
+     *
+     * #468: every failure path from the picker was silent — a cancelled pick, a
+     * file that could not be read, and an empty file all did nothing at all, so
+     * a reporter whose picker was being intercepted by another app saw only a
+     * button that appeared dead. A dialog that cannot report failure cannot be
+     * debugged from the outside.
+     */
+    fun reportImportFailed(message: String) {
+        _importState.value = ImportState.Failed(message)
+    }
+
     /** Parse [text] (an rclone.conf) and move to [ImportState.Loaded] for selection. */
     fun loadConfig(text: String) {
         _importState.value = ImportState.Importing

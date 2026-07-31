@@ -55,11 +55,39 @@ fun ImportRcloneConfigDialog(
     // change on our side (#468). OPEN_DOCUMENT always lands in the system
     // SAF picker.
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
+        // Every branch reports something. Silence here is what left #468's
+        // reporter unable to tell a cancelled pick from a broken one.
+        if (uri == null) {
+            viewModel.reportImportFailed(
+                "No file was returned. If another app intercepted the file picker, " +
+                    "paste the contents of rclone.conf below instead.",
+            )
+        } else {
             val text = runCatching {
                 context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-            }.getOrNull()
-            if (!text.isNullOrBlank()) { pasted = text; viewModel.loadConfig(text) }
+            }.getOrElse { e ->
+                viewModel.reportImportFailed("Could not read that file: ${e.message}")
+                null
+            }
+            when {
+                text == null -> Unit // already reported above
+                text.isBlank() -> viewModel.reportImportFailed("That file is empty.")
+                else -> {
+                    pasted = text
+                    viewModel.loadConfig(text)
+                }
+            }
+        }
+    }
+
+    // A device with no SAF picker at all throws here rather than returning a
+    // null uri; #468 found a ROM where the only handler could be disabled.
+    fun launchPicker() {
+        runCatching { picker.launch(arrayOf("*/*")) }.onFailure {
+            viewModel.reportImportFailed(
+                "No file picker is available on this device. " +
+                    "Paste the contents of rclone.conf below instead.",
+            )
         }
     }
 
@@ -83,8 +111,19 @@ fun ImportRcloneConfigDialog(
                         }
                     is RcloneConfigViewModel.ImportState.Encrypted ->
                         Text(stringResource(R.string.rclone_import_encrypted))
-                    is RcloneConfigViewModel.ImportState.Failed ->
+                    is RcloneConfigViewModel.ImportState.Failed -> {
+                        // The error is shown ABOVE the normal controls, not
+                        // instead of them: telling someone to paste the file
+                        // while hiding the paste box would make them close and
+                        // reopen the dialog to act on the advice (#468).
                         Text(s.message, color = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.height(12.dp))
+                        PickOrPaste(
+                            pasted = pasted,
+                            onPastedChange = { pasted = it },
+                            onPick = ::launchPicker,
+                        )
+                    }
                     is RcloneConfigViewModel.ImportState.Done ->
                         Text(
                             stringResource(
@@ -95,15 +134,10 @@ fun ImportRcloneConfigDialog(
                     RcloneConfigViewModel.ImportState.Idle -> {
                         Text(stringResource(R.string.rclone_import_intro), style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = { picker.launch(arrayOf("*/*")) }) {
-                            Text(stringResource(R.string.rclone_import_pick_file))
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pasted,
-                            onValueChange = { pasted = it },
-                            label = { Text(stringResource(R.string.rclone_import_paste_label)) },
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+                        PickOrPaste(
+                            pasted = pasted,
+                            onPastedChange = { pasted = it },
+                            onPick = ::launchPicker,
                         )
                     }
                 }
@@ -111,7 +145,11 @@ fun ImportRcloneConfigDialog(
         },
         confirmButton = {
             when (state) {
-                RcloneConfigViewModel.ImportState.Idle ->
+                // Failed offers Parse as well, so a pasted config recovers the
+                // dialog in place instead of needing it closed and reopened.
+                RcloneConfigViewModel.ImportState.Idle,
+                is RcloneConfigViewModel.ImportState.Failed,
+                ->
                     TextButton(
                         onClick = { viewModel.loadConfig(pasted) },
                         enabled = pasted.isNotBlank(),
@@ -167,4 +205,24 @@ private fun SelectRemotes(
             ) { Text(stringResource(R.string.rclone_import_select_count, selected.size)) }
         }
     }
+}
+
+/** The pick-a-file button plus the paste box, shown both initially and after a
+ *  failure so the advice in an error message is actionable where it appears. */
+@Composable
+private fun PickOrPaste(
+    pasted: String,
+    onPastedChange: (String) -> Unit,
+    onPick: () -> Unit,
+) {
+    OutlinedButton(onClick = onPick) {
+        Text(stringResource(R.string.rclone_import_pick_file))
+    }
+    Spacer(Modifier.height(8.dp))
+    OutlinedTextField(
+        value = pasted,
+        onValueChange = onPastedChange,
+        label = { Text(stringResource(R.string.rclone_import_paste_label)) },
+        modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+    )
 }
