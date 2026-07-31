@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.11
+
+⌨️ **The keyboard could refuse to open in the terminal after returning to the app** — last night's HyperOS crash fix (v5.86.8) makes the terminal's input view unfocusable while the app is backgrounded, restoring it 100ms after return. But the show-keyboard call bails out silently when the view is unfocusable, and nothing retries it — so a show request landing in that window did nothing at all, leaving a terminal that simply refused input. The race is exact: the auto-show on resume and the refocus were both on 100ms timers. The show path now restores focusability itself when the window is back (and still refuses to take focus while it is hidden, which is what crashed HyperOS). Pinned by a test that fails on the old code. Possible cause of #476 — unconfirmed against that reporter's device, who hasn't yet supplied their version. (#476)
+
 ## v5.86.10
 
 🔍 **`get_app_info` now tells the truth about the native Wayland desktop** — the MCP capability list advertised `wayland` unconditionally, even on a device where `liblabwc_android.so` fails to load (the undiagnosed root cause behind #469's cage/present_app crash, contained since v5.86.7). The capability is now gated on the library actually having loaded, and when it hasn't, a new `waylandLoadError` field carries the recorded failure reason — so one MCP call answers what previously needed Shizuku-gated logcat access within hours of the failure. Diagnostic groundwork for #469's remaining root-cause question; the crash containment itself already shipped. (#469)
