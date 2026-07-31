@@ -1964,9 +1964,15 @@ internal class McpTools(
             put("mosh")
             put("eternal_terminal")
             put("proot")
-            put("wayland")
+            // Truthful, unlike its neighbours: the native compositor + cage
+            // virgl path only exist when liblabwc_android.so loaded (#469).
+            if (sh.haven.core.wayland.WaylandBridge.available) put("wayland")
             put("ffmpeg")
         })
+        // #469: when the labwc lib failed to load, surface WHY over MCP —
+        // the logcat line rotates out long before anyone asks, and reading
+        // logcat remotely needs Shizuku. Absent when wayland is available.
+        sh.haven.core.wayland.WaylandBridge.loadError?.let { put("waylandLoadError", it) }
         // Live phase/bytes of an in-flight backgrounded install (#331) — lets
         // an agent on a slow link poll the download instead of going blind.
         activeInstallProgress?.let { put("activeInstall", it) }
