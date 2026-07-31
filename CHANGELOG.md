@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.10
+
+🔍 **`get_app_info` now tells the truth about the native Wayland desktop** — the MCP capability list advertised `wayland` unconditionally, even on a device where `liblabwc_android.so` fails to load (the undiagnosed root cause behind #469's cage/present_app crash, contained since v5.86.7). The capability is now gated on the library actually having loaded, and when it hasn't, a new `waylandLoadError` field carries the recorded failure reason — so one MCP call answers what previously needed Shizuku-gated logcat access within hours of the failure. Diagnostic groundwork for #469's remaining root-cause question; the crash containment itself already shipped. (#469)
+
 ## v5.86.9
 
 🖥️ **High-resolution RDP desktops no longer render top-left-only** — KRDP (KDE Plasma's RDP server) agrees to the client's requested resolution during the handshake but then streams the physical monitor over the graphics channel; the real size only arrives in the EGFX ResetGraphics message, which Haven ignored. The framebuffer stayed at the handshake size, so on a 2560x1440 or 4K desktop everything beyond that was silently clipped — only the top-left crop was visible, with black filling the rest when zoomed out. The framebuffer now follows the size the server announces, and the viewer's existing unzoomed state fit-scales the whole desktop into view. Pinned by a regression test that replays the KRDP sequence (handshake at 1280x800, ResetGraphics at 2560x1440, fill outside the old bounds) and fails without the fix. Not yet re-verified against a live KRDP stream — reporters on #474/#467, a re-test would be appreciated. (#474, #467)
