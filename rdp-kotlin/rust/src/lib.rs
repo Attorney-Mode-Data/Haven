@@ -527,14 +527,22 @@ fn build_config(config: &RdpConfig) -> ironrdp_connector::Config {
                             }),
                         ),
                     },
-                    Codec {
-                        id: 0,
-                        property: CodecProperty::NsCodec(NsCodec {
-                            is_dynamic_fidelity_allowed: true,
-                            is_subsampling_allowed: true,
-                            color_loss_level: 3,
-                        }),
-                    },
+                    // NSCodec is deliberately NOT advertised (#461).
+                    //
+                    // Advertising it lets a Windows server assign it a codec id
+                    // (1 in practice) and send fast-path SET_SURFACE_BITS with
+                    // it — but that route is decoded by ironrdp-session, whose
+                    // CodecId::from_u8 accepts only NONE(0), REMOTEFX(3) and
+                    // QOI(0x0A/0x0B). An id it does not know is a hard error,
+                    // not a skipped region, so the whole session dies with
+                    // `Fast-Path: unexpected codec ID: 1` mid-logon.
+                    //
+                    // Haven's NSCodec support is the sub-region decoder INSIDE
+                    // ClearCodec on the EGFX channel (#418) — a different
+                    // container entirely, and no help here. Advertising a codec
+                    // this path cannot decode only invites the server to use it.
+                    // Windows falls back to RemoteFX or uncompressed bitmaps,
+                    // both of which are decodable.
                 ])
             },
         }),
@@ -2129,6 +2137,60 @@ fn socks5_connect(
     stream.read_exact(&mut bnd_skip)?;
 
     Ok(stream)
+}
+
+#[cfg(test)]
+mod codec_advertisement_tests {
+    use super::{build_config, RdpConfig};
+    use ironrdp_pdu::rdp::capability_sets::CodecProperty;
+
+    fn config() -> RdpConfig {
+        RdpConfig {
+            username: String::new(),
+            password: String::new(),
+            domain: String::new(),
+            width: 1920,
+            height: 1080,
+            color_depth: 32,
+            enable_credssp: false,
+            pinned_cert_sha256: None,
+            progressive_upgrade: false,
+            avc_enabled: true,
+        }
+    }
+
+    /// #461: a Windows server took up NSCodec because we advertised it, then
+    /// sent fast-path surface bits with codec id 1 — which ironrdp-session
+    /// rejects outright, killing the session mid-logon with
+    /// `Fast-Path: unexpected codec ID: 1`. Never advertise a codec the
+    /// surface-bits path cannot decode; the server will happily use it.
+    #[test]
+    fn nscodec_is_not_advertised() {
+        let cfg = build_config(&config());
+        let codecs = &cfg.bitmap.as_ref().expect("bitmap config").codecs.0;
+        assert!(
+            !codecs
+                .iter()
+                .any(|c| matches!(c.property, CodecProperty::NsCodec(_))),
+            "NSCodec must not be advertised: ironrdp-session's CodecId::from_u8 \
+             accepts only NONE(0), REMOTEFX(3), QOI(0x0A/0x0B), so a server that \
+             takes it up kills the session",
+        );
+    }
+
+    /// The advertisement must not become empty either — RemoteFX is what makes
+    /// Windows send efficient tile updates rather than 16bpp line-by-line RLE.
+    #[test]
+    fn remotefx_is_still_advertised() {
+        let cfg = build_config(&config());
+        let codecs = &cfg.bitmap.as_ref().expect("bitmap config").codecs.0;
+        assert!(
+            codecs
+                .iter()
+                .any(|c| matches!(c.property, CodecProperty::RemoteFx(_))),
+            "RemoteFX must stay advertised",
+        );
+    }
 }
 
 #[cfg(test)]
