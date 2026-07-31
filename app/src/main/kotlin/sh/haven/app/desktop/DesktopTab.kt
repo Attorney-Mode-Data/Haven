@@ -97,6 +97,10 @@ sealed class DesktopTab {
         override val remoteDesktop: RemoteDesktopSession = RdpDesktopSession(session)
         val cursor: StateFlow<CursorOverlay?> get() = _cursor
         val pointerPos: StateFlow<Pair<Int, Int>> get() = _pointerPos
+
+        /** #422: [frame] carries one bitmap mutated in place, so its identity
+         *  stops changing per update; the viewer repaints on this counter. */
+        val frameSeq: StateFlow<Long> get() = session.frameSeq
     }
 
     data class Spice(

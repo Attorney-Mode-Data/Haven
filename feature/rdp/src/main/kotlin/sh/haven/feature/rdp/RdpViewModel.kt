@@ -45,6 +45,11 @@ class RdpViewModel @Inject constructor(
     private val _frame = MutableStateFlow<Bitmap?>(null)
     val frame: StateFlow<Bitmap?> = _frame.asStateFlow()
 
+    /** #422: the frame bitmap is mutated in place, so its identity no longer
+     *  changes per update — the viewer repaints on this instead. */
+    private val _frameSeq = MutableStateFlow(0L)
+    val frameSeq: StateFlow<Long> = _frameSeq.asStateFlow()
+
     private val _connected = MutableStateFlow(false)
     val connected: StateFlow<Boolean> = _connected.asStateFlow()
 
@@ -154,6 +159,7 @@ class RdpViewModel @Inject constructor(
 
         session.onFrameUpdate = { bitmap ->
             _frame.value = bitmap
+            _frameSeq.value = _frameSeq.value + 1
         }
         session.onError = { e ->
             Log.e(TAG, "RDP error", e)

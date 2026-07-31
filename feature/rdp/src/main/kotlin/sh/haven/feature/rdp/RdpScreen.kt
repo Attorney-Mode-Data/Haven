@@ -66,6 +66,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -106,6 +107,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import sh.haven.core.data.preferences.ToolbarKey
 import sh.haven.core.data.preferences.ToolbarLayout
@@ -123,6 +125,12 @@ import kotlin.math.abs
 fun RdpSessionContent(
     connected: StateFlow<Boolean>,
     frame: StateFlow<Bitmap?>,
+    /**
+     * #422: [frame] now carries a single bitmap that is mutated in place, so its
+     * identity stops changing per update and nothing downstream would repaint.
+     * This counter is what invalidates the draw.
+     */
+    frameSeq: StateFlow<Long> = NO_FRAME_SEQ,
     error: StateFlow<String?>,
     toolbarLayout: ToolbarLayout = ToolbarLayout.DEFAULT,
     onTap: (Int, Int) -> Unit,
@@ -197,9 +205,12 @@ fun RdpSessionContent(
         }
     }
 
+    val frameSeqState = frameSeq.collectAsState()
+
     if (connectedState && frameState != null) {
         RdpViewer(
             frame = frameState!!,
+            frameSeq = frameSeqState,
             fullscreen = fullscreen,
             toolbarLayout = toolbarLayout,
             onTap = onTap,
@@ -301,6 +312,7 @@ fun RdpScreen(
     RdpSessionContent(
         connected = viewModel.connected,
         frame = viewModel.frame,
+        frameSeq = viewModel.frameSeq,
         error = viewModel.error,
         toolbarLayout = toolbarLayout,
         onTap = { x, y -> viewModel.sendClick(x, y) },
@@ -452,12 +464,24 @@ private fun DesktopPlaceholder(
     }
 }
 
+/**
+ * Default for callers whose frames still arrive as a fresh bitmap each update —
+ * SPICE reuses this renderer — where the changing identity already invalidates
+ * the draw and no counter is needed (#422).
+ */
+private val NO_FRAME_SEQ: StateFlow<Long> = MutableStateFlow(0L)
+
 // --- RDP Desktop Viewer ---
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RdpViewer(
     frame: Bitmap,
+    /**
+     * Read ONLY inside the draw scope, so an in-place bitmap change invalidates
+     * the draw phase without recomposing this whole subtree every frame (#422).
+     */
+    frameSeq: State<Long>,
     fullscreen: Boolean,
     toolbarLayout: ToolbarLayout = ToolbarLayout.DEFAULT,
     onTap: (Int, Int) -> Unit,
@@ -757,6 +781,11 @@ private fun RdpViewer(
                         clip = true
                     },
             ) {
+                // The bitmap is mutated in place, so its identity cannot signal a
+                // change; this read is what invalidates the draw. Removing it
+                // freezes the picture on the first frame.
+                @Suppress("UNUSED_EXPRESSION")
+                frameSeq.value
                 drawRemoteFrame(imageBitmap, frame.width, frame.height)
                 // Server cursor overlay (#212). Draw at the touchpad-tracked
                 // virtual cursor in TOUCHPAD mode (the position the user is

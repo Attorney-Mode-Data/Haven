@@ -256,6 +256,7 @@ fun DesktopScreen(
                         is DesktopTab.Rdp -> RdpSessionContent(
                             connected = tab.connected,
                             frame = tab.frame,
+                            frameSeq = tab.frameSeq,
                             error = tab.error,
                             toolbarLayout = toolbarLayout,
                             onTap = { x, y -> desktopViewModel.sendClick(x, y) },
