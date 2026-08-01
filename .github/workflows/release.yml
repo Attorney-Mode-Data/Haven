@@ -144,6 +144,12 @@ jobs:
       - name: Assert reflectively-loaded classes survived R8
         if: matrix.abi == 'arm64'
         run: ./scripts/check-r8-kept-classes.sh
+      # A stale committed .so fails to dlopen on-device and kills every
+      # cage/app-window feature (#469), with nothing failing at build time.
+      # Inspects checked-in binaries only, so run it once.
+      - name: Assert committed native libs resolve their stubs (#469)
+        if: matrix.abi == 'arm64'
+        run: ./scripts/check-native-libs.sh
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
