@@ -1180,9 +1180,37 @@ fun ConnectionsScreen(
                 var draggedId by remember { mutableStateOf<String?>(null) }
                 var dragOffset by remember { mutableFloatStateOf(0f) }
                 val reorderedIds = remember { mutableStateListOf<String>() }
-                if (reorderedIds.toList() != canonicalFlatIds && draggedId == null) {
-                    reorderedIds.clear()
-                    reorderedIds.addAll(canonicalFlatIds)
+                // The order we last wrote, until the database echoes it back (#488).
+                //
+                // commitReorder writes asynchronously, and onDragEnd clears
+                // draggedId BEFORE calling it. The resync below therefore used to
+                // run on the very next recomposition, while canonicalFlatIds still
+                // held the pre-drag order — reverting the move the user had just
+                // made. Whether it survived came down to whether the database
+                // emitted first, which is why only *some* drags stuck.
+                var pendingOrder by remember { mutableStateOf<List<String>?>(null) }
+                if (draggedId == null) {
+                    val pending = pendingOrder
+                    when {
+                        // Nothing in flight — follow the database.
+                        pending == null ->
+                            if (reorderedIds.toList() != canonicalFlatIds) {
+                                reorderedIds.clear()
+                                reorderedIds.addAll(canonicalFlatIds)
+                            }
+                        // The database caught up with what we wrote.
+                        canonicalFlatIds == pending -> pendingOrder = null
+                        // The set of connections changed underneath us (added,
+                        // deleted, synced) — our pending order is stale, take theirs.
+                        canonicalFlatIds.toSet() != pending.toSet() -> {
+                            pendingOrder = null
+                            reorderedIds.clear()
+                            reorderedIds.addAll(canonicalFlatIds)
+                        }
+                        // Same members, different order: our write is still in
+                        // flight. Hold what the user did rather than fighting it.
+                        else -> Unit
+                    }
                 }
 
                 // Derive group membership from flat order: connections after a group header
@@ -1195,7 +1223,11 @@ fun ConnectionsScreen(
                         if (key.startsWith("group-")) {
                             val gid = key.removePrefix("group-")
                             currentGroupId = gid
-                            viewModel.reorderGroups(listOf(gid)) // will be batched below
+                            // updateGroupSortOrder alone. reorderGroups(listOf(gid))
+                            // used to run first and assigned index 0 — the only index
+                            // a one-element list has — to every group in turn. Both
+                            // launch their own coroutine, so whichever landed last
+                            // won, and group order could come out zeroed (#488).
                             viewModel.updateGroupSortOrder(gid, groupSortIdx++)
                         } else {
                             val profile = allTopLevel.find { it.id == key }
@@ -1360,6 +1392,9 @@ fun ConnectionsScreen(
                                         if (!isFiltering) {
                                             draggedId = null
                                             dragOffset = 0f
+                                            // Recorded BEFORE the write so the resync
+                                            // above knows a commit is in flight (#488).
+                                            pendingOrder = reorderedIds.toList()
                                             commitReorder()
                                         }
                                     },
