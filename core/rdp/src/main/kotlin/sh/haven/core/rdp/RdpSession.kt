@@ -360,7 +360,21 @@ class RdpSession(
             }
             if (region != null) {
                 existing!!.also {
-                    drawTile(it, region, dirty!!.x.toInt(), dirty.y.toInt())
+                    // A region covering the whole bitmap is the common case, not
+                    // the exception: progressive and AVC both hand us a
+                    // full-screen dirty bbox every frame. drawTile would
+                    // allocate a second full-size bitmap, copy into it, then
+                    // blit that over the destination — two 8.3MB copies and an
+                    // 8.3MB allocation per frame, to land the pixels exactly
+                    // where copyPixelsFromBuffer puts them in one. Measured at
+                    // 1080p the whole publish step was ~72ms/frame (#466).
+                    if (dirty!!.x.toInt() == 0 && dirty.y.toInt() == 0 &&
+                        region.width.toInt() == it.width && region.height.toInt() == it.height
+                    ) {
+                        it.copyPixelsFromBuffer(ByteBuffer.wrap(region.pixels))
+                    } else {
+                        drawTile(it, region, dirty.x.toInt(), dirty.y.toInt())
+                    }
                 }
             } else {
                 // First frame, a resize, or a rect the native side rejected:
