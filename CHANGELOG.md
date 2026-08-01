@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.25
+
+🖥️ **Remote desktops stay responsive when the server draws outside the agreed screen size** — a reporter's VirtualBox session ran slowly and then died within a minute. The server was painting a desktop larger than the size the two ends had agreed on, so thousands of its updates fell outside the screen Haven had set up and drew nothing at all — yet each one still made Haven rebuild the entire screen image from scratch. In a 38-second session that came to roughly 36 GB of pointless copying on the phone. Haven now updates only the part of the screen an update actually touches, so updates that land outside it cost nothing. The content those updates carried is still missing — that is a separate problem, still open — but it no longer takes the app down with it. (#422)
+
+🔁 **Mosh sessions that stall mid-scroll now reconnect by themselves** — reported as a session freezing while scrolling back through history, showing "reconnecting", and never coming back until it was closed and reopened by hand. There are two ways a mosh session can go wrong: it can go quiet, which Haven already noticed and recovered from, or it can keep receiving perfectly good packets that it has no way to use. The second kind looked completely healthy to the watchdog — packets were arriving the whole time — so the recovery that would have fixed it was never triggered. It now spots a session that is receiving but getting nowhere and reconnects it. Sessions that are simply idle are left alone, as is a phone that has gone offline. (#421)
+
 ## v5.86.24
 
 🗂️ **Terminal tabs are wider and easier to hit** — the tab strip sized each tab to its label, so a short name like "cctv" gave a target barely wider than the four letters. Tabs now share the strip evenly, so on a three-tab strip each one is well over twice the width it used to be. Once there are more tabs than will fit at a comfortable size the strip goes back to scrolling, rather than shrinking every tab to a sliver.
