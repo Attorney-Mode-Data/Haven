@@ -841,6 +841,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_rdp_transport_checksum_method_pointercallback_on_pointer_position(
     ): Int
+    external fun uniffi_rdp_transport_checksum_method_rdpclient_bitmap_bridge_id(
+    ): Int
     external fun uniffi_rdp_transport_checksum_method_rdpclient_connect(
     ): Int
     external fun uniffi_rdp_transport_checksum_method_rdpclient_disconnect(
@@ -953,6 +955,8 @@ internal object UniffiLib {
     external fun uniffi_rdp_transport_fn_free_rdpclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
     external fun uniffi_rdp_transport_fn_constructor_rdpclient_new(`config`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_rdp_transport_fn_method_rdpclient_bitmap_bridge_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_rdp_transport_fn_method_rdpclient_connect(`ptr`: Long,`host`: RustBuffer.ByValue,`port`: Short,`socksProxy`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
@@ -1143,6 +1147,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_pointercallback_on_pointer_position() != 11369) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rdp_transport_checksum_method_rdpclient_bitmap_bridge_id() != 60513) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_rdpclient_connect() != 62634) {
@@ -1496,6 +1503,29 @@ public object FfiConverterUInt: FfiConverter<UInt, Int> {
 
     override fun write(value: UInt, buf: ByteBuffer) {
         buf.putInt(value.toInt())
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterLong: FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Long {
+        return buf.getLong()
+    }
+
+    override fun lower(value: Long): Long {
+        return value
+    }
+
+    override fun allocationSize(value: Long) = 8UL
+
+    override fun write(value: Long, buf: ByteBuffer) {
+        buf.putLong(value)
     }
 }
 
@@ -3135,6 +3165,14 @@ public object FfiConverterTypePointerCallback: FfiConverter<PointerCallback, Lon
 
 public interface RdpClientInterface {
     
+    /**
+     * Key for the JNI bitmap bridge (#466). Kotlin passes this to
+     * `RdpBitmapBridge.blitRegion` so a raw JNI call can find this session's
+     * framebuffer; UniFFI objects are opaque handles and cannot be reached
+     * from hand-written JNI any other way.
+     */
+    fun `bitmapBridgeId`(): kotlin.Long
+    
     fun `connect`(`host`: kotlin.String, `port`: kotlin.UShort, `socksProxy`: SocksProxyConfig?)
     
     fun `disconnect`()
@@ -3296,6 +3334,25 @@ open class RdpClient: Disposable, AutoCloseable, RdpClientInterface
             UniffiLib.uniffi_rdp_transport_fn_clone_rdpclient(handle, status)
         }
     }
+
+    
+    /**
+     * Key for the JNI bitmap bridge (#466). Kotlin passes this to
+     * `RdpBitmapBridge.blitRegion` so a raw JNI call can find this session's
+     * framebuffer; UniFFI objects are opaque handles and cannot be reached
+     * from hand-written JNI any other way.
+     */override fun `bitmapBridgeId`(): kotlin.Long {
+            return FfiConverterLong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_rdp_transport_fn_method_rdpclient_bitmap_bridge_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
     
     @Throws(RdpException::class)override fun `connect`(`host`: kotlin.String, `port`: kotlin.UShort, `socksProxy`: SocksProxyConfig?)

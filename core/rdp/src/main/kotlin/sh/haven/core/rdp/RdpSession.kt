@@ -353,12 +353,31 @@ class RdpSession(
             // The common path: fetch ONLY the changed region and paint it into
             // the bitmap the viewer already holds. Fetching the whole
             // framebuffer here was the last full-frame copy per update (#422).
-            val region = if (reusable && dirty != null) {
+            // Fastest path: let native write straight into the bitmap we
+            // already hold, skipping the Vec, the FFI marshalling and the
+            // Kotlin-side copy entirely (#466). Returns false for anything
+            // recoverable — wrong size, wrong format, session gone — and we
+            // fall through to the byte-array path below.
+            val blitted = reusable && dirty != null && RdpBitmapBridge.available &&
+                runCatching {
+                    RdpBitmapBridge.blitRegion(
+                        existing!!,
+                        c.bitmapBridgeId(),
+                        dirty.x.toInt(),
+                        dirty.y.toInt(),
+                        dirty.width.toInt(),
+                        dirty.height.toInt(),
+                    )
+                }.getOrDefault(false)
+
+            val region = if (!blitted && reusable && dirty != null) {
                 c.getFramebufferRegion(dirty.x, dirty.y, dirty.width, dirty.height)
             } else {
                 null
             }
-            if (region != null) {
+            if (blitted) {
+                existing!!
+            } else if (region != null) {
                 existing!!.also {
                     // A region covering the whole bitmap is the common case, not
                     // the exception: progressive and AVC both hand us a

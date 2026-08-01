@@ -2,6 +2,7 @@ use std::net::{SocketAddr, TcpStream};
 use std::sync::{Arc, Mutex, RwLock};
 use log::{debug, error, info, warn};
 
+mod bitmap_bridge;
 mod egfx;
 mod redirection;
 
@@ -215,8 +216,20 @@ enum InputEvent {
 pub struct RdpClient {
     config: RdpConfig,
     state: Arc<RwLock<SessionState>>,
+    /// Key the JNI bitmap bridge uses to find `state` (#466). A raw JNI entry
+    /// point cannot reach a UniFFI object, so the state is registered here and
+    /// Kotlin passes this id back in.
+    bitmap_bridge_id: i64,
     input_queue: Arc<Mutex<Vec<InputEvent>>>,
     session_thread: Mutex<Option<std::thread::JoinHandle<()>>>,
+}
+
+impl Drop for RdpClient {
+    fn drop(&mut self) {
+        // Weak refs mean a stale entry is harmless, but a long-lived process
+        // should not accumulate them.
+        bitmap_bridge::unregister(self.bitmap_bridge_id);
+    }
 }
 
 #[uniffi::export]
@@ -224,9 +237,7 @@ impl RdpClient {
     #[uniffi::constructor]
     pub fn new(config: RdpConfig) -> Self {
         init_logging();
-        Self {
-            config,
-            state: Arc::new(RwLock::new(SessionState {
+        let state = Arc::new(RwLock::new(SessionState {
                 connected: false,
                 framebuffer: None,
                 dirty_rects: Vec::new(),
@@ -234,12 +245,25 @@ impl RdpClient {
                 clipboard_callback: None,
                 session_callback: None,
                 pointer_callback: None,
-                avc_decoder: None,
-                shutdown: false,
-            })),
+            avc_decoder: None,
+            shutdown: false,
+        }));
+        let bitmap_bridge_id = bitmap_bridge::register(&state);
+        Self {
+            config,
+            state,
+            bitmap_bridge_id,
             input_queue: Arc::new(Mutex::new(Vec::new())),
             session_thread: Mutex::new(None),
         }
+    }
+
+    /// Key for the JNI bitmap bridge (#466). Kotlin passes this to
+    /// `RdpBitmapBridge.blitRegion` so a raw JNI call can find this session's
+    /// framebuffer; UniFFI objects are opaque handles and cannot be reached
+    /// from hand-written JNI any other way.
+    pub fn bitmap_bridge_id(&self) -> i64 {
+        self.bitmap_bridge_id
     }
 
     pub fn connect(
