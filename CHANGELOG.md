@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.23
+
+📐 **Terminal text no longer runs off the right edge when a computer is attached to the same session** — reported as text still being cut off with no way to scroll across to it, even after the zoom fix in v5.86.21. This was a second, unrelated cause. When a phone and a computer are attached to the same tmux session, tmux sizes the shared view for whichever device was used most recently. Use the computer, and the view becomes as wide as its screen — far wider than the phone can show — and the phone renders only the left-hand portion, with no way to reach the rest. Nothing was lost; those columns were simply never sent to the phone. It came and went depending on which device you last touched, which is what made it look intermittent. Haven now asks tmux to fit the shared view to the smallest attached screen, so the phone always sees the whole width. The computer is letterboxed to match, which is the deliberate trade: a desktop can resize its own window, a phone cannot recover what was never sent. (#479)
+
 ## v5.86.22
 
 🪟 **Linux desktops and single-app windows work again** — starting a desktop, or opening a guest app in its own window, failed outright on every install: the feature died the moment it was asked for, and over the agent bridge it took the connection down with it. The compositor library Haven ships had been built before part of its link step ran, leaving 51 internal references unresolved, so Android refused to load it at all. Nothing detected this at build time — the app compiled, packaged and installed perfectly, and only failed on a real device when the feature was first used. The library is rebuilt, and the build now refuses to package one in that state, so this class of failure cannot ship silently again. (#469)
