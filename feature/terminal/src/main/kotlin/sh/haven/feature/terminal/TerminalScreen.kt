@@ -104,6 +104,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -120,6 +121,16 @@ import sh.haven.core.terminal.HavenTerminal
 import sh.haven.core.data.preferences.ToolbarItem
 import sh.haven.core.data.preferences.ToolbarLayout
 import sh.haven.core.data.preferences.UserPreferencesRepository
+
+/** Horizontal padding on the tab strip, subtracted when deciding if tabs can be justified. */
+private val TAB_STRIP_PADDING = 4.dp
+
+/**
+ * Below this a stretched tab is no wider than a content-hugging one, so there is
+ * nothing to gain — past that many tabs the strip goes back to scrolling instead
+ * of shaving every tab down to a sliver.
+ */
+private val MIN_JUSTIFIED_TAB_WIDTH = 96.dp
 
 /** Distinct colors for grouping tabs by connection profile. */
 private val TAB_GROUP_COLORS = listOf(
@@ -649,18 +660,34 @@ fun TerminalScreen(
             val indicatorColor = profileColors[tabs.getOrNull(clampedIndex)?.profileId]
 
             if (showTabBar && !fullscreen) {
+                // Tabs used to hug their label, so a short name like "cctv" gave a
+                // tap target barely wider than the four characters — easy to miss
+                // on a phone. Share the strip out evenly instead, while the tabs
+                // still get a comfortable width; past that many tabs, fall back to
+                // the scrolling strip rather than shaving them down to slivers.
+                val stripWidth = LocalConfiguration.current.screenWidthDp.dp - TAB_STRIP_PADDING * 2
+                val justified = tabs.isNotEmpty() &&
+                    stripWidth / tabs.size >= MIN_JUSTIFIED_TAB_WIDTH
+                // A menu bound to the loop position would follow the SLOT, not the
+                // tab: reordering slides a different tab underneath it and the next
+                // press moves the wrong one. Keyed by session id so it tracks the
+                // tab across moves, which is what lets it stay open for several.
+                var tabMenuFor by remember { mutableStateOf<String?>(null) }
                 Surface(tonalElevation = 2.dp) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                            .then(
+                                if (justified) Modifier
+                                else Modifier.horizontalScroll(rememberScrollState()),
+                            )
+                            .padding(horizontal = TAB_STRIP_PADDING, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         tabs.forEachIndexed { index, tab ->
                             val reconnecting by tab.isReconnecting.collectAsState()
                             val selected = activeTabIndex == index
-                            var showTabMenu by remember { mutableStateOf(false) }
+                            val showTabMenu = tabMenuFor == tab.sessionId
                             var renameDialogFor by remember { mutableStateOf<String?>(null) }
                             val tabColor = profileColors[tab.profileId]
 
@@ -675,13 +702,14 @@ fun TerminalScreen(
                                 )
                             }
 
-                            Box {
+                            Box(modifier = if (justified) Modifier.weight(1f) else Modifier) {
                                 Surface(
                                     modifier = Modifier
+                                        .then(if (justified) Modifier.fillMaxWidth() else Modifier)
                                         .padding(horizontal = 2.dp)
                                         .combinedClickable(
                                             onClick = { viewModel.selectTab(index) },
-                                            onLongClick = { showTabMenu = true },
+                                            onLongClick = { tabMenuFor = tab.sessionId },
                                         ),
                                     shape = MaterialTheme.shapes.small,
                                     color = if (selected) {
@@ -711,6 +739,11 @@ fun TerminalScreen(
                                             vertical = 8.dp,
                                         ),
                                         verticalAlignment = Alignment.CenterVertically,
+                                        // Left-aligned text in a tab that now spans a
+                                        // third of the screen reads as misplaced; centre
+                                        // it only when the tab is actually stretched.
+                                        horizontalArrangement =
+                                            if (justified) Arrangement.Center else Arrangement.Start,
                                     ) {
                                         if (reconnecting) {
                                             Icon(
@@ -723,6 +756,11 @@ fun TerminalScreen(
                                         Text(
                                             tab.label,
                                             maxLines = 1,
+                                            // A stretched tab has a fixed width, so a long
+                                            // label must give way to the close button
+                                            // rather than push it off the edge.
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false),
                                             style = MaterialTheme.typography.labelLarge,
                                         )
                                         // #306: a one-tap close on the active tab so
@@ -753,7 +791,7 @@ fun TerminalScreen(
                                 // Long-press action bar
                                 DropdownMenu(
                                     expanded = showTabMenu,
-                                    onDismissRequest = { showTabMenu = false },
+                                    onDismissRequest = { tabMenuFor = null },
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     Row(
@@ -765,7 +803,7 @@ fun TerminalScreen(
                                     ) {
                                         TextButton(
                                             onClick = {
-                                                showTabMenu = false
+                                                tabMenuFor = null
                                                 viewModel.addTab()
                                             },
                                             enabled = !newTabLoading,
@@ -786,14 +824,14 @@ fun TerminalScreen(
                                         }
                                         Row {
                                             IconButton(
-                                                onClick = { viewModel.moveTab(index, -1); showTabMenu = false },
+                                                onClick = { viewModel.moveTab(index, -1) },
                                                 enabled = index > 0,
                                                 modifier = Modifier.size(36.dp),
                                             ) {
                                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.terminal_move_left), modifier = Modifier.size(18.dp))
                                             }
                                             IconButton(
-                                                onClick = { viewModel.moveTab(index, 1); showTabMenu = false },
+                                                onClick = { viewModel.moveTab(index, 1) },
                                                 enabled = index < tabs.size - 1,
                                                 modifier = Modifier.size(36.dp),
                                             ) {
@@ -802,7 +840,7 @@ fun TerminalScreen(
                                         }
                                         TextButton(
                                             onClick = {
-                                                showTabMenu = false
+                                                tabMenuFor = null
                                                 viewModel.closeTab(tab.sessionId)
                                             },
                                             colors = ButtonDefaults.textButtonColors(
@@ -832,7 +870,7 @@ fun TerminalScreen(
                                                 )
                                             },
                                             onClick = {
-                                                showTabMenu = false
+                                                tabMenuFor = null
                                                 viewModel.beginShowDetails(tab.sessionId)
                                             },
                                         )
@@ -848,7 +886,7 @@ fun TerminalScreen(
                                                 )
                                             },
                                             onClick = {
-                                                showTabMenu = false
+                                                tabMenuFor = null
                                                 renameDialogFor = renameableName
                                             },
                                         )
@@ -864,7 +902,7 @@ fun TerminalScreen(
                                                 )
                                             },
                                             onClick = {
-                                                showTabMenu = false
+                                                tabMenuFor = null
                                                 viewModel.beginSaveConnection(tab.sessionId)
                                             },
                                         )
@@ -882,7 +920,7 @@ fun TerminalScreen(
                                                 text = { Text(name, style = MaterialTheme.typography.bodySmall) },
                                                 leadingIcon = { Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp)) },
                                                 onClick = {
-                                                    showTabMenu = false
+                                                    tabMenuFor = null
                                                     viewModel.openRemoteSession(tab.profileId, name)
                                                 },
                                             )
@@ -893,7 +931,7 @@ fun TerminalScreen(
                                                 text = { Text(session.label, style = MaterialTheme.typography.bodySmall) },
                                                 leadingIcon = { Icon(Icons.Filled.Cable, null, modifier = Modifier.size(16.dp)) },
                                                 onClick = {
-                                                    showTabMenu = false
+                                                    tabMenuFor = null
                                                     viewModel.selectTabByProfileId(session.profileId)
                                                 },
                                             )
