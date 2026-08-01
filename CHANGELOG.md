@@ -5,6 +5,14 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.27
+
+🖵️ **Remote desktops are markedly faster** — the frame rate over a 1080p session roughly doubled in testing, from about 6.6 to between 9.6 and 11.4 frames a second on the same connection and the same content. Every frame used to be copied three times on its way to the screen, including building a fresh 8 MB buffer for it in the app on each one; the decoded picture is now written straight into the image being displayed, once. The step that did all that copying went from 72 milliseconds a frame to about 1. What remains is the decoding itself, which is where any further gains have to come from. (#466)
+
+🏷️ **Terminal tab names are back** — v5.86.24 made the tabs share the width evenly, and once you had enough tabs for that to stop fitting, every tab lost its name and shrank onto its close button. The two cases behave differently under the hood and only the roomy one was checked. (#479)
+
+**If your terminal looks short and you used v5.86.23 to v5.86.25 with tmux:** those versions set a tmux option that limits a shared session to the smaller of your devices in each direction, and it stays set on the tmux server even after updating Haven. Run `tmux set -g window-size latest` on that machine to restore it. Sorry — that one was ours.
+
 ## v5.86.26
 
 📐 **Terminal sessions use the full height of your screen again** — v5.86.23 changed how Haven sizes a tmux session that a computer is also connected to, so that the phone was no longer cut off on the right. That change fixed the width and quietly cost you height: the setting it used takes the smaller of the two devices in *each direction separately*, so the phone got its own width but the computer's height, losing rows it had room for. Reverted to the previous behaviour, where the session matches whichever device you last used — connecting, rotating and opening the keyboard all count, so the phone gets its exact size whenever you pick it up. (#479)
