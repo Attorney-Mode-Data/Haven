@@ -1378,6 +1378,11 @@ fn run_rdp_session(
     // attributed to a stage. Costs a couple of Instant::now() per frame.
     let mut perf = FramePerf::new();
 
+    /// A slow-path PDU that arrived truncated, waiting for the rest (#422).
+    /// Holds at most one fragment: if the next frame does not complete it, both
+    /// are given up on rather than growing a buffer on a desynchronised stream.
+    let mut pending_partial: Option<Vec<u8>> = None;
+
     // Active session loop
     loop {
         // Check for shutdown
@@ -1522,8 +1527,20 @@ fn run_rdp_session(
                     let n = frame.len().min(64);
                     debug!("FRAMEDIAG action={:?} len={} bytes={:02x?}", action, frame.len(), &frame[..n]);
                 }
+                // If we are holding the first half of a split PDU, glue this
+                // frame onto it and decode the pair (#422). Cleared either way:
+                // one attempt only, so a genuine desync fails fast instead of
+                // accumulating.
+                let joined: Option<Vec<u8>> = pending_partial.take().map(|mut head| {
+                    debug!("Reassembling {} + {} byte fragments", head.len(), frame.len());
+                    head.extend_from_slice(&frame);
+                    head
+                });
+                let frame_to_process: &[u8] = joined.as_deref().unwrap_or(&frame);
+                let was_reassembled = joined.is_some();
+
                 let t_process = std::time::Instant::now();
-                match active_stage.process(&mut image, action, &frame) {
+                match active_stage.process(&mut image, action, frame_to_process) {
                     Ok(outputs) => {
                         // Time inside process(): protocol decode, and for AVC
                         // tiles the MediaCodec round-trip plus YUV->RGB, since
@@ -1632,7 +1649,7 @@ fn run_rdp_session(
                         // redirect (reconnect with the routing token) is #117's
                         // next phase — deferred until it can be verified against a
                         // real GRD redirect capture.
-                        if let Some(info) = redirection::detect_server_redirect(&frame) {
+                        if let Some(info) = redirection::detect_server_redirect(frame_to_process) {
                             let target = info
                                 .target_host()
                                 .unwrap_or_else(|| "another session on the same host".to_string());
@@ -1664,7 +1681,7 @@ fn run_rdp_session(
                             let mut cas = activation_template.reset_clone();
                             let _ = stream_ctl.set_read_timeout(Some(std::time::Duration::from_secs(30)));
                             let res = perform_reactivation(
-                                &mut tls_framed, &mut cas, Some(&frame),
+                                &mut tls_framed, &mut cas, Some(frame_to_process),
                                 &mut active_stage, &mut image, state,
                             );
                             let _ = stream_ctl.set_read_timeout(Some(IDLE_TIMEOUT));
@@ -1672,11 +1689,30 @@ fn run_rdp_session(
                             res?;
                         } else if msg.contains("unhandled") || msg.contains("unsupported") {
                             // Try to decode as slow-path bitmap update
-                            if try_handle_slow_path_bitmap(&frame, state) {
+                            if try_handle_slow_path_bitmap(frame_to_process, state) {
                                 debug!("Decoded slow-path bitmap update");
                             } else {
                                 debug!("Skipping unhandled PDU: {}", msg);
                             }
+                        } else if msg.contains("NotEnoughBytes") && !was_reassembled {
+                            // #422: VirtualBox splits a large slow-path PDU across
+                            // two frames and we decoded each half on its own.
+                            //
+                            // Two crash reports carried the SAME expected length
+                            // and complementary received lengths:
+                            //     received 4263, expected 4287
+                            //     received   24, expected 4287
+                            // and 4263 + 24 = 4287 exactly. Both immediately follow
+                            // a 4245-byte slow-path pointer update — a large cursor
+                            // bitmap, which is what pushes the PDU over the split.
+                            // The reporter noticed it happens when they go
+                            // fullscreen, which is when that cursor changes.
+                            //
+                            // Hold the fragment and try again once its other half
+                            // arrives, rather than killing a session over a PDU we
+                            // simply have not finished receiving.
+                            debug!("Holding {} byte fragment for reassembly: {}", frame.len(), msg);
+                            pending_partial = Some(frame.to_vec());
                         } else {
                             // #437: a fatal protocol error is not a clean exit —
                             // surface it through on_error so the app layer marks
