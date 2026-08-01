@@ -2248,7 +2248,10 @@ private fun AboutDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_about_dialog_title)) },
         text = {
-            Column {
+            // The library list alone is taller than the dialog on a phone, and
+            // AlertDialog clips its text slot rather than scrolling it — so
+            // without this the last entries were simply unreachable (#485).
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
                     text = stringResource(R.string.settings_about_app_name),
                     style = MaterialTheme.typography.headlineSmall,
