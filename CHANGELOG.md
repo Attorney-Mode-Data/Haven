@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.28
+
+🖥️ **You can now tell Haven what screen size to ask a remote desktop for** — under Settings → Desktop. Haven always asked for 1920×1080 and gave no way to change it, which is fine until the machine at the other end draws something else: a VirtualBox VM defaults to 2560×1600 and simply paints at that size without saying so, and everything Haven had not made room for was quietly thrown away. That looks like a screen that stops refreshing, or one with stale patches that never update. Set this to match the resolution the remote machine actually uses. 1920×1080, 2560×1600 and 1280×720 are one tap. (#422)
+
 ## v5.86.27
 
 🖵️ **Remote desktops are markedly faster** — the frame rate over a 1080p session roughly doubled in testing, from about 6.6 to between 9.6 and 11.4 frames a second on the same connection and the same content. Every frame used to be copied three times on its way to the screen, including building a fresh 8 MB buffer for it in the app on each one; the decoded picture is now written straight into the image being displayed, once. The step that did all that copying went from 72 milliseconds a frame to about 1. What remains is the decoding itself, which is where any further gains have to come from. (#466)
