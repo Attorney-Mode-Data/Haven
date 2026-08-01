@@ -17,7 +17,7 @@ enum class SessionManager(
 ) {
     NONE("None", null, null),
     TMUX("tmux",
-        { name -> "exec sh -c 'if ! command -v tmux >/dev/null 2>&1; then echo \"Haven: tmux not found. Install it (e.g. apt install tmux) or change session manager in connection settings.\"; else exec tmux new-session -A -s $name \\; set -gq allow-passthrough on \\; set -gq mouse on \\; set -gq window-size smallest; fi'" },
+        { name -> "exec sh -c 'if ! command -v tmux >/dev/null 2>&1; then echo \"Haven: tmux not found. Install it (e.g. apt install tmux) or change session manager in connection settings.\"; else exec tmux new-session -A -s $name \\; set -gq allow-passthrough on \\; set -gq mouse on; fi'" },
         "sh -c 'tmux ls -F \"#{session_name}\" 2>/dev/null'",
         { name -> "sh -c 'tmux kill-session -t $name'" },
         { old, new -> "sh -c 'tmux rename-session -t $old $new'" },
@@ -35,7 +35,7 @@ enum class SessionManager(
         { old, new -> "sh -c 'screen -S $old -X sessionname $new'" },
     ),
     BYOBU("byobu",
-        { name -> "exec sh -c 'if ! command -v byobu >/dev/null 2>&1; then echo \"Haven: byobu not found. Install it (e.g. apt install byobu) or change session manager in connection settings.\"; else exec byobu new-session -A -s $name \\; set -gq mouse on \\; set -gq window-size smallest; fi'" },
+        { name -> "exec sh -c 'if ! command -v byobu >/dev/null 2>&1; then echo \"Haven: byobu not found. Install it (e.g. apt install byobu) or change session manager in connection settings.\"; else exec byobu new-session -A -s $name \\; set -gq mouse on; fi'" },
         "sh -c 'byobu ls -F \"#{session_name}\" 2>/dev/null'",
         { name -> "sh -c 'byobu kill-session -t $name'" },
         { old, new -> "sh -c 'byobu rename-session -t $old $new'" },

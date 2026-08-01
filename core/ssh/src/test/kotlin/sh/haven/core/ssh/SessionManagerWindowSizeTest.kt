@@ -1,66 +1,66 @@
 package sh.haven.core.ssh
 
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 /**
- * A phone attaching to a tmux session that a desktop is already attached to
- * ends up in a size fight. tmux defaults to `window-size latest`, so the window
- * is sized for whichever client was used most recently — when that is the
- * desktop, the phone can only render the leftmost N columns of a much wider
- * window, and tmux offers no horizontal scrolling for the rest.
+ * Do NOT pin tmux's `window-size` on attach. This is a regression guard for a
+ * fix that made things worse, kept because the reasoning is not obvious and
+ * the option looks like an improvement.
  *
- * Measured on a real pair of clients (desktop 189x42, phone 72x33): forcing the
- * window to the desktop's size left the phone's emulator holding lines cut
- * dead at column 72 —
+ * #479 reported terminal text cut off on the right when a desktop client was
+ * attached to the same tmux session: tmux's default `window-size latest` sizes
+ * the shared window for whichever client was used most recently, and a phone
+ * being *read* rather than typed on loses that race. Setting `window-size
+ * smallest` fixed the width and was released in v5.86.23.
  *
- *     ∙ Resolve open GitHub issues      No resource problem — 19 GB free, hea
+ * It then broke the height. `smallest` takes the minimum in each dimension
+ * INDEPENDENTLY, so with a phone at 98x44 and a desktop at 189x42 the window
+ * became 98x42 — the phone's width, the desktop's height — and the phone lost
+ * rows it had room for. Measured on the reporter's own server:
  *
- * with the remaining 117 columns unreachable. That reads exactly like the
- * "text is clipped and I can't scroll to it" report in #479, but it is a
- * different fault from the libvterm reflow bug fixed there: nothing is
- * destroyed, it is simply never sent to this client.
+ *     phone clients    98x44
+ *     desktop clients  189x42
+ *     window           98x41   (42 minus the status line)
  *
- * `window-size smallest` makes the window fit the smallest attached client, so
- * the phone always sees everything (the desktop gets letterboxed instead — the
- * deliberate trade, since the small screen is the one that cannot recover).
- * Set with `-gq` alongside the mouse/passthrough options Haven already applies
- * on attach.
+ * The tempting alternative does not work either. Grouped sessions
+ * (`new-session -t`) are the usual advice for devices of different sizes, but
+ * a group shares its windows and therefore shares their size. Measured with
+ * real attached clients on a scratch server:
+ *
+ *     client 189x42 on A, client 98x44 on grouped B
+ *     -> window A 98x42, window B 98x42
+ *
+ * One window has one size; some client is always compromised. tmux's default
+ * at least gives the device you are actually touching its exact size, which is
+ * the behaviour asked for after both regressions were on the table.
  */
 class SessionManagerWindowSizeTest {
 
     @Test
-    fun `tmux attach pins the window to the smallest client`() {
+    fun `tmux attach does not pin window-size`() {
         val cmd = SessionManager.TMUX.command!!("work")
-        assertTrue(
-            "tmux attach must set window-size smallest, or a desktop client " +
-                "attached to the same session sizes the window beyond what the " +
-                "phone can display and the overflow is unreachable. Got: $cmd",
-            cmd.contains("set -gq window-size smallest"),
+        assertFalse(
+            "pinning window-size clamps the shared window per-dimension across all " +
+                "attached clients — it cost the phone 3 rows in #479 follow-up. Got: $cmd",
+            cmd.contains("window-size"),
         )
     }
 
-    /** byobu is tmux underneath, so it has the same failure and the same fix. */
     @Test
-    fun `byobu attach pins the window to the smallest client`() {
+    fun `byobu attach does not pin window-size`() {
         val cmd = SessionManager.BYOBU.command!!("work")
-        assertTrue(
-            "byobu wraps tmux and inherits the same multi-client sizing fight. Got: $cmd",
-            cmd.contains("set -gq window-size smallest"),
+        assertFalse(
+            "byobu wraps tmux and inherits the same clamping. Got: $cmd",
+            cmd.contains("window-size"),
         )
     }
 
-    /**
-     * The options are passed as tmux command arguments, not shell commands, so
-     * the separators must survive as literal `\;` — an unescaped `;` would end
-     * the shell command and tmux would never see the option (#358 territory).
-     */
+    /** The options that ARE wanted must survive this revert. */
     @Test
-    fun `the option is chained with an escaped separator`() {
+    fun `the mouse and passthrough options are still set`() {
         val cmd = SessionManager.TMUX.command!!("work")
-        assertTrue(
-            "window-size must be chained with an escaped ';' or the shell eats it. Got: $cmd",
-            cmd.contains("\\; set -gq window-size smallest"),
-        )
+        assertFalse("mouse option lost", !cmd.contains("set -gq mouse on"))
+        assertFalse("allow-passthrough lost", !cmd.contains("set -gq allow-passthrough on"))
     }
 }
