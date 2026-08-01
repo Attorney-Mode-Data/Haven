@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.26
+
+📐 **Terminal sessions use the full height of your screen again** — v5.86.23 changed how Haven sizes a tmux session that a computer is also connected to, so that the phone was no longer cut off on the right. That change fixed the width and quietly cost you height: the setting it used takes the smaller of the two devices in *each direction separately*, so the phone got its own width but the computer's height, losing rows it had room for. Reverted to the previous behaviour, where the session matches whichever device you last used — connecting, rotating and opening the keyboard all count, so the phone gets its exact size whenever you pick it up. (#479)
+
 ## v5.86.25
 
 🖥️ **Remote desktops stay responsive when the server draws outside the agreed screen size** — a reporter's VirtualBox session ran slowly and then died within a minute. The server was painting a desktop larger than the size the two ends had agreed on, so thousands of its updates fell outside the screen Haven had set up and drew nothing at all — yet each one still made Haven rebuild the entire screen image from scratch. In a 38-second session that came to roughly 36 GB of pointless copying on the phone. Haven now updates only the part of the screen an update actually touches, so updates that land outside it cost nothing. The content those updates carried is still missing — that is a separate problem, still open — but it no longer takes the app down with it. (#422)
