@@ -52,8 +52,54 @@ impl DvcEncode for GfxClientMessage {}
 /// egfx::rfx (Phase 3). For now we ACK every frame so the server doesn't
 /// throttle at `max_unacknowledged_frame_count` (FreeRDP-style: queue_depth=0
 /// means "no backlog, please send the next frame").
+/// Per-frame cost breakdown for the EGFX display path (#466).
+///
+/// The first attempt at this timed `ActiveStageOutput::GraphicsUpdate` in the
+/// session loop — which EGFX never emits. It publishes from its own
+/// [`EgfxProcessor::flush_dirty_to_framebuffer`], so a whole session produced
+/// zero timing lines. Measured on a live session before shipping, which is the
+/// only reason that was caught; a reporter would have sent back an empty log.
+#[derive(Default)]
+pub(crate) struct EgfxPerf {
+    frames: u64,
+    /// Codec decode: progressive/ClearCodec/planar tiles, or the MediaCodec
+    /// round-trip plus YUV->RGB for AVC.
+    decode_us: u64,
+    /// Publishing the frame: dirty-rect copy plus the callback into the app.
+    flush_us: u64,
+    zgfx_us: u64,
+    since_report: Option<std::time::Instant>,
+}
+
+const EGFX_PERF_REPORT_FRAMES: u64 = 30;
+
+impl EgfxPerf {
+    fn maybe_report(&mut self) {
+        let started = *self.since_report.get_or_insert_with(std::time::Instant::now);
+        if self.frames < EGFX_PERF_REPORT_FRAMES {
+            return;
+        }
+        let secs = started.elapsed().as_secs_f64().max(0.000_001);
+        let n = self.frames;
+        // The flush runs inside EndFrame's dispatch, which the per-PDU timer
+        // also wraps — so decode_us contains flush_us. Subtract, or the two
+        // numbers overlap and "decode" looks worse than it is.
+        let decode_only = self.decode_us.saturating_sub(self.flush_us);
+        info!(
+            "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us, publish {}us, total {}us",
+            n as f64 / secs,
+            self.zgfx_us / n,
+            decode_only / n,
+            self.flush_us / n,
+            (self.zgfx_us + self.decode_us) / n,
+        );
+        *self = Self::default();
+    }
+}
+
 pub struct EgfxProcessor {
     state: Arc<RwLock<SessionState>>,
+    pub(crate) perf: EgfxPerf,
     capabilities_received: bool,
     server_pdu_count: u64,
     /// MS-RDPEGFX wraps every DVC payload in an RDP_SEGMENTED_DATA PDU
@@ -89,6 +135,7 @@ impl EgfxProcessor {
         progressive_decoder.set_upgrade_enabled(progressive_upgrade);
         Self {
             state,
+            perf: EgfxPerf::default(),
             capabilities_received: false,
             server_pdu_count: 0,
             zgfx: Decompressor::new(),
@@ -149,6 +196,7 @@ impl DvcProcessor for EgfxProcessor {
     fn process(&mut self, _channel_id: u32, payload: &[u8]) -> PduResult<Vec<DvcMessage>> {
         // Step 1: ZGFX decompress (every EGFX wire payload is wrapped).
         let mut decompressed = Vec::with_capacity(payload.len() * 4);
+        let t_zgfx = std::time::Instant::now();
         if let Err(e) = self.zgfx.decompress(payload, &mut decompressed) {
             warn!(
                 "EGFX zgfx decompress failed ({e:?}); skipping {} byte payload",
@@ -156,6 +204,7 @@ impl DvcProcessor for EgfxProcessor {
             );
             return Ok(Vec::new());
         }
+        self.perf.zgfx_us += t_zgfx.elapsed().as_micros() as u64;
         debug!(
             "EGFX zgfx in={} out={} (ratio {:.2}x)",
             payload.len(),
@@ -171,6 +220,7 @@ impl DvcProcessor for EgfxProcessor {
             self.server_pdu_count = self.server_pdu_count.saturating_add(1);
             let n = self.server_pdu_count;
             let pdu_start = cur.pos();
+            let t_pdu = std::time::Instant::now();
             let pdu = match <GfxPdu as ironrdp_core::Decode>::decode(&mut cur) {
                 Ok(p) => p,
                 Err(e) => {
@@ -183,7 +233,16 @@ impl DvcProcessor for EgfxProcessor {
             };
             let pdu_end = cur.pos();
             maybe_dump_pdu(n, &decompressed[pdu_start..pdu_end], &pdu);
+            let is_end_frame = matches!(pdu, GfxPdu::EndFrame(_));
             self.dispatch(n, &pdu, &mut out_messages);
+            // Everything a PDU costs: wire decode plus, for surface PDUs, the
+            // codec work. EndFrame's own cost is the flush, counted separately
+            // inside flush_dirty_to_framebuffer.
+            self.perf.decode_us += t_pdu.elapsed().as_micros() as u64;
+            if is_end_frame {
+                self.perf.frames += 1;
+                self.perf.maybe_report();
+            }
         }
         Ok(out_messages)
     }
@@ -452,12 +511,14 @@ impl EgfxProcessor {
             dirty.len()
         );
         if let Some(cb) = frame_cb {
+            let t_cb = std::time::Instant::now();
             cb.on_frame_update(
                 bb_l as u16,
                 bb_t as u16,
                 (bb_r - bb_l) as u16,
                 (bb_b - bb_t) as u16,
             );
+            self.perf.flush_us += t_cb.elapsed().as_micros() as u64;
         }
     }
 
