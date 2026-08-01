@@ -53,6 +53,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <activity
+            android:name=".DeepLinkActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <!-- step-ca renewal notification deep-link: tapping the
                  "cert expiring" notification fires haven://renew-cert/<keyId>
                  which lands here, then the activity hands the keyId off to
@@ -77,9 +88,6 @@
                     android:scheme="haven"
                     android:host="connect" />
             </intent-filter>
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
         </activity>
 
         <activity
