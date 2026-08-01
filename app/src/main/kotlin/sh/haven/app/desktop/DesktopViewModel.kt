@@ -1548,10 +1548,19 @@ class DesktopViewModel @Inject constructor(
                 val verboseEnabled = preferencesRepository.verboseLoggingEnabled.first()
                 val verboseBuffer = if (verboseEnabled) ConcurrentLinkedQueue<String>() else null
 
+                // Was hardcoded to the RdpSession defaults (1920x1080) with no
+                // way to change it, so a server drawing anything else had its
+                // updates discarded (#422 — VirtualBox defaults to 2560x1600
+                // and never announces a resize).
+                val rdpWidth = preferencesRepository.rdpDesktopWidth.first()
+                val rdpHeight = preferencesRepository.rdpDesktopHeight.first()
+
                 val session = RdpSession(
                     sessionId = "rdp-$tabId",
                     host = actualHost,
                     port = actualPort,
+                    width = rdpWidth,
+                    height = rdpHeight,
                     username = username,
                     password = password,
                     domain = domain,

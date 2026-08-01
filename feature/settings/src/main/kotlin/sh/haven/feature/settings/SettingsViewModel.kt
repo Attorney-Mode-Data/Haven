@@ -464,6 +464,16 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesRepository.setDesktopInputMode(mode) }
     }
 
+    /** Desktop size Haven asks RDP servers for (#422). */
+    val rdpDesktopWidth: StateFlow<Int> = preferencesRepository.rdpDesktopWidth
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1920)
+    val rdpDesktopHeight: StateFlow<Int> = preferencesRepository.rdpDesktopHeight
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1080)
+
+    fun setRdpDesktopSize(width: Int, height: Int) {
+        viewModelScope.launch { preferencesRepository.setRdpDesktopSize(width, height) }
+    }
+
     val gpuUseVenus: StateFlow<Boolean> = preferencesRepository.gpuUseVenus
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 

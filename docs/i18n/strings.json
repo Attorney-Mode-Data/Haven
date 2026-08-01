@@ -23873,6 +23873,13 @@
      }
     },
     {
+     "name": "common_apply",
+     "en": "Apply",
+     "comment": "Common",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "common_save",
      "en": "Save",
      "comment": "Common",
@@ -28473,9 +28480,47 @@
      }
     },
     {
+     "name": "settings_rdp_desktop_size_title",
+     "en": "RDP desktop size",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_rdp_desktop_size_subtitle",
+     "en": "%1$d × %2$d — match your server, or its updates outside this area are dropped",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
+     "args": [
+      "%1$d",
+      "%2$d"
+     ],
+     "t": {}
+    },
+    {
+     "name": "settings_rdp_desktop_size_hint",
+     "en": "Set this to the resolution the remote machine actually uses. VirtualBox defaults to 2560 × 1600.",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_rdp_desktop_size_width",
+     "en": "Width",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_rdp_desktop_size_height",
+     "en": "Height",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "settings_touchpad_input_title",
      "en": "Touchpad input",
-     "comment": "Common strings",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
      "args": [],
      "t": {
       "ar": "إدخال لوحة اللمس",
@@ -28494,7 +28539,7 @@
     {
      "name": "settings_touchpad_input_direct_subtitle",
      "en": "Direct touch — finger position is the pointer. Toggle on for trackpad-style input.",
-     "comment": "Common strings",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
      "args": [],
      "t": {
       "ar": "لمس مباشر — موضع الإصبع هو المؤشر. فعّله للإدخال على نمط لوحة اللمس.",
@@ -28513,7 +28558,7 @@
     {
      "name": "settings_touchpad_input_touchpad_subtitle",
      "en": "Drag moves the remote cursor; tap clicks at the cursor. The viewport follows the cursor when zoomed.",
-     "comment": "Common strings",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
      "args": [],
      "t": {
       "ar": "السحب يحرّك المؤشر البعيد؛ النقر ينقر عند المؤشر. تتبع منطقة العرض المؤشر عند التكبير.",
@@ -28532,7 +28577,7 @@
     {
      "name": "settings_bandwidth_suggest_title",
      "en": "Suggest 256 colours on slow VNC links",
-     "comment": "Common strings",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
      "args": [],
      "t": {
       "ar": "اقتراح 256 لونًا على اتصالات VNC البطيئة",
@@ -28551,7 +28596,7 @@
     {
      "name": "settings_bandwidth_suggest_subtitle",
      "en": "Detects throughput below ~1 Mbps after a few seconds and offers a one-tap reconnect at 256 colours. Off silences the prompt.",
-     "comment": "Common strings",
+     "comment": "RDP desktop size (#422): Haven asked every server for 1920x1080 with no way to change it, so a server drawing a different size had its updates discarded. %1$d and %2$d are the width and height in pixels.",
      "args": [],
      "t": {
       "ar": "يكتشف معدل نقل أقل من ~1 ميجابت/ثانية بعد بضع ثوانٍ ويعرض إعادة الاتصال بـ 256 لونًا بنقرة واحدة. إيقاف التشغيل يلغي الإشعار.",

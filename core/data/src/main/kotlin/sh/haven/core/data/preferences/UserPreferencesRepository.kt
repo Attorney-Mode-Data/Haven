@@ -29,6 +29,8 @@ class UserPreferencesRepository @Inject constructor(
     private val mailFontScaleKey = floatPreferencesKey("mail_font_scale")
     private val terminalScrollbackRowsKey = intPreferencesKey("terminal_scrollback_rows")
     private val prootIdleTimeoutMinutesKey = intPreferencesKey("proot_idle_timeout_minutes")
+    private val rdpDesktopWidthKey = intPreferencesKey("rdp_desktop_width")
+    private val rdpDesktopHeightKey = intPreferencesKey("rdp_desktop_height")
     private val terminalTapToPositionCursorKey = booleanPreferencesKey("terminal_tap_to_position_cursor")
     // #418 debug: enable RemoteFX-Progressive WBT_TILE_UPGRADE refinement
     // decoding for RDP. Off by default while the upgrade path is verified.
@@ -1195,6 +1197,33 @@ class UserPreferencesRepository @Inject constructor(
             .coerceIn(MIN_SCROLLBACK_ROWS, MAX_SCROLLBACK_ROWS)
     }
 
+    /**
+     * Desktop size Haven asks an RDP server for.
+     *
+     * This was hardcoded to 1920x1080 with no way to change it, which is fine
+     * until the server draws something else. A VirtualBox VM defaults to
+     * 2560x1600 and simply paints at that size without announcing a resize, so
+     * every update outside 1920x1080 was silently discarded and the screen went
+     * stale (#422). Matching the two is the workaround; letting the client
+     * follow the server is the better fix and is a separate piece of work.
+     */
+    val rdpDesktopWidth: Flow<Int> = dataStore.data.map { prefs ->
+        (prefs[rdpDesktopWidthKey] ?: DEFAULT_RDP_WIDTH)
+            .coerceIn(MIN_RDP_DIMENSION, MAX_RDP_DIMENSION)
+    }
+
+    val rdpDesktopHeight: Flow<Int> = dataStore.data.map { prefs ->
+        (prefs[rdpDesktopHeightKey] ?: DEFAULT_RDP_HEIGHT)
+            .coerceIn(MIN_RDP_DIMENSION, MAX_RDP_DIMENSION)
+    }
+
+    suspend fun setRdpDesktopSize(width: Int, height: Int) {
+        dataStore.edit { prefs ->
+            prefs[rdpDesktopWidthKey] = width.coerceIn(MIN_RDP_DIMENSION, MAX_RDP_DIMENSION)
+            prefs[rdpDesktopHeightKey] = height.coerceIn(MIN_RDP_DIMENSION, MAX_RDP_DIMENSION)
+        }
+    }
+
     suspend fun setTerminalScrollbackRows(rows: Int) {
         dataStore.edit { prefs ->
             prefs[terminalScrollbackRowsKey] = rows.coerceIn(MIN_SCROLLBACK_ROWS, MAX_SCROLLBACK_ROWS)
@@ -1982,6 +2011,14 @@ class UserPreferencesRepository @Inject constructor(
         const val DEFAULT_TOOLBAR_MIN_BUTTON_WIDTH = 0
         const val MIN_TOOLBAR_MIN_BUTTON_WIDTH = 0
         const val MAX_TOOLBAR_MIN_BUTTON_WIDTH = 64
+        /** What Haven asked RDP servers for before it was configurable (#422). */
+        const val DEFAULT_RDP_WIDTH = 1920
+        const val DEFAULT_RDP_HEIGHT = 1080
+
+        /** RDP carries the desktop size as a u16, and a 1x1 desktop is not useful. */
+        const val MIN_RDP_DIMENSION = 640
+        const val MAX_RDP_DIMENSION = 8192
+
         const val DEFAULT_SCROLLBACK_ROWS = 1000
         const val MIN_SCROLLBACK_ROWS = 100
         const val MAX_SCROLLBACK_ROWS = 25000

@@ -2,6 +2,7 @@
 <resources>
     <!-- Common -->
     <string name="common_cancel">Cancel</string>
+    <string name="common_apply">Apply</string>
     <string name="common_save">Save</string>
     <string name="common_done">Done</string>
     <string name="common_close">Close</string>
@@ -297,6 +298,14 @@
     <string name="settings_reflow_on_keyboard_subtitle">When the keyboard opens, resize the terminal to fit above it instead of scrolling the view up. Helps full-screen apps that show a status line at the top; leave off for plain shells.</string>
     <string name="settings_gpu_venus_title">Experimental GPU stack (venus + zink)</string>
     <string name="settings_gpu_venus_subtitle">Use venus (Vulkan to the GPU) + zink for modern OpenGL (~3.2 core) on accelerated desktops, instead of virgl (GL 2.1). Native Vulkan apps display; OpenGL present is currently slow. Needs mesa-vulkan-drivers installed in the guest. Off = virgl default.</string>
+    <!-- RDP desktop size (#422): Haven asked every server for 1920x1080 with no
+         way to change it, so a server drawing a different size had its updates
+         discarded. %1$d and %2$d are the width and height in pixels. -->
+    <string name="settings_rdp_desktop_size_title">RDP desktop size</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — match your server, or its updates outside this area are dropped</string>
+    <string name="settings_rdp_desktop_size_hint">Set this to the resolution the remote machine actually uses. VirtualBox defaults to 2560 × 1600.</string>
+    <string name="settings_rdp_desktop_size_width">Width</string>
+    <string name="settings_rdp_desktop_size_height">Height</string>
     <string name="settings_touchpad_input_title">Touchpad input</string>
     <string name="settings_touchpad_input_direct_subtitle">Direct touch — finger position is the pointer. Toggle on for trackpad-style input.</string>
     <string name="settings_touchpad_input_touchpad_subtitle">Drag moves the remote cursor; tap clicks at the cursor. The viewport follows the cursor when zoomed.</string>
