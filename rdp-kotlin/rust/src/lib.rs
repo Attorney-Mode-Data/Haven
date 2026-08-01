@@ -1350,6 +1350,10 @@ fn run_rdp_session(
     let mut last_input_at: Option<std::time::Instant> = None;
     let mut current_timeout = IDLE_TIMEOUT;
 
+    // #466: nothing in the display path was timed, so "it is slow" could not be
+    // attributed to a stage. Costs a couple of Instant::now() per frame.
+    let mut perf = FramePerf::new();
+
     // Active session loop
     loop {
         // Check for shutdown
@@ -1481,16 +1485,26 @@ fn run_rdp_session(
         }
 
         // Read server PDU
+        let t_read = std::time::Instant::now();
         match tls_framed.read_pdu() {
             Ok((action, frame)) => {
+                // Time blocked waiting for the server. Large here means we are
+                // NOT the bottleneck; small here with a large process/publish
+                // means we are.
+                perf.read_us += t_read.elapsed().as_micros() as u64;
                 // #425 diag: log action + header bytes to diagnose the KRDP
                 // "unexpected channel received: ID 0" interop error.
                 if std::env::var("HAVEN_RDP_FRAMEDIAG").is_ok() {
                     let n = frame.len().min(64);
                     debug!("FRAMEDIAG action={:?} len={} bytes={:02x?}", action, frame.len(), &frame[..n]);
                 }
+                let t_process = std::time::Instant::now();
                 match active_stage.process(&mut image, action, &frame) {
                     Ok(outputs) => {
+                        // Time inside process(): protocol decode, and for AVC
+                        // tiles the MediaCodec round-trip plus YUV->RGB, since
+                        // the decoder callback runs from in here.
+                        perf.process_us += t_process.elapsed().as_micros() as u64;
                         for output in outputs {
                             match output {
                                 ActiveStageOutput::ResponseFrame(response) => {
@@ -1502,7 +1516,11 @@ fn run_rdp_session(
                                 ActiveStageOutput::GraphicsUpdate(rect) => {
                                     debug!("GraphicsUpdate at ({},{}) to ({},{})",
                                         rect.left, rect.top, rect.right, rect.bottom);
+                                    let t_pub = std::time::Instant::now();
                                     update_framebuffer(state, &image, &rect);
+                                    perf.publish_us += t_pub.elapsed().as_micros() as u64;
+                                    perf.frames += 1;
+                                    perf.maybe_report();
                                 }
                                 // Server cursor updates (#212). Forward the
                                 // decoded shape/visibility/position to Kotlin,
@@ -1657,6 +1675,55 @@ fn run_rdp_session(
     }
 
     Ok(())
+}
+
+/// Per-frame cost breakdown for the RDP display path (#466).
+///
+/// A reporter saw updates arrive "extremely slowly" and — importantly —
+/// dropping the desktop from 4K to 1080p and the server quality to minimum
+/// changed nothing. That argues the cost is NOT proportional to pixels, which
+/// rules out most of the obvious suspects and leaves the fixed per-frame costs:
+/// the MediaCodec round-trip, the JNI hops, the draw. Nothing in this path was
+/// timed, so neither we nor the reporter could say which.
+///
+/// Reports an average every [PERF_REPORT_FRAMES] frames at info level, so a
+/// single ordinary logcat answers it.
+struct FramePerf {
+    frames: u64,
+    read_us: u64,
+    process_us: u64,
+    publish_us: u64,
+    since: std::time::Instant,
+}
+
+const PERF_REPORT_FRAMES: u64 = 60;
+
+impl FramePerf {
+    fn new() -> Self {
+        Self {
+            frames: 0,
+            read_us: 0,
+            process_us: 0,
+            publish_us: 0,
+            since: std::time::Instant::now(),
+        }
+    }
+
+    fn maybe_report(&mut self) {
+        if self.frames < PERF_REPORT_FRAMES {
+            return;
+        }
+        let secs = self.since.elapsed().as_secs_f64().max(0.000_001);
+        let n = self.frames;
+        info!(
+            "RDP perf: {:.1} fps over {n} frames — per frame: read {}us, process {}us, publish {}us (read = blocked on server, so a large read means the server is the limit, not us)",
+            n as f64 / secs,
+            self.read_us / n,
+            self.process_us / n,
+            self.publish_us / n,
+        );
+        *self = Self::new();
+    }
 }
 
 /// Try to decode a slow-path bitmap update from the raw X224 frame
