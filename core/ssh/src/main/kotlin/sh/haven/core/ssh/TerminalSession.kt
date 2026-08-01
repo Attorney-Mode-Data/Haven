@@ -73,6 +73,10 @@ class TerminalSession(
     @Volatile
     private var pendingResize: ScheduledFuture<*>? = null
 
+    /** Pending "shell went quiet" fallback for the command queue — see [armPendingIdleFallback]. */
+    @Volatile
+    private var pendingIdleCheck: ScheduledFuture<*>? = null
+
     /**
      * Last PTY size we asked the remote for. Tracked so [reconnect] can
      * replay it on the freshly-opened channel — without this, the reader
@@ -169,22 +173,17 @@ class TerminalSession(
                             .mapNotNull { line -> line.last().takeIf { it in promptTerminators } }
                             .firstOrNull()
                         if (promptChar != null) {
-                            val cmd = synchronized(_pendingCommands) { _pendingCommands.removeFirstOrNull() }
-                            if (cmd != null) {
-                                Log.d(TAG, "Shell prompt detected ('$promptChar'), sending pending command")
-                                sendToSsh((cmd + "\n").toByteArray())
-                                onBreadcrumb?.invoke(
-                                    "pending/reattach sent on prompt '$promptChar': ${cmd.take(48)}",
-                                )
-                                // Last pending command sent on a reconnect: the
-                                // session manager is reattached now, so force a
-                                // repaint (see [redrawAfterPendingDrain]).
-                                val drained = synchronized(_pendingCommands) { _pendingCommands.isEmpty() }
-                                if (drained && redrawAfterPendingDrain) {
-                                    redrawAfterPendingDrain = false
-                                    schedulePostReattachRedraw()
-                                }
-                            }
+                            Log.d(TAG, "Shell prompt detected ('$promptChar'), sending pending command")
+                            sendNextPendingCommand("prompt '$promptChar'")
+                        } else {
+                            // No recognised prompt in this chunk. The character
+                            // heuristic can't cover every prompt (#482), so arm a
+                            // fallback that fires once the shell goes quiet —
+                            // otherwise the attach command sits queued until some
+                            // unrelated later output happens to end in $ # % > ❯,
+                            // which is what "the command appears far too late"
+                            // looks like from the user's side.
+                            armPendingIdleFallback()
                         }
                     }
                 }
@@ -368,9 +367,62 @@ class TerminalSession(
         readerThread?.interrupt()
     }
 
+    /**
+     * Send the next queued command, if any. Shared by the prompt-character path
+     * and the idle fallback so both drain the same queue under the same lock —
+     * whichever fires first wins and the other finds it empty.
+     */
+    private fun sendNextPendingCommand(trigger: String) {
+        if (closed) return
+        val cmd = synchronized(_pendingCommands) { _pendingCommands.removeFirstOrNull() } ?: return
+        sendToSsh((cmd + "\n").toByteArray())
+        onBreadcrumb?.invoke("pending/reattach sent on $trigger: ${cmd.take(48)}")
+        // Last pending command sent on a reconnect: the session manager is
+        // reattached now, so force a repaint (see [redrawAfterPendingDrain]).
+        val drained = synchronized(_pendingCommands) { _pendingCommands.isEmpty() }
+        if (drained) {
+            if (redrawAfterPendingDrain) {
+                redrawAfterPendingDrain = false
+                schedulePostReattachRedraw()
+            }
+        } else {
+            // More queued. Re-arm so a shell that prints nothing we recognise
+            // still drains the rest instead of stalling half-way.
+            armPendingIdleFallback()
+        }
+    }
+
+    /**
+     * Arm the "shell went quiet" fallback for the pending queue, replacing any
+     * previously armed one — so the timer measures silence since the LAST byte,
+     * not since the first.
+     *
+     * The prompt-character heuristic ([promptTerminators]) cannot enumerate
+     * every prompt anyone uses; a prompt ending in a powerline glyph, a bracket
+     * or a non-Latin character is simply never recognised, and before this the
+     * queued attach command waited indefinitely (#482). Waiting for the output
+     * to stop is independent of what the prompt looks like: a shell that has
+     * printed something and then gone silent is a shell waiting for input.
+     */
+    private fun armPendingIdleFallback() {
+        if (closed) return
+        if (synchronized(_pendingCommands) { _pendingCommands.isEmpty() }) return
+        pendingIdleCheck?.cancel(false)
+        pendingIdleCheck = try {
+            writeExecutor.schedule(
+                { sendNextPendingCommand("idle ${PENDING_IDLE_FALLBACK_MS}ms") },
+                PENDING_IDLE_FALLBACK_MS,
+                TimeUnit.MILLISECONDS,
+            )
+        } catch (_: java.util.concurrent.RejectedExecutionException) {
+            null // executor already shut down (session closing) — nothing to do
+        }
+    }
+
     override fun close() {
         if (closed) return
         closed = true
+        pendingIdleCheck?.cancel(false)
         writeExecutor.shutdown()
         try { shell.disconnect() } catch (_: Exception) {}
         readerThread?.interrupt()
@@ -385,6 +437,19 @@ class TerminalSession(
 
         /** Built-in trailing prompt characters: `$ # % >` and `❯`. */
         val DEFAULT_PROMPT_TERMINATORS: Set<Char> = setOf('$', '#', '%', '>', '❯')
+
+        /**
+         * How long the shell must be silent before a queued command is sent
+         * without having recognised a prompt (#482).
+         *
+         * Long enough not to fire into a prompt still being painted in pieces
+         * (colours, git status, a slow right-hand prompt), short enough that a
+         * user who picked a session from the list is not left sitting in a bare
+         * shell wondering what happened. The prompt-character path still wins
+         * whenever it matches, so this only governs prompts the heuristic
+         * cannot see.
+         */
+        private const val PENDING_IDLE_FALLBACK_MS = 1200L
 
         /**
          * Trailing characters that mark a shell prompt, used to decide when a
