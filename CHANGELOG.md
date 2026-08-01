@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.22
+
+🪟 **Linux desktops and single-app windows work again** — starting a desktop, or opening a guest app in its own window, failed outright on every install: the feature died the moment it was asked for, and over the agent bridge it took the connection down with it. The compositor library Haven ships had been built before part of its link step ran, leaving 51 internal references unresolved, so Android refused to load it at all. Nothing detected this at build time — the app compiled, packaged and installed perfectly, and only failed on a real device when the feature was first used. The library is rebuilt, and the build now refuses to package one in that state, so this class of failure cannot ship silently again. (#469)
+
 ## v5.86.21
 
 ✂️ **Pinch-zoom no longer destroys the right-hand side of the terminal** — reported as text being clipped when zooming in and out, with no way to scroll across to reach it. The text was not off-screen; it had been deleted. Zooming changes the font size, which changes how many columns fit, which resizes the terminal — and the terminal core was configured to truncate lines on a resize rather than re-wrap them. So zooming in cut every visible line to the narrower width and threw the remainder away, and zooming back out left blank space where the words used to be, with nothing to scroll to. A resize is now a re-layout: lines re-wrap to the new width and come back whole when you zoom out again. (#479)
