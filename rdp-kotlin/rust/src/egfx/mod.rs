@@ -624,6 +624,24 @@ impl EgfxProcessor {
                     warn!("EGFX[{n}]: AVC420 tile but no decoder registered (set_avc_decoder) — dropping");
                     return;
                 };
+                // Whether converting only the changed rectangles would pay off
+                // depends entirely on how the server slices its frames, and we
+                // had only a code comment asserting KRDP sends one full-frame
+                // region (#466). Log it so a real session can confirm or refute
+                // that rather than it being taken on trust: a single region the
+                // size of the destination means there is nothing smaller to
+                // convert, several small ones mean there is.
+                debug!(
+                    "EGFX[{n}]: AVC420 dest {w}x{h} at ({},{}), {} region rect(s){}",
+                    r.left,
+                    r.top,
+                    stream.rectangles.len(),
+                    if stream.rectangles.len() == 1 {
+                        " (full-frame — per-region conversion would save nothing)"
+                    } else {
+                        ""
+                    },
+                );
                 // The H.264 frame is a full picture the size of the destination
                 // rectangle; `stream.rectangles` are changed-region hints. KRDP
                 // sends one full-frame region, so blit the whole decoded frame
