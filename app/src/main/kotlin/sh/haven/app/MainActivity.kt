@@ -408,6 +408,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        activeInstanceRef = java.lang.ref.WeakReference(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handleWorkspaceShortcut(intent)
@@ -562,6 +563,26 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (activeInstanceRef?.get() === this) {
+            activeInstanceRef = null
+        }
+        super.onDestroy()
+    }
+
+    fun handleDeepLinkUri(uri: android.net.Uri) {
+        val intent = Intent().apply { data = uri }
+        handleRenewCertDeepLink(intent)
+        handleConnectDeepLink(intent)
+    }
+
+    companion object {
+        @Volatile
+        private var activeInstanceRef: java.lang.ref.WeakReference<MainActivity>? = null
+
+        fun getActiveInstance(): MainActivity? = activeInstanceRef?.get()
     }
 }
 
