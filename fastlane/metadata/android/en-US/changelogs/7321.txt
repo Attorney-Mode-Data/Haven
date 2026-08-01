@@ -1,1 +1,3 @@
-📐 Terminal text no longer runs off the right edge when a computer is attached to the same tmux session. tmux sized the shared view for whichever device was used most recently — use the computer and the view became as wide as its screen, so the phone showed only the left-hand portion with no way to reach the rest. Haven now fits the shared view to the smallest attached screen. A second cause behind the same symptom as the v5.86.21 zoom fix. (#479)
+📐 Terminal text no longer runs off the right edge when a computer is attached to the same tmux session. tmux sized the shared view for whichever device was used most recently, so using the computer made the view wider than the phone could show. Haven now fits it to the smallest attached screen. (#479)
+
+📜 The About Haven page scrolls again — its text was cut off at the bottom with no way to reach the rest. (#485)
