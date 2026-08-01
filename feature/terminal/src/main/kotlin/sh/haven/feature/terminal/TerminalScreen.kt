@@ -760,7 +760,19 @@ fun TerminalScreen(
                                             // label must give way to the close button
                                             // rather than push it off the edge.
                                             overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false),
+                                            // weight ONLY when justified. In the scrolling
+                                            // fallback this Row sits inside horizontalScroll,
+                                            // where the width constraint is infinite — and a
+                                            // weighted child of an unbounded Row measures to
+                                            // ZERO. That blanked the label entirely and
+                                            // collapsed the tab onto its close button, which
+                                            // is what enough tabs to disable justification
+                                            // looked like in practice.
+                                            modifier = if (justified) {
+                                                Modifier.weight(1f, fill = false)
+                                            } else {
+                                                Modifier
+                                            },
                                             style = MaterialTheme.typography.labelLarge,
                                         )
                                         // #306: a one-tap close on the active tab so
