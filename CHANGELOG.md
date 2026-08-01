@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.21
+
+✂️ **Pinch-zoom no longer destroys the right-hand side of the terminal** — reported as text being clipped when zooming in and out, with no way to scroll across to reach it. The text was not off-screen; it had been deleted. Zooming changes the font size, which changes how many columns fit, which resizes the terminal — and the terminal core was configured to truncate lines on a resize rather than re-wrap them. So zooming in cut every visible line to the narrower width and threw the remainder away, and zooming back out left blank space where the words used to be, with nothing to scroll to. A resize is now a re-layout: lines re-wrap to the new width and come back whole when you zoom out again. (#479)
+
 ## v5.86.20
 
 📜 **Terminal scrollback is fully reachable again after pinch-zooming** — reported as not being able to scroll all the way back once you had zoomed, most of the time but not always. A zoom changes how far there is to scroll twice over: the characters get taller and the reflow pushes more lines into the scrollback. The gesture handler had measured that limit once, when it started, and does not restart when the font size changes — so it kept clamping every scroll to the pre-zoom limit, putting the scrollback the zoom had just created out of reach. Raising the scrollback-lines setting could not help, because the limit was frozen regardless of how much history existed. The intermittency was the giveaway: anything that rebuilds the gesture setup — entering mouse mode, or a full-screen app taking over — restarted the handler and quietly picked up the current limit until the next zoom. The limit is now read live, the same way the character measurements beside it already were. (#478)
