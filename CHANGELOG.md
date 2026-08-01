@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.24
+
+🗂️ **Terminal tabs are wider and easier to hit** — the tab strip sized each tab to its label, so a short name like "cctv" gave a target barely wider than the four letters. Tabs now share the strip evenly, so on a three-tab strip each one is well over twice the width it used to be. Once there are more tabs than will fit at a comfortable size the strip goes back to scrolling, rather than shrinking every tab to a sliver.
+
+↔️ **Reordering a tab no longer closes the menu each time** — moving a tab several places meant long-pressing it again after every single step. The move arrows now leave the menu open, and it follows the tab as it moves, so you can walk a tab across the strip in one go.
+
 ## v5.86.23
 
 📐 **Terminal text no longer runs off the right edge when a computer is attached to the same session** — reported as text still being cut off with no way to scroll across to it, even after the zoom fix in v5.86.21. This was a second, unrelated cause. When a phone and a computer are attached to the same tmux session, tmux sizes the shared view for whichever device was used most recently. Use the computer, and the view becomes as wide as its screen — far wider than the phone can show — and the phone renders only the left-hand portion, with no way to reach the rest. Nothing was lost; those columns were simply never sent to the phone. It came and went depending on which device you last touched, which is what made it look intermittent. Haven now asks tmux to fit the shared view to the smallest attached screen, so the phone always sees the whole width. The computer is letterboxed to match, which is the deliberate trade: a desktop can resize its own window, a phone cannot recover what was never sent. (#479)
