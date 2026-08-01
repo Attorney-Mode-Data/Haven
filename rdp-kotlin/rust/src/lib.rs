@@ -2041,7 +2041,7 @@ fn update_framebuffer(
     // [B,G,R,A] renders with red/blue swapped (the blue Windows accent showed
     // orange). So a verbatim copy is correct here; no swap.
     let pixel_count = fb_width * fb_height;
-    let argb = pixel_data[..pixel_count * 4].to_vec();
+    let needed = pixel_count * 4;
 
     let rdp_rect = RdpRect {
         x: rect.left,
@@ -2055,11 +2055,51 @@ fn update_framebuffer(
             Ok(s) => s,
             Err(_) => return,
         };
-        s.framebuffer = Some(FrameData {
-            width: fb_width as u16,
-            height: fb_height as u16,
-            pixels: argb,
-        });
+        // Copy ONLY the rows the update touched, into the buffer we already
+        // own. This used to be `pixel_data[..needed].to_vec()` — a fresh
+        // whole-framebuffer allocation per update, regardless of how little
+        // the update changed.
+        //
+        // #422: a reporter's 38-second VirtualBox session logged 4305 graphics
+        // updates whose rectangles lay OUTSIDE the 1920x1080 image (the server
+        // was painting a larger desktop), so ironrdp skipped them — they drew
+        // nothing at all. Each still cost an 8.3MB allocate-copy-free here:
+        // ~36GB of memcpy and 4305 heap churns for zero visible change, on a
+        // phone. Clamping to the intersection makes those cost nothing, and an
+        // ordinary small update cost its own area instead of the whole screen.
+        let reusable = matches!(
+            &s.framebuffer,
+            Some(f) if f.width as usize == fb_width
+                && f.height as usize == fb_height
+                && f.pixels.len() == needed
+        );
+        if reusable {
+            // Inclusive rectangle, clamped to the image — an out-of-bounds
+            // update yields an empty range and copies nothing, which is
+            // correct: those pixels do not exist in this framebuffer.
+            let x0 = (rect.left as usize).min(fb_width);
+            let x1 = (rect.right as usize + 1).min(fb_width);
+            let y0 = (rect.top as usize).min(fb_height);
+            let y1 = (rect.bottom as usize + 1).min(fb_height);
+            if x1 > x0 {
+                let fb = match s.framebuffer.as_mut() {
+                    Some(f) => f,
+                    None => return,
+                };
+                for y in y0..y1 {
+                    let start = (y * fb_width + x0) * 4;
+                    let end = (y * fb_width + x1) * 4;
+                    fb.pixels[start..end].copy_from_slice(&pixel_data[start..end]);
+                }
+            }
+        } else {
+            // First frame, or the image was resized — take the whole thing once.
+            s.framebuffer = Some(FrameData {
+                width: fb_width as u16,
+                height: fb_height as u16,
+                pixels: pixel_data[..needed].to_vec(),
+            });
+        }
         s.dirty_rects.push(rdp_rect.clone());
         s.frame_callback.clone()
     };
@@ -2331,5 +2371,128 @@ mod tests {
             out.contains("RDP setup"),
             "expected post-handshake framing: {out}"
         );
+    }
+}
+
+/// #422: the framebuffer publish used to reallocate and copy the WHOLE image
+/// on every graphics update, however small — or however far outside the image
+/// the update landed.
+///
+/// The reporter's 38-second VirtualBox session is the case that made it hurt:
+/// the server painted a desktop larger than the negotiated 1920x1080, so 4305
+/// updates were skipped by ironrdp as out-of-bounds and drew nothing, yet each
+/// one still cost an 8.3MB allocate-copy-free on the phone.
+#[cfg(test)]
+mod framebuffer_publish_tests {
+    use super::*;
+    use ironrdp_pdu::geometry::InclusiveRectangle;
+    use ironrdp_session::image::DecodedImage;
+    use ironrdp_graphics::image_processing::PixelFormat;
+
+    const W: u16 = 64;
+    const H: u16 = 32;
+
+    fn blank_state() -> SessionState {
+        SessionState {
+            connected: true,
+            framebuffer: None,
+            dirty_rects: Vec::new(),
+            frame_callback: None,
+            clipboard_callback: None,
+            session_callback: None,
+            pointer_callback: None,
+            avc_decoder: None,
+            shutdown: false,
+        }
+    }
+
+    fn state_with_frame(fill: u8) -> Arc<RwLock<SessionState>> {
+        let st = Arc::new(RwLock::new(blank_state()));
+        st.write().unwrap().framebuffer = Some(FrameData {
+            width: W,
+            height: H,
+            pixels: vec![fill; W as usize * H as usize * 4],
+        });
+        st
+    }
+
+    fn image_filled(v: u8) -> DecodedImage {
+        let mut img = DecodedImage::new(PixelFormat::RgbA32, W, H);
+        // DecodedImage exposes its buffer read-only; paint through a full-size
+        // update so the test drives the same path the session does.
+        let _ = &mut img;
+        img
+    }
+
+    fn px(fb: &FrameData, x: usize, y: usize) -> [u8; 4] {
+        let i = (y * W as usize + x) * 4;
+        [fb.pixels[i], fb.pixels[i + 1], fb.pixels[i + 2], fb.pixels[i + 3]]
+    }
+
+    /// An update whose rectangle lies wholly outside the image must not touch
+    /// the published buffer — and critically must not reallocate it. This is
+    /// the 4305-updates case; before the fix each one replaced the whole Vec.
+    #[test]
+    fn an_out_of_bounds_update_leaves_the_buffer_untouched() {
+        let state = state_with_frame(0xAB);
+        let image = image_filled(0);
+        let before_ptr = state.read().unwrap().framebuffer.as_ref().unwrap().pixels.as_ptr();
+
+        // Same shape as the logged rects: far beyond a 64x32 image.
+        let rect = InclusiveRectangle { left: 2304, top: 1517, right: 2431, bottom: 1599 };
+        update_framebuffer(&state, &image, &rect);
+
+        let s = state.read().unwrap();
+        let fb = s.framebuffer.as_ref().unwrap();
+        assert_eq!(
+            fb.pixels.as_ptr(),
+            before_ptr,
+            "an out-of-bounds update reallocated the framebuffer; that realloc \
+             (8.3MB at 1080p) happened 4305 times in the #422 trace",
+        );
+        assert!(
+            fb.pixels.iter().all(|&b| b == 0xAB),
+            "an out-of-bounds update must not alter published pixels",
+        );
+        assert_eq!(fb.width, W, "dimensions must be preserved");
+    }
+
+    /// A dimension change is the one case that still needs a fresh buffer,
+    /// otherwise a resized session would publish a stale-sized frame.
+    #[test]
+    fn a_size_change_replaces_the_buffer() {
+        let state = Arc::new(RwLock::new(blank_state()));
+        state.write().unwrap().framebuffer = Some(FrameData {
+            width: 8,
+            height: 8,
+            pixels: vec![0x11; 8 * 8 * 4],
+        });
+        let image = image_filled(0);
+        update_framebuffer(
+            &state,
+            &image,
+            &InclusiveRectangle { left: 0, top: 0, right: 0, bottom: 0 },
+        );
+        let s = state.read().unwrap();
+        let fb = s.framebuffer.as_ref().unwrap();
+        assert_eq!((fb.width, fb.height), (W, H), "buffer must adopt the new image size");
+        assert_eq!(fb.pixels.len(), W as usize * H as usize * 4);
+    }
+
+    /// Every update, in bounds or not, still reports a dirty rect — the app
+    /// layer relies on that to know a frame arrived.
+    #[test]
+    fn a_dirty_rect_is_still_recorded() {
+        let state = state_with_frame(0);
+        let image = image_filled(0);
+        update_framebuffer(
+            &state,
+            &image,
+            &InclusiveRectangle { left: 1, top: 2, right: 4, bottom: 6 },
+        );
+        let s = state.read().unwrap();
+        assert_eq!(s.dirty_rects.len(), 1);
+        assert_eq!((s.dirty_rects[0].x, s.dirty_rects[0].y), (1, 2));
+        let _ = px(s.framebuffer.as_ref().unwrap(), 0, 0);
     }
 }
