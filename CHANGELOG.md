@@ -5,6 +5,14 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.33
+
+🔗 **Terminal links: a fix from the last release was joining lines it shouldn't** — v5.86.32 taught Haven to reassemble a URL that a program had split across two lines inside a filename. It was too eager about it, and would also join a line that merely *began* with a filename: a URL at the end of one line followed by `README.md and 3 other files changed` on the next came out as one address ending `barREADME.md`. Tapping such a link opened the wrong page.
+
+A wrapped line is one that ran out of room, so Haven now only joins the two halves when the second one could not have fitted on the end of the first. That is the actual difference between a URL the terminal had to break and two lines that happen to sit next to each other, and it needs nothing the terminal doesn't already know. Links genuinely broken across lines still open in full; a filename on the line below a link is left alone.
+
+This was found by trying realistic pairs of lines rather than by reading the code — the tests that shipped with the original fix all missed it, because none of them put a real filename underneath a link. (#491)
+
 ## v5.86.32
 
 🗂️ **Connections can be dragged past a collapsed folder** — with a collapsed folder that had connections in it, anything below could not be dragged above it or into it, however far you pulled. When a folder is collapsed, the list being reordered and the list on screen stop agreeing: its contents are still in the first and absent from the second. The drag chose what to step over from one and measured it against the other, found nothing to measure, and skipped the step — silently, on every frame. A collapsed folder was a wall. Dragging *into* one also used to strand the connection there, since the row disappeared from under your finger the moment it crossed the boundary; it now stays put until you let go. Two earlier attempts at this fixed real bugs but not this one, because this one is not a matter of timing — it happens every time. Checked on a phone against the previous build with the same list and the same gesture. (#488)
