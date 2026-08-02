@@ -46,3 +46,14 @@ DEV.local.md
 # Kotlin daemon scratch dir — incremental-compile cache + crash logs.
 # Slipped into rc14 by accident.
 .kotlin/
+
+# Native binaries are BUILT FROM SOURCE, never committed (F-Droid requires
+# every binary in the APK to be reproducible from source in their builder;
+# a committed .so also goes stale silently — #469). Each path below has a
+# Gradle task wired into the build that regenerates it.
+# build-proot/build.sh via :core:local:buildProot
+core/local/src/main/jniLibs/
+# cargo-ndk via rdp-kotlin:buildRdpNative
+rdp-kotlin/jniLibs/
+# gomobile via :rclone-android:buildRcloneNative
+rclone-android/build/
