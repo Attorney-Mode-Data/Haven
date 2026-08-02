@@ -57,3 +57,6 @@ core/local/src/main/jniLibs/
 rdp-kotlin/jniLibs/
 # gomobile via :rclone-android:buildRcloneNative
 rclone-android/build/
+# Build outputs of wayland-android/build-native-helpers.sh (submodule-local,
+# but listed here too so a stray copy into the parent tree is never staged).
+wayland-android/jniLibs/

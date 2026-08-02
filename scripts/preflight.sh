@@ -32,6 +32,7 @@ skip_changelog=0
 
 # 1. Hardcoded UI strings (#210) — literal Text("…")/title=/subtitle=.
 run "no hardcoded UI strings" ./scripts/check-i18n-hardcoded.sh
+run "no new committed binaries" ./scripts/check-no-committed-binaries.sh
 
 # 2. Translation export current — regenerate and fail if docs/i18n/strings.json
 #    drifted from the strings.xml sources. This is the gate that reddened CI on

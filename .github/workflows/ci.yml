@@ -116,6 +116,11 @@ jobs:
         run: ./scripts/check-i18n-hardcoded.sh
       - name: Check committed native libs resolve their stubs (#469)
         run: ./scripts/check-native-libs.sh
+      - name: Check no new binaries are committed
+        # Binaries are unauditable in review and go stale silently (#469).
+        # Blocks any NEW one; the pre-existing set is grandfathered in the
+        # script and that list can only shrink.
+        run: ./scripts/check-no-committed-binaries.sh
       - name: Check translation export is current
         # docs/i18n/strings.json feeds the Pages translation page. Regenerate
         # and fail if it drifted from the strings.xml sources (rerun
