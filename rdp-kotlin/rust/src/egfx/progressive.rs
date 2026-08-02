@@ -254,6 +254,22 @@ pub struct ProgressiveDecoder {
     /// Per-tile refinement state, keyed by (surface_id, xIdx, yIdx). Populated
     /// on FIRST/SIMPLE only when `upgrade_enabled`.
     tile_states: std::collections::HashMap<(u16, u16, u16), Box<TileState>>,
+    /// Tiles dropped because refinement is gated off (#462).
+    upgrades_skipped: u64,
+    /// Tiles dropped for carrying delta coefficients we cannot apply (#462).
+    diff_tiles_skipped: u64,
+}
+
+/// Whether this occurrence should be logged.
+///
+/// A frame can carry hundreds of tiles, so logging each one would bury the
+/// session. The first is always reported — that is the one a bug report needs
+/// — and then every 500th, which keeps a persistent problem visible without
+/// flooding.
+fn should_report(count: u64) -> bool {
+    // `count > 0` guards the modulo: 0 % 500 == 0 would otherwise report
+    // a drop that has not happened.
+    count > 0 && (count == 1 || count % 500 == 0)
 }
 
 impl ProgressiveDecoder {
@@ -267,6 +283,8 @@ impl ProgressiveDecoder {
             work_tmp: Box::new([0; SUBBAND_LEN]),
             upgrade_enabled: false,
             tile_states: std::collections::HashMap::new(),
+            upgrades_skipped: 0,
+            diff_tiles_skipped: 0,
         }
     }
 
@@ -497,10 +515,20 @@ impl ProgressiveDecoder {
                             out_tiles,
                         )?;
                     } else {
-                        debug!(
-                            "Progressive: WBT_TILE_UPGRADE skipped ({} byte payload)",
-                            tpayload.len()
-                        );
+                        // Warn, not debug: a dropped refinement pass leaves
+                        // that tile at its coarse first-pass approximation —
+                        // a smooth, over-saturated block amid correct content
+                        // — and at debug level this never reached a bug
+                        // report, which is what made #462 guesswork (#462).
+                        self.upgrades_skipped += 1;
+                        if should_report(self.upgrades_skipped) {
+                            warn!(
+                                "Progressive: dropped {} refinement tile(s) so far — those areas stay \
+                                 at coarse quality. Settings → RDP → 'Progressive upgrade tile \
+                                 decoding' decodes them (experimental, #418).",
+                                self.upgrades_skipped
+                            );
+                        }
                     }
                 }
                 other => warn!("Progressive: unknown tile block 0x{other:04x}"),
@@ -597,9 +625,17 @@ impl ProgressiveDecoder {
             // path, or a multi-pass FIRST). Without a saved per-tile
             // sign+current buffer this would produce wrong output, so
             // skip rather than paint garbage. UPGRADE support → future.
-            debug!(
-                "Progressive: tile (xIdx={x_idx},yIdx={y_idx}) flags=0x{tile_flags:02x} TILE_DIFFERENCE set, skipping"
-            );
+            // Warn for the same reason as the refinement drop above: this
+            // leaves an unpainted rectangle wherever the tile sits, and a
+            // report cannot say so if we only whisper it at debug (#462).
+            self.diff_tiles_skipped += 1;
+            if should_report(self.diff_tiles_skipped) {
+                warn!(
+                    "Progressive: dropped {} delta-coded tile(s) so far — those rectangles keep \
+                     stale pixels. Most recent at xIdx={x_idx} yIdx={y_idx} flags=0x{tile_flags:02x}.",
+                    self.diff_tiles_skipped
+                );
+            }
             return Ok(());
         }
 
@@ -1631,6 +1667,39 @@ mod tests {
         let mut tiles = Vec::new();
         dec.decode(0, &pdu, &mut tiles).unwrap();
         assert!(tiles.is_empty());
+        // The count is what the warning reports, and it is the only evidence
+        // a bug report can carry that refinement was dropped — so assert the
+        // skip actually ran, not merely that no tile came out (#462). A tile
+        // that never reached this branch would also produce no tiles.
+        assert_eq!(1, dec.upgrades_skipped);
+    }
+
+    #[test]
+    fn dropped_refinements_keep_counting() {
+        let pdu = upgrade_only_pdu();
+        let mut dec = ProgressiveDecoder::new();
+        let mut tiles = Vec::new();
+        for _ in 0..3 {
+            dec.decode(0, &pdu, &mut tiles).unwrap();
+        }
+        assert_eq!(3, dec.upgrades_skipped);
+    }
+
+    #[test]
+    fn the_first_drop_is_always_reported_then_every_500th() {
+        // The first matters most: it is the one that turns a vague report
+        // into a named cause. Reporting every tile would bury the session.
+        assert!(should_report(1));
+        assert!(!should_report(2));
+        assert!(!should_report(499));
+        assert!(should_report(500));
+        assert!(!should_report(501));
+        assert!(should_report(1000));
+    }
+
+    #[test]
+    fn nothing_is_reported_before_anything_is_dropped() {
+        assert!(!should_report(0));
     }
 
     #[test]
