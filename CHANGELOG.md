@@ -5,6 +5,16 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.34
+
+🖱️ **RDP: the pointer moves on the server the way it moves under your finger** — while the remote screen was busy, a drag reached the server as a handful of jumps rather than a continuous movement. Input was sent once per pass of the session loop, and every pass also decoded a frame, so input left only as often as frames arrived. Measured against a test server, sixty pointer positions a second were arriving in three and a half bursts — about seventeen at once, then a quarter-second of nothing.
+
+Sending input no longer waits for decoding. On the same measurement, all sixty positions a second now leave as they are made, and the picture arrives no more slowly for it. The effect is largest exactly where it was worst: the heavier the remote screen is to decode, the more this was costing you, which is why it was more noticeable with H.264/AVC420 switched on.
+
+Worth being straight about what was checked: this was measured against a FreeRDP test server on a desktop, not on a phone against Windows or KDE, and not through the phone's hardware video decoder. If pointer movement still differs between AVC420 on and off for you, that is worth reporting — it would mean some of the coupling remains. (#477)
+
+🖥️ **RDP: a fix for sessions dropping on VirtualBox now also covers reconnection** — Haven already knew how to rejoin a large message that VirtualBox had split across two network reads, but only during a settled session. The same split during a *reconnection* — which is what happens when the remote desktop changes size or 3D acceleration is switched on — still ended the session. That path is now handled too. This one is reasoned from the crash reports rather than reproduced here, since it needs a VirtualBox host to trigger. (#422)
+
 ## v5.86.33
 
 🔗 **Terminal links: a fix from the last release was joining lines it shouldn't** — v5.86.32 taught Haven to reassemble a URL that a program had split across two lines inside a filename. It was too eager about it, and would also join a line that merely *began* with a filename: a URL at the end of one line followed by `README.md and 3 other files changed` on the next came out as one address ending `barREADME.md`. Tapping such a link opened the wrong page.
