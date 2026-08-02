@@ -5,6 +5,14 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.30
+
+🖱️ **A remote desktop should no longer give up when the mouse pointer arrives in two pieces** — sessions were ending with a certificate-sounding error that had nothing to do with certificates. A large custom mouse pointer can be big enough that the server sends it split across two messages, and Haven was trying to make sense of each half on its own; the half was always incomplete, so it ended the session. It now waits for the rest before deciding. This was reported as happening when switching the remote machine to fullscreen, which fits — going fullscreen is what changes the pointer. I have not been able to reproduce it here, so this one is reasoned from crash logs rather than watched working. (#422)
+
+🔒 **Connections stay put while you scroll** — the drag grip on the left of each row sat right where your thumb passes, and it started moving a connection almost as soon as you touched it, so flinging through a long list could quietly reorder it. Moving a connection now needs a brief press and hold first, with a small vibration when it takes hold. (#489)
+
+📁 **Groups can be reordered** — long-press a group header and there are now Move up and Move down entries in its menu. A group takes its connections with it, and the menu stays open so you can move it several places without reopening it each time. (#490)
+
 ## v5.86.29
 
 🧲 **Dragging a connection to a new position or group now sticks** — some drags simply undid themselves, and which ones seemed arbitrary. It was a race: the new order was saved in the background, but the list refreshed itself from the saved order a moment too early, while that was still the *old* one, and put everything back. Whether a drag survived came down to which finished first. Groups could also end up reordered on their own, from a second and unrelated slip in the same code. (#488)
