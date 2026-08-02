@@ -2065,6 +2065,50 @@ fn try_handle_slow_path_bitmap(
 /// The caller must widen the transport read timeout around this call — the
 /// sequence blocks on multi-PDU reads that the session loop's 100ms poll
 /// timeout would abort.
+/// Render an error together with its source chain.
+///
+/// `ConnectorError`'s Display prints only its own context — "decode error" —
+/// while the part that actually explains the failure sits one level down. A
+/// server dropping the link reports `received disconnect provider ultimatum`
+/// in the inner `DecodeError`, and printing only the outer context turns that
+/// into a bare "decode error" with nothing to act on.
+///
+/// IronRDP 0.10/0.11 routes more failures through the generic decode variant
+/// than 0.9 did — 0.9 raised the ultimatum as its own reason — so without this
+/// the upgrade would have made a whole class of disconnects unreadable.
+fn error_chain(e: &(dyn std::error::Error + 'static)) -> String {
+    let mut out = strip_location(&e.to_string());
+    let mut source = e.source();
+    while let Some(inner) = source {
+        let msg = strip_location(&inner.to_string());
+        // Skip a link that only repeats what the outer message already said.
+        if !out.contains(&msg) {
+            out.push_str(": ");
+            out.push_str(&msg);
+        }
+        source = inner.source();
+    }
+    out
+}
+
+/// Drop IronRDP's leading `[context @ /path/to/file.rs:12]` marker.
+///
+/// Those paths point into the Rust toolchain and the cargo registry, so they
+/// say nothing to a user looking at a failed connection and crowd out the part
+/// that does. Only a marker at the very start is removed, so a message that
+/// happens to contain brackets later keeps them.
+fn strip_location(msg: &str) -> String {
+    let trimmed = msg.trim_start();
+    if !trimmed.starts_with('[') {
+        return trimmed.to_owned();
+    }
+    match trimmed.find(']') {
+        // Only strip when it really is a location marker.
+        Some(end) if trimmed[..end].contains(" @ ") => trimmed[end + 1..].trim_start().to_owned(),
+        _ => trimmed.to_owned(),
+    }
+}
+
 fn perform_reactivation<S: std::io::Read + std::io::Write>(
     framed: &mut ironrdp_blocking::Framed<S>,
     cas: &mut ironrdp_connector::connection_activation::ConnectionActivationSequence,
@@ -2086,7 +2130,7 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
         buf.clear();
         let written = cas
             .step(input, buf)
-            .map_err(|e| format!("reactivation step: {e}"))?;
+            .map_err(|e| format!("reactivation step: {}", error_chain(&e)))?;
         if let Some(n) = written.size() {
             framed
                 .write_all(&buf[..n])
@@ -2467,6 +2511,82 @@ mod region_tests {
             avc_enabled: false,
         });
         assert!(client.get_framebuffer_region(0, 0, 4, 4).is_none());
+    }
+}
+
+#[cfg(test)]
+mod error_chain_tests {
+    use super::{error_chain, strip_location};
+
+    #[derive(Debug)]
+    struct Layer {
+        msg: String,
+        source: Option<Box<Layer>>,
+    }
+
+    impl std::fmt::Display for Layer {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str(&self.msg)
+        }
+    }
+
+    impl std::error::Error for Layer {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            self.source.as_deref().map(|e| e as &(dyn std::error::Error + 'static))
+        }
+    }
+
+    fn layer(msg: &str, source: Option<Layer>) -> Layer {
+        Layer { msg: msg.to_owned(), source: source.map(Box::new) }
+    }
+
+    #[test]
+    fn the_reason_one_level_down_is_reported() {
+        // The case this exists for: IronRDP 0.10 reports a server dropping the
+        // link as a bare "decode error", with the reason in the source.
+        let e = layer(
+            "[decode error @ /rustc/abc/library/core/src/ops/function.rs:250] decode error",
+            Some(layer(
+                "[decode_send_data_indication @ /home/x/.cargo/registry/ironrdp-core-0.2.1/src/error.rs:248] other (received disconnect provider ultimatum)",
+                None,
+            )),
+        );
+        assert_eq!(
+            "decode error: other (received disconnect provider ultimatum)",
+            error_chain(&e),
+        );
+    }
+
+    #[test]
+    fn a_repeated_link_is_not_appended_twice() {
+        let e = layer("decode error", Some(layer("decode error", None)));
+        assert_eq!("decode error", error_chain(&e));
+    }
+
+    #[test]
+    fn a_chain_deeper_than_two_is_followed() {
+        let e = layer("a", Some(layer("b", Some(layer("c", None)))));
+        assert_eq!("a: b: c", error_chain(&e));
+    }
+
+    #[test]
+    fn an_error_with_no_source_is_unchanged() {
+        assert_eq!("plain failure", error_chain(&layer("plain failure", None)));
+    }
+
+    #[test]
+    fn location_markers_are_stripped() {
+        assert_eq!("decode error", strip_location("[decode error @ /rustc/abc/f.rs:250] decode error"));
+        assert_eq!("other (x)", strip_location("[f @ /path/error.rs:248] other (x)"));
+    }
+
+    #[test]
+    fn text_that_merely_starts_with_a_bracket_is_left_alone() {
+        // Only a real `[context @ path]` marker is a location; a message that
+        // opens with a bracket for its own reasons keeps it.
+        assert_eq!("[not a location] body", strip_location("[not a location] body"));
+        assert_eq!("[unclosed bracket", strip_location("[unclosed bracket"));
+        assert_eq!("no brackets at all", strip_location("no brackets at all"));
     }
 }
 
