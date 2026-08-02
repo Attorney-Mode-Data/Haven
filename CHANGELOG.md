@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.31
+
+🖥️ **Remote desktop: the RDP engine is up to date with the current IronRDP release** — a dependency refresh rather than a feature, and deliberately a boring one. Frame rate and decoding are unchanged, measured before and after against the same server rather than assumed: about 15 frames a second either way on the same 1080p session. The engine was checked against three different RDP servers (FreeRDP, xrdp, and KDE's KRDP) before shipping. Windows Server and GNOME Remote Desktop were not among them, so if you use either and something looks different, that is worth reporting. (#117)
+
+🔎 **A remote desktop that drops the connection now says why** — when a server ends the session itself, for example after a failed login, Haven reported a bare "decode error" with nothing to act on. The reason the server gave is now shown instead, and the internal file paths that used to crowd these messages are gone. Found while testing the engine update against a third server.
+
 ## v5.86.30
 
 🗝️ **An SSH key can now live in OpenKeychain instead of in Haven** — including an OpenPGP authentication subkey held on a YubiKey or Nitrokey. Keys → + → "Use a key from OpenKeychain" picks one; OpenKeychain signs each authentication itself, handling its own passphrase, PIN or tap, and the private key never reaches Haven. The option only appears if a provider app is installed. Currently supported on the default SSH engine; a profile set to the alternative engine falls back rather than failing. Not yet verified against a real token — no provider is installed on my own devices, so this is tested at the mechanism level only. (#487)
