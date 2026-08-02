@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Badge
@@ -117,6 +119,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.platform.LocalUriHandler
@@ -1244,6 +1248,27 @@ fun ConnectionsScreen(
                     }
                 }
 
+                /**
+                 * Move a group past its neighbouring group, carrying its
+                 * connections with it (#490).
+                 *
+                 * Groups swap with groups only. Membership here is positional —
+                 * a connection belongs to the last header above it — so moving
+                 * a lone header would silently donate that group's contents to
+                 * whichever group it landed under. Swapping whole blocks keeps
+                 * every connection in the group it started in, and leaves the
+                 * ungrouped connections sitting above the first header where
+                 * they belong.
+                 */
+                fun moveGroup(gid: String, up: Boolean) {
+                    val moved = moveGroupBlock(reorderedIds, gid, up) ?: return
+                    reorderedIds.clear()
+                    reorderedIds.addAll(moved)
+                    // Same in-flight handshake the drag path uses (#488).
+                    pendingOrder = moved
+                    commitReorder()
+                }
+
                 val lazyListState = rememberLazyListState()
 
                 // Build display list from reorderedIds (respecting filter + collapsed state)
@@ -1283,8 +1308,22 @@ fun ConnectionsScreen(
                             val gid = key.removePrefix("group-")
                             val group = groupMap[gid] ?: return@forEach
                             val groupProfileCount = byGroup[gid]?.size ?: 0
+                            // Only meaningful against the real order, so the
+                            // moves are hidden while a filter is narrowing it.
+                            val groupKeys = reorderedIds.filter { it.startsWith("group-") }
+                            val groupPos = groupKeys.indexOf(key)
                             item(key = key) {
                                 ConnectionGroupHeader(
+                                    onMoveUp = if (!isFiltering && groupPos > 0) {
+                                        { moveGroup(gid, up = true) }
+                                    } else {
+                                        null
+                                    },
+                                    onMoveDown = if (!isFiltering && groupPos < groupKeys.lastIndex) {
+                                        { moveGroup(gid, up = false) }
+                                    } else {
+                                        null
+                                    },
                                     group = group,
                                     connectionCount = groupProfileCount,
                                     isLaunching = groupLaunchState?.groupId == group.id,
@@ -1700,6 +1739,7 @@ private fun ConnectionTreeItem(
                 val currentOnDragStart by rememberUpdatedState(onDragStart)
                 val currentOnDrag by rememberUpdatedState(onDrag)
                 val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+                val haptics = LocalHapticFeedback.current
                 Icon(
                     Icons.Filled.DragHandle,
                     contentDescription = stringResource(R.string.connections_reorder),
@@ -1708,11 +1748,21 @@ private fun ConnectionTreeItem(
                         .size(32.dp)
                         .padding(start = 4.dp)
                         .pointerInput(Unit) {
-                            detectVerticalDragGestures(
-                                onDragStart = { currentOnDragStart() },
+                            // Long-press to arm, rather than dragging on touch
+                            // slop. The handle is a 32dp target sitting in the
+                            // scroll path, so a thumb that lands on it while
+                            // flinging the list used to reorder a connection
+                            // by accident (#489). A press-and-hold cannot be
+                            // produced by scrolling, and the haptic tick says
+                            // the row is now yours to move.
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    currentOnDragStart()
+                                },
                                 onDragEnd = { currentOnDragEnd() },
                                 onDragCancel = { currentOnDragEnd() },
-                                onVerticalDrag = { _, dragAmount -> currentOnDrag(dragAmount) },
+                                onDrag = { _, dragAmount -> currentOnDrag(dragAmount.y) },
                             )
                         },
                 )
@@ -2119,6 +2169,9 @@ private fun ConnectionGroupHeader(
     onDelete: () -> Unit,
     onSetIdentity: (String?) -> Unit = {},
     onLaunchGroup: () -> Unit = {},
+    /** Null at the ends of the list, or while a filter is applied (#490). */
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -2222,6 +2275,23 @@ private fun ConnectionGroupHeader(
                 leadingIcon = { Icon(Icons.Filled.DriveFileRenameOutline, null) },
                 onClick = { showMenu = false; showRenameDialog = true },
             )
+            // Deliberately leave the menu open: moving a group more than one
+            // place is the common case, and reopening the menu for each step
+            // is what makes that tedious.
+            if (onMoveUp != null || onMoveDown != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.connections_auth_move_up)) },
+                    leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) },
+                    enabled = onMoveUp != null,
+                    onClick = { onMoveUp?.invoke() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.connections_auth_move_down)) },
+                    leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) },
+                    enabled = onMoveDown != null,
+                    onClick = { onMoveDown?.invoke() },
+                )
+            }
             if (identities.isNotEmpty()) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.connections_menu_group_identity)) },
@@ -2237,6 +2307,37 @@ private fun ConnectionGroupHeader(
         }
     }
     HorizontalDivider()
+}
+
+/**
+ * Swap a group with the group above or below it, carrying its connections
+ * along (#490).
+ *
+ * [ids] is the flat list the screen reorders: `group-<id>` header keys with
+ * each group's connections following its header. Membership is positional —
+ * a connection belongs to the last header above it — so a group has to move
+ * as a block, or it would donate its contents to whichever group it landed
+ * under. Ungrouped connections sit above the first header and are never
+ * touched, since groups only ever swap with other groups.
+ *
+ * Returns null when the move is not available: no such group, or it is
+ * already at the end it is being asked to move towards.
+ */
+internal fun moveGroupBlock(ids: List<String>, gid: String, up: Boolean): List<String>? {
+    val headers = ids.indices.filter { ids[it].startsWith("group-") }
+    val pos = headers.indexOf(ids.indexOf("group-$gid"))
+    val neighbour = if (up) pos - 1 else pos + 1
+    if (pos < 0 || neighbour !in headers.indices) return null
+    // A block runs from its header to just before the next one.
+    fun block(p: Int) = headers[p]..(headers.getOrNull(p + 1)?.minus(1) ?: ids.lastIndex)
+    val first = block(minOf(pos, neighbour))
+    val second = block(maxOf(pos, neighbour))
+    // Adjacent by construction, so the swap is just a matter of emitting the
+    // second block before the first.
+    return ids.subList(0, first.first) +
+        ids.slice(second) +
+        ids.slice(first) +
+        ids.subList(second.last + 1, ids.size)
 }
 
 /**

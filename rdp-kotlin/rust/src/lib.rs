@@ -1378,9 +1378,9 @@ fn run_rdp_session(
     // attributed to a stage. Costs a couple of Instant::now() per frame.
     let mut perf = FramePerf::new();
 
-    /// A slow-path PDU that arrived truncated, waiting for the rest (#422).
-    /// Holds at most one fragment: if the next frame does not complete it, both
-    /// are given up on rather than growing a buffer on a desynchronised stream.
+    // A slow-path PDU that arrived truncated, waiting for the rest (#422).
+    // Holds at most one fragment: if the next frame does not complete it, both
+    // are given up on rather than growing a buffer on a desynchronised stream.
     let mut pending_partial: Option<Vec<u8>> = None;
 
     // Active session loop
