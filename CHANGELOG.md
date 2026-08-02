@@ -5,6 +5,16 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.32
+
+🗂️ **Connections can be dragged past a collapsed folder** — with a collapsed folder that had connections in it, anything below could not be dragged above it or into it, however far you pulled. When a folder is collapsed, the list being reordered and the list on screen stop agreeing: its contents are still in the first and absent from the second. The drag chose what to step over from one and measured it against the other, found nothing to measure, and skipped the step — silently, on every frame. A collapsed folder was a wall. Dragging *into* one also used to strand the connection there, since the row disappeared from under your finger the moment it crossed the boundary; it now stays put until you let go. Two earlier attempts at this fixed real bugs but not this one, because this one is not a matter of timing — it happens every time. Checked on a phone against the previous build with the same list and the same gesture. (#488)
+
+Dragging a connection down over folder headers also used to leave it lagging behind your finger, a little further with each header, because the drag corrected its position by the height of the row being moved rather than the height of the one it moved past.
+
+🔗 **A link split across two lines now opens in full** — when a program running in the terminal wraps its own output at a width of its choosing, it can break a URL in the middle of a filename, and tapping it opened only the part before the break. The two halves are now joined when the tail looks like a filename. Being straight about the limit: a link broken inside a hostname, or inside a path with no file extension, is still not joined — there is nothing left on the screen that tells those apart from ordinary prose on the next line. (#491)
+
+🖥️ **RDP: picture updates that cannot be decoded now say so** — these were skipped at debug level, so the only sign was a rectangle of the remote screen that never repainted, with nothing in the log to point at. They are now warnings and appear in the connection log. This does not repair the missing regions, which is still open; it makes them traceable when you report one. (#462)
+
 ## v5.86.31
 
 🖥️ **Remote desktop: the RDP engine is up to date with the current IronRDP release** — a dependency refresh rather than a feature, and deliberately a boring one. Frame rate and decoding are unchanged, measured before and after against the same server rather than assumed: about 15 frames a second either way on the same 1080p session. The engine was checked against three different RDP servers (FreeRDP, xrdp, and KDE's KRDP) before shipping. Windows Server and GNOME Remote Desktop were not among them, so if you use either and something looks different, that is worth reporting. (#117)
