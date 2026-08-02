@@ -1778,6 +1778,11 @@ struct FramePerf {
 
 const PERF_REPORT_FRAMES: u64 = 60;
 
+/// How many extra frames reactivation will pull in to complete a PDU that
+/// arrived split (#422). The observed case needs exactly one; the bound keeps
+/// a real desync from consuming the stream frame by frame.
+const REACTIVATION_MAX_JOINS: u32 = 4;
+
 impl FramePerf {
     fn new() -> Self {
         Self {
@@ -2140,7 +2145,40 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
     };
 
     if let Some(frame) = first_frame {
-        feed(cas, frame, framed, &mut buf)?;
+        // The frame that announced the reactivation can be only part of its
+        // PDU. The loop below reads by hint and so always gets a whole one,
+        // but this first frame was already taken off the wire by the caller,
+        // and VirtualBox splits a large Demand Active across two X.224 frames
+        // — the reporter's crash was `NotEnoughBytes { received: 24, expected:
+        // 4287 }` with a 4263-byte frame immediately before it. The session
+        // loop already rejoins that pair for the active stage; reactivation
+        // had no such handling and died on the half it could see. (#422)
+        //
+        // Reading the remainder here rather than holding it, because we are
+        // inside a blocking read loop and the rest of the PDU is already on
+        // its way — nobody else will deliver it to us.
+        let mut pending = frame.to_vec();
+        let mut joins = 0;
+        loop {
+            match feed(cas, &pending, framed, &mut buf) {
+                Ok(()) => break,
+                Err(e) if e.contains("NotEnoughBytes") && joins < REACTIVATION_MAX_JOINS => {
+                    joins += 1;
+                    let (_, more) = framed
+                        .read_pdu()
+                        .map_err(|io| format!("reactivation read (join {joins}): {io}"))?;
+                    debug!(
+                        "Reactivation: joining {} + {} byte fragments (#422)",
+                        pending.len(),
+                        more.len()
+                    );
+                    pending.extend_from_slice(&more);
+                }
+                // Bounded on purpose: a genuine desync fails fast rather than
+                // swallowing the whole stream one frame at a time.
+                Err(e) => return Err(e),
+            }
+        }
     }
     while !cas.state().is_terminal() {
         // A hint means "read that PDU and feed it"; no hint means the next
