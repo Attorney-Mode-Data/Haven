@@ -8,19 +8,19 @@ crate-type = ["cdylib", "rlib"]
 name = "rdp_transport"
 
 [dependencies]
-ironrdp-blocking = "0.9"
-ironrdp-connector = "0.9"
-ironrdp-session = "0.10"
-ironrdp-input = "0.6"
-ironrdp-cliprdr = "0.6"
-ironrdp-graphics = "0.8"
+ironrdp-blocking = "0.10"
+ironrdp-connector = "0.10"
+ironrdp-session = "0.11"
+ironrdp-input = "0.7"
+ironrdp-cliprdr = "0.7"
+ironrdp-graphics = "0.9"
 ironrdp-tls = { version = "0.2", features = ["rustls"] }
-ironrdp-pdu = "0.8"
-ironrdp-dvc = "0.7"
-ironrdp-displaycontrol = "0.7"
-ironrdp-svc = "0.7"
+ironrdp-pdu = "0.9"
+ironrdp-dvc = "0.8"
+ironrdp-displaycontrol = "0.8"
+ironrdp-svc = "0.8"
 ironrdp-core = "0.2"
-ironrdp-egfx = "0.2"
+ironrdp-egfx = "0.3"
 x509-cert = { version = "0.3", default-features = false }
 smallvec = "1"
 log = "0.4"
@@ -76,10 +76,22 @@ optional = true
 [build-dependencies]
 uniffi = { version = "0.32", features = ["build"] }
 
-# Local fork of ironrdp-connector with one Haven-specific patch:
-# advertise SUPPORT_DYN_VC_GFX_PROTOCOL (0x0100) in the Client Core Data so
-# servers open the EGFX dynamic virtual channel. Upstream rejects an unconditional
-# default; we may upstream a Config flag once the integration stabilises.
+# Local fork of ironrdp-connector (0.10.0) carrying three Haven patches:
+#
+#  1. Advertise SUPPORT_DYN_VC_GFX_PROTOCOL (0x0100) in the Client Core Data so
+#     servers open the EGFX dynamic virtual channel. Upstream rejects an
+#     unconditional default and still offers no config hook as of 0.10.0, so
+#     the fork cannot be dropped yet; a Config flag is the way out.
+#  2. Surface the server's Input capability flags on ConnectionResult and
+#     through the activation sequence, so fast-path input can be gated on what
+#     the server actually advertised (#422 — VirtualBox VRDP drops the link).
+#  3. Accept a short/empty Server Font Map during finalization rather than
+#     failing the connect on NotEnoughBytes (#422, VirtualBox VRDP again).
+#     Lived in the crate's legacy.rs until 0.10.0 deleted that module; the
+#     helper now sits in connection_finalization.rs with its own tests.
+#
+# Rebasing onto a new upstream: diff this tree against the matching
+# ironrdp-connector release to extract the patch, then re-apply.
 [patch.crates-io]
 ironrdp-connector = { path = "vendor/ironrdp-connector" }
 

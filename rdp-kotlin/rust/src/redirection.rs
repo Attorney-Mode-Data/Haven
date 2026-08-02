@@ -275,7 +275,7 @@ pub fn parse_share_control_redirect(user_data: &[u8]) -> Option<RedirectionInfo>
 /// slow-path-bitmap handler uses — then defers to
 /// [`parse_share_control_redirect`]. Returns `None` for any non-redirect frame.
 pub fn detect_server_redirect(frame: &[u8]) -> Option<RedirectionInfo> {
-    let ctx = ironrdp_connector::legacy::decode_send_data_indication(frame).ok()?;
+    let ctx = ironrdp_pdu::mcs::decode_send_data_indication(frame).ok()?;
     parse_share_control_redirect(ctx.user_data)
 }
 

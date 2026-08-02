@@ -1143,7 +1143,7 @@ fn run_rdp_session(
 ) -> Result<(), String> {
     use ironrdp_blocking::{connect_begin, connect_finalize, mark_as_upgraded, Framed};
     use ironrdp_connector::ServerName;
-    use ironrdp_session::{ActiveStage, ActiveStageOutput};
+    use ironrdp_session::ActiveStageOutput;
     use ironrdp_session::image::DecodedImage;
     use ironrdp_graphics::image_processing::PixelFormat;
 
@@ -1328,7 +1328,10 @@ fn run_rdp_session(
     // #438: keep a resettable copy of the activation sequence so a bare
     // Server Demand Active (FreeRDP shadow skips the preceding Deactivate
     // All) can re-enter the activation state machine mid-session.
-    let activation_template = connection_result.connection_activation.reset_clone();
+    // connector 0.10.0 replaced the clone-and-reset dance with a factory that
+    // mints a fresh sequence on demand — which is what #438 wanted in the first
+    // place.
+    let activation_factory = connection_result.activation_factory;
 
     // #422: fast-path input is only legal when the server advertised it
     // (MS-RDPBCGR 2.2.8.1.2). VirtualBox VRDP advertises SCANCODES only and
@@ -1346,7 +1349,19 @@ fn run_rdp_session(
         supported
     };
 
-    let mut active_stage = ActiveStage::new(connection_result);
+    // session 0.11.0 replaced ActiveStage::new(connection_result) with an
+    // explicit builder; the fields are the same ones the constructor read.
+    let mut active_stage = ironrdp_session::ActiveStageBuilder {
+        static_channels: connection_result.static_channels,
+        user_channel_id: connection_result.user_channel_id,
+        io_channel_id: connection_result.io_channel_id,
+        message_channel_id: connection_result.message_channel_id,
+        share_id: connection_result.share_id,
+        compression_type: connection_result.compression_type,
+        enable_server_pointer: connection_result.enable_server_pointer,
+        pointer_software_rendering: connection_result.pointer_software_rendering,
+    }
+    .build();
 
     // Handshake is done; shrink the read timeout to 100ms so the session
     // loop can poll the shutdown flag promptly. WouldBlock/TimedOut are
@@ -1607,7 +1622,12 @@ fn run_rdp_session(
                                     error!("Server disconnect: {}", reason);
                                     break;
                                 }
-                                ActiveStageOutput::DeactivateAll(mut cas) => {
+                                ActiveStageOutput::DeactivateAll => {
+                                    // session 0.11.0 stopped handing the
+                                    // activation sequence out with this event;
+                                    // we mint our own from the factory, which
+                                    // is the same sequence it used to pass.
+                                    let mut cas = activation_factory.create();
                                     // Server-initiated Deactivation-Reactivation
                                     // (#438): re-run the activation sequence and
                                     // swap onto the renegotiated parameters. Any
@@ -1678,7 +1698,7 @@ fn run_rdp_session(
                             // layer rejects. Re-enter the activation state machine
                             // and hand it the frame we already consumed.
                             info!("Bare Server Demand Active — running reactivation");
-                            let mut cas = activation_template.reset_clone();
+                            let mut cas = activation_factory.create();
                             let _ = stream_ctl.set_read_timeout(Some(std::time::Duration::from_secs(30)));
                             let res = perform_reactivation(
                                 &mut tls_framed, &mut cas, Some(frame_to_process),
@@ -1799,7 +1819,11 @@ fn try_handle_slow_path_bitmap(
     // UPDATETYPE_BITMAP marker (0x0001 LE) in the frame.
     // Decode the X224/MCS/ShareControl/ShareData headers to extract the
     // Update PDU payload.
-    use ironrdp_connector::legacy::{decode_send_data_indication, decode_io_channel, IoChannelPdu};
+    // These moved out of ironrdp-connector's `legacy` module, which was
+    // deleted in connector 0.10.0, into the PDU crate that always owned
+    // the wire formats.
+    use ironrdp_pdu::mcs::decode_send_data_indication;
+    use ironrdp_pdu::rdp::headers::{decode_io_channel, IoChannelPdu};
     use ironrdp_pdu::rdp::headers::ShareDataPdu;
 
     let ctx = match decode_send_data_indication(frame) {
@@ -2090,10 +2114,13 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
         feed(cas, pdu.as_deref().unwrap_or(&[]), framed, &mut buf)?;
     }
 
+    // connector 0.10.0 dropped these from the Finalized variant; the sequence
+    // still knows them, and they cannot change across a reactivation.
+    let io_channel_id = cas.io_channel_id();
+    let user_channel_id = cas.user_channel_id();
+
     match cas.connection_activation_state() {
         ConnectionActivationState::Finalized {
-            io_channel_id,
-            user_channel_id,
             desktop_size,
             share_id,
             // #422: a reactivation could in principle renegotiate input flags,
