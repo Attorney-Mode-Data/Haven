@@ -35,7 +35,13 @@ while read -r line; do
 
     case "$flag" in
         '+'|'U')
-            warn "submodule '$path' SHA mismatch (parent pin=$sha differs from submodule HEAD). Did you forget 'git add $path' after committing inside the submodule?"
+            # `git submodule status` prints the *checked-out* SHA after the
+            # flag, not the parent's pin — the two were the wrong way round
+            # here, so the warning named the value you needed to change as the
+            # one already recorded. Show both, since which is which is the
+            # whole question when you hit this.
+            pinned="$(git ls-tree HEAD -- "$path" 2>/dev/null | awk '{print $3}')"
+            warn "submodule '$path' SHA mismatch: checked out ${sha}, parent pins ${pinned:-<unpinned>}. Did you forget 'git add $path' after committing inside the submodule?"
             ;;
     esac
 
