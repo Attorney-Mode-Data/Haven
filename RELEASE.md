@@ -141,13 +141,14 @@ The buildserver no longer pre-installs NDKs in its Docker image — `fdroidserve
 
 Things Haven's CI does **not** exercise but F-Droid does:
 
-- `build-proot/build.sh`, `build-ffmpeg/build.sh`, `wayland-android/build_liblabwc_android.sh` — F-Droid has these in its `scandelete` list (it deletes the committed `.so`s and rebuilds from source). Our CI uses the committed pre-built binaries. A regression in any of those scripts won't show up until the F-Droid bot MR's build step fails on GitLab. If you touch those scripts or their deps, smoke-test locally before tagging:
+- `build-proot/build.sh`, `build-ffmpeg/build.sh`, `wayland-android/build_liblabwc_android.sh`, `wayland-android/build-native-helpers.sh` — F-Droid `scandelete`s the committed `.so`s and rebuilds them from source; **our CI still ships the committed copies for ffmpeg and wayland**, so the two APKs are built differently and a regression in any of those scripts stays invisible until the F-Droid bot MR fails on GitLab. If you touch those scripts or their deps, smoke-test locally before tagging:
   ```bash
   rm -rf core/ffmpeg/src/main/jniLibs core/wayland/src/main/jniLibs core/local/src/main/jniLibs
   ABI=arm64-v8a bash build-ffmpeg/build.sh
   bash build-proot/build.sh
-  pushd wayland-android && ABI=arm64-v8a ./build_liblabwc_android.sh && popd
+  pushd wayland-android && ABI=arm64-v8a ./build_liblabwc_android.sh && ABI=arm64-v8a ./build-native-helpers.sh && popd
   ```
+  Anything in `core/wayland/src/main/jniLibs/` that no build step regenerates is **deleted from the F-Droid APK and never replaced** — that is how their builds shipped with no XWayland wrapper, no GLES benchmark and no GPU renderer. Whenever you add a binary there, add the build step to the fdroiddata recipe in the same change. The two `libvirgl_*_server.so` binaries still have no build script and are still missing from F-Droid builds.
 
 ### If the F-Droid build fails
 

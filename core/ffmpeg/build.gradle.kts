@@ -30,8 +30,14 @@ dependencies {
 // Copy pre-built FFmpeg binaries into jniLibs so Android extracts them
 // to nativeLibraryDir. Same pattern as core/local's buildProot task.
 // Refreshes each ABI from a local `build-ffmpeg/build-<abi>` if present;
-// ABIs without a local build keep their committed .so (so CI/F-Droid,
-// which uses the committed binaries, is never clobbered with nothing).
+// ABIs without a local build keep their committed .so.
+//
+// The old comment here said F-Droid "uses the committed binaries". It does
+// not: their recipe `scandelete`s core/ffmpeg/src/main/jniLibs and runs
+// build-ffmpeg/build.sh, so F-Droid's APK carries a from-source ffmpeg.
+// *Our* release workflow is the one that ships the committed copies — the
+// opposite way round — which is why these are still tracked (grandfathered
+// in scripts/check-no-committed-binaries.sh) rather than deleted.
 val ffmpegAbis = listOf("arm64-v8a", "x86_64", "armeabi-v7a")
 val copyFfmpegBinaries by tasks.registering {
     doLast {
