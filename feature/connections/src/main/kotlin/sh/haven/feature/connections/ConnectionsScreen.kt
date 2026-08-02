@@ -130,6 +130,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import androidx.core.content.ContextCompat
@@ -1270,6 +1271,7 @@ fun ConnectionsScreen(
                 }
 
                 val lazyListState = rememberLazyListState()
+                val collapsedGroupIds = groups.filter { it.collapsed }.map { it.id }.toSet()
 
                 // Build display list from reorderedIds (respecting filter + collapsed state)
                 val displayIds = if (isFiltering) {
@@ -1287,18 +1289,7 @@ fun ConnectionsScreen(
                         }
                     }
                 } else {
-                    // Respect collapsed groups: skip profile IDs that belong to a collapsed group
-                    val collapsedGroupIds = groups.filter { it.collapsed }.map { it.id }.toSet()
-                    var inCollapsedGroup = false
-                    reorderedIds.filter { key ->
-                        if (key.startsWith("group-")) {
-                            val gid = key.removePrefix("group-")
-                            inCollapsedGroup = gid in collapsedGroupIds
-                            true // always show group header
-                        } else {
-                            !inCollapsedGroup
-                        }
-                    }
+                    displayedRows(reorderedIds, collapsedGroupIds, dragged = draggedId)
                 }
 
                 LazyColumn(state = lazyListState, modifier = Modifier.fillMaxSize()) {
@@ -1393,38 +1384,43 @@ fun ConnectionsScreen(
                                     onDrag = { delta ->
                                         if (!isFiltering) {
                                             dragOffset += delta
-                                            val fromIdx = reorderedIds.indexOf(profile.id)
-                                            if (fromIdx < 0) return@ConnectionTreeItem
+                                            if (dragOffset == 0f) return@ConnectionTreeItem
                                             val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
                                             val draggedInfo = visibleItems.find { it.key == profile.id }
                                                 ?: return@ConnectionTreeItem
-                                            if (dragOffset > 0 && fromIdx < reorderedIds.lastIndex) {
-                                                val nextInfo = visibleItems.find { it.key == reorderedIds[fromIdx + 1] }
-                                                if (nextInfo != null) {
-                                                    val dist = nextInfo.offset - draggedInfo.offset
-                                                    if (dragOffset > dist / 2) {
-                                                        reorderedIds.add(fromIdx + 1, reorderedIds.removeAt(fromIdx))
-                                                        // Preserve visual continuity: the item's list
-                                                        // position just jumped by `dist`, so subtract
-                                                        // `dist` from dragOffset instead of resetting
-                                                        // to zero — otherwise the visual row leaps a
-                                                        // full row ahead of the finger on each swap.
-                                                        dragOffset -= dist
-                                                    }
-                                                }
-                                            } else if (dragOffset < 0 && fromIdx > 0) {
-                                                val prevInfo = visibleItems.find { it.key == reorderedIds[fromIdx - 1] }
-                                                if (prevInfo != null) {
-                                                    val dist = draggedInfo.offset - prevInfo.offset
-                                                    if (dragOffset < -dist / 2) {
-                                                        reorderedIds.add(fromIdx - 1, reorderedIds.removeAt(fromIdx))
-                                                        // Mirror of the downward case — the item
-                                                        // jumped one row up, so add `dist` back to
-                                                        // dragOffset so visual tracking stays 1:1.
-                                                        dragOffset += dist
-                                                    }
-                                                }
+                                            // Recomputed here rather than reusing the composed
+                                            // displayIds, which is a frame behind once a swap has
+                                            // already moved the row this gesture.
+                                            val rows = displayedRows(reorderedIds, collapsedGroupIds, profile.id)
+                                            val here = rows.indexOf(profile.id)
+                                            if (here < 0) return@ConnectionTreeItem
+                                            val down = dragOffset > 0
+                                            val neighbourKey =
+                                                rows.getOrNull(if (down) here + 1 else here - 1)
+                                                    ?: return@ConnectionTreeItem
+                                            val neighbourInfo = visibleItems.find { it.key == neighbourKey }
+                                                ?: return@ConnectionTreeItem
+                                            val dist = neighbourBlockHeight(
+                                                draggedOffset = draggedInfo.offset,
+                                                neighbourOffset = neighbourInfo.offset,
+                                                neighbourSize = neighbourInfo.size,
+                                                afterNeighbourOffset = rows.getOrNull(here + 2)
+                                                    ?.let { key -> visibleItems.find { it.key == key }?.offset },
+                                                down = down,
+                                            )
+                                            if (dist <= 0 || abs(dragOffset) <= dist / 2) {
+                                                return@ConnectionTreeItem
                                             }
+                                            val moved = moveDraggedRow(reorderedIds, rows, profile.id, down)
+                                                ?: return@ConnectionTreeItem
+                                            reorderedIds.clear()
+                                            reorderedIds.addAll(moved)
+                                            // Preserve visual continuity: the item's list position
+                                            // just jumped by `dist`, so take `dist` back out of
+                                            // dragOffset instead of resetting to zero — otherwise
+                                            // the visual row leaps a full row past the finger on
+                                            // each swap.
+                                            dragOffset += if (down) -dist else dist
                                         }
                                     },
                                     onDragEnd = {
@@ -2338,6 +2334,99 @@ internal fun moveGroupBlock(ids: List<String>, gid: String, up: Boolean): List<S
         ids.slice(second) +
         ids.slice(first) +
         ids.subList(second.last + 1, ids.size)
+}
+
+/**
+ * How far a dragged row's slot moves when it changes places with its
+ * neighbour: the height of that neighbour's *block* — its own row plus any
+ * dependent rows drawn under it, which travel with their parent.
+ *
+ * This is what the drag has to give back to its offset so the row keeps
+ * tracking the finger, and it is not the same as the gap the drag used to
+ * measure going down. That gap is the *dragged* row's height, which only
+ * matches when every row is the same height. A group header is shorter than a
+ * connection, so dragging a connection down over one took back more than the
+ * slot had moved, leaving the row drawn higher than the finger had put it —
+ * losing that difference again on each further header.
+ *
+ * Going up the two happen to coincide: the previous block ends exactly where
+ * the dragged row begins, so the gap is already the block height.
+ *
+ * [afterNeighbourOffset] is the row after the neighbour, which bounds the
+ * neighbour's block; without it (the neighbour is last, or scrolled out) fall
+ * back to the neighbour's own height and lose only its dependents.
+ */
+internal fun neighbourBlockHeight(
+    draggedOffset: Int,
+    neighbourOffset: Int,
+    neighbourSize: Int,
+    afterNeighbourOffset: Int?,
+    down: Boolean,
+): Int = if (down) {
+    (afterNeighbourOffset ?: (neighbourOffset + neighbourSize)) - neighbourOffset
+} else {
+    draggedOffset - neighbourOffset
+}
+
+/**
+ * The rows the connection list actually renders: every `group-` header, plus
+ * the connections of the groups that are not collapsed.
+ *
+ * [dragged] is exempt from hiding. A row dragged into a collapsed group would
+ * otherwise disappear from under the finger mid-gesture, stranding it there —
+ * it stays on screen until the drag ends, and is then hidden with the rest of
+ * that group's members. (#488)
+ */
+internal fun displayedRows(
+    ids: List<String>,
+    collapsedGroupIds: Set<String>,
+    dragged: String?,
+): List<String> {
+    var hidden = false
+    return ids.filter { key ->
+        if (key.startsWith("group-")) {
+            hidden = key.removePrefix("group-") in collapsedGroupIds
+            true // always show group headers
+        } else {
+            !hidden || key == dragged
+        }
+    }
+}
+
+/**
+ * Move a dragged connection one row past its neighbour *on screen* (#488).
+ *
+ * [ids] is the full flat order; [displayed] is the subset the list actually
+ * rendered, which omits the members of collapsed groups. The neighbour has to
+ * come from [displayed], because the caller can only measure rows that exist:
+ * picking it from [ids] meant that as soon as the row above was a hidden member
+ * of a collapsed group there was nothing to measure against, and the drag stopped
+ * dead there. A collapsed group was an impassable wall, so a connection below one
+ * could never be dragged above it or into it — the "refuses to move" in #488.
+ *
+ * Landing position is expressed against that same neighbour: just after it going
+ * down, just before it going up. Since membership is positional, dragging onto a
+ * header — collapsed or not — makes the connection that group's first member,
+ * and dragging up past a header takes it out of the group again.
+ *
+ * Returns null when there is no neighbour that way, i.e. the row is already at
+ * that end of the list.
+ */
+internal fun moveDraggedRow(
+    ids: List<String>,
+    displayed: List<String>,
+    id: String,
+    down: Boolean,
+): List<String>? {
+    val here = displayed.indexOf(id)
+    if (here < 0) return null
+    val neighbour = displayed.getOrNull(if (down) here + 1 else here - 1) ?: return null
+    if (!ids.contains(id) || !ids.contains(neighbour)) return null
+    val moved = ids.toMutableList()
+    moved.remove(id)
+    val at = moved.indexOf(neighbour)
+    moved.add(if (down) at + 1 else at, id)
+    return moved
 }
 
 /**
