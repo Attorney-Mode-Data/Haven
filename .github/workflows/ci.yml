@@ -69,7 +69,28 @@ jobs:
         # matches no :app task and silently skips the agent/MCP unit tests.
         # Name the flavor task explicitly (arm64 only — unit tests are
         # flavor-agnostic) so they actually run in CI.
-        run: ./gradlew testDebugUnitTest :app:testArm64DebugUnitTest
+        #
+        # The sshlib contract tests are excluded here and run in their own
+        # non-gating step below. They exercise the opt-in preview SSH engine
+        # against an upstream race in sshlib 0.4.1 — its output pump is
+        # cancelled on CHANNEL_CLOSE and drops whatever it is still holding, so
+        # a command's stdout or stderr comes back empty or truncated at random
+        # (connectbot/cbssh#245, tracked in #448). Haven narrows the window but
+        # cannot close it from outside the library, and 0.4.1 is the latest
+        # release. Three failures in one day, on three different assertions,
+        # blocked a release that changed nothing in core/ssh — so this engine's
+        # known flakiness no longer gates shipping for the default JSch engine.
+        # Restore it here the moment a fixed sshlib is out.
+        run: >-
+          ./gradlew testDebugUnitTest :app:testArm64DebugUnitTest
+          -PexcludeSshlibContractTests=true
+      - name: Run sshlib contract tests (non-gating, connectbot/cbssh#245)
+        # Reported, never silent: a failure here is visible in the job summary
+        # and the uploaded results, it just does not fail the build. If these
+        # start failing *every* run rather than intermittently, that is a real
+        # regression and not the upstream race — check before dismissing it.
+        continue-on-error: true
+        run: ./gradlew :core:ssh:testDebugUnitTest --tests 'sh.haven.core.ssh.sshlib.*'
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

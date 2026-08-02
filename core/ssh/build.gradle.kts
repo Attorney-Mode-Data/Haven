@@ -30,6 +30,18 @@ android {
     }
 }
 
+// CI runs the sshlib contract tests in their own non-gating step, because the
+// opt-in preview engine inherits an upstream race in sshlib 0.4.1 that drops a
+// command's output at random (connectbot/cbssh#245, tracked in #448). Passing
+// -PexcludeSshlibContractTests=true takes them out of the gating run; a plain
+// local `test` still runs everything, so the exclusion cannot hide anything
+// from someone working on this module.
+if (providers.gradleProperty("excludeSshlibContractTests").orNull == "true") {
+    tasks.withType<Test>().configureEach {
+        exclude("sh/haven/core/ssh/sshlib/**")
+    }
+}
+
 dependencies {
     api(libs.jsch)
     // Second SSH engine (#58). implementation, NOT api — no module outside
