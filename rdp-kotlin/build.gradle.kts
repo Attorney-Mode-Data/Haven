@@ -38,8 +38,14 @@ kotlin {
 }
 
 // Build IronRDP native library from Rust source via cargo-ndk.
-// Prerequisites: rustup, cargo-ndk, aarch64-linux-android + x86_64-linux-android targets.
-// The .so files are NOT committed — they're built as part of the Gradle build.
+// Prerequisites: rustup, cargo-ndk, and the three Android targets below.
+//
+// The .so files under jniLibs/ ARE committed (this comment used to claim they
+// were not). That only stays harmless while every shipped ABI is rebuilt from
+// source here: armeabi-v7a was missing from the target list, so a Rust change
+// rebuilt arm64 and x86_64 and left armv7 users on whatever binary happened to
+// be checked in — the silent-staleness failure #469 was, in a different
+// module. All three are built now, so the committed copies are only a cache.
 val buildRdpNative by tasks.registering(Exec::class) {
     val rustDir = file("rust")
     val jniDir = file("jniLibs")
@@ -63,6 +69,7 @@ val buildRdpNative by tasks.registering(Exec::class) {
     commandLine("cargo", "ndk",
         "-o", jniDir.absolutePath,
         "-t", "arm64-v8a",
+        "-t", "armeabi-v7a",
         "-t", "x86_64",
         "build", "--release")
 }
