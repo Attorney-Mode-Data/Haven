@@ -34,6 +34,8 @@ import sh.haven.core.data.repository.ConnectionRepository
 import sh.haven.core.data.repository.PortForwardRepository
 import sh.haven.core.data.repository.SshKeyRepository
 import sh.haven.core.ssh.ConnectionConfig
+import sh.haven.core.ssh.OpenKeychainClientFactory
+import sh.haven.core.ssh.openkeychain.OpenKeychainKeyData
 import sh.haven.core.ssh.HostKeyAuthFailure
 import sh.haven.core.ssh.HostKeyResult
 import sh.haven.core.ssh.isSshNetworkError
@@ -3094,6 +3096,7 @@ class ConnectionsViewModel @Inject constructor(
             } else null
             val client = reuseClient ?: SshConnectionFactory.create(sshEngineFromOptionsText(profile.sshOptions)).apply {
                 fidoAuthenticator = this@ConnectionsViewModel.fidoAuthenticator
+                openKeychainClients = OpenKeychainClientFactory.from(appContext)
                 this.verboseLogger = verboseLogger
             }
             val sessionId = sshSessionManager.registerSession(profile.id, profile.label, client)
@@ -4113,6 +4116,7 @@ class ConnectionsViewModel @Inject constructor(
         // this SshClient", never reaching the touch prompt (#286).
         val jumpClient = SshClient().apply {
             fidoAuthenticator = this@ConnectionsViewModel.fidoAuthenticator
+            openKeychainClients = OpenKeychainClientFactory.from(appContext)
             verboseLogger = jumpVerbose
         }
         val jumpSessionId = sshSessionManager.registerSession(jumpProfileId, "Jump: ${jumpProfile.label}", jumpClient)
@@ -4278,6 +4282,7 @@ class ConnectionsViewModel @Inject constructor(
                 is ConnectionConfig.AuthMethod.PrivateKey -> "key"
                 is ConnectionConfig.AuthMethod.PrivateKeys -> "key"
                 is ConnectionConfig.AuthMethod.FidoKey -> "FIDO2"
+                is ConnectionConfig.AuthMethod.ProviderKey -> "provider key"
                 is ConnectionConfig.AuthMethod.Multi -> m.methods.joinToString("+") { label(it) }
             }
             label(config.authMethod)
@@ -4648,6 +4653,16 @@ class ConnectionsViewModel @Inject constructor(
                     keyLabel = key.label,
                 )
             }
+            // A key held by another app (#487): the bytes are a reference to
+            // it, not key material, so they go through verbatim exactly as
+            // an SK credential handle does.
+            if (key.keyType == OpenKeychainKeyData.KEY_TYPE) {
+                Log.d(TAG, "Using a provider-held key: ${key.label}")
+                return ConnectionConfig.AuthMethod.ProviderKey(
+                    keyData = keyBytes,
+                    keyLabel = key.label,
+                )
+            }
             // For encrypted keys, pass the original encrypted bytes + passphrase.
             // JSch decrypts at auth time — key never stored in plaintext.
             // When the caller supplied no passphrase, fall back to the opt-in
@@ -4692,7 +4707,14 @@ class ConnectionsViewModel @Inject constructor(
      */
     private suspend fun resolveAnyUsableKeys(): ConnectionConfig.AuthMethod? {
         val entries = sshKeyRepository.getAllDecrypted()
-            .filter { !it.keyType.startsWith("sk-") && it.enabledForAuth }
+            // Provider-held keys (#487) are excluded for the same reason as
+            // SK keys: their bytes are a reference to a key in another app,
+            // not loadable material, and signing with one prompts the user.
+            .filter {
+                !it.keyType.startsWith("sk-") &&
+                    it.keyType != OpenKeychainKeyData.KEY_TYPE &&
+                    it.enabledForAuth
+            }
             .mapNotNull { key ->
                 if (key.isEncrypted) {
                     // Only usable unattended if its passphrase is stored (#290).
@@ -5391,6 +5413,7 @@ class ConnectionsViewModel @Inject constructor(
         val verboseLogger = if (verboseEnabled) SshVerboseLogger() else null
         val client = SshConnectionFactory.create(sshEngineFromOptionsText(profile.sshOptions)).apply {
             fidoAuthenticator = this@ConnectionsViewModel.fidoAuthenticator
+            openKeychainClients = OpenKeychainClientFactory.from(appContext)
             this.verboseLogger = verboseLogger
         }
         val sessionId = sshSessionManager.registerSession(profile.id, profile.label, client)

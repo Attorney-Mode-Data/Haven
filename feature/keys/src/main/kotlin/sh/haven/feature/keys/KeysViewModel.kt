@@ -37,6 +37,10 @@ import sh.haven.core.security.KeystoreFlag
 import sh.haven.core.security.KeystoreStore
 import sh.haven.core.security.SshKeyGenerator
 import sh.haven.core.ssh.SshCertificateParser
+import sh.haven.core.ssh.openkeychain.OpenKeychainApi
+import sh.haven.core.ssh.openkeychain.OpenKeychainClient
+import sh.haven.core.ssh.openkeychain.OpenKeychainKeyData
+import sh.haven.core.ssh.openkeychain.OpenKeychainProvider
 import sh.haven.core.ssh.SshKeyExporter
 import sh.haven.core.ssh.SshKeyImporter
 import sh.haven.core.stepca.StepCaSignFlow
@@ -79,6 +83,7 @@ class KeysViewModel @Inject constructor(
     private val stepCaConfigRepository: StepCaConfigRepository,
     private val stepCaSignFlow: StepCaSignFlow,
     private val fidoAuthenticator: sh.haven.core.fido.FidoAuthenticator,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: Context,
     private val totpSecretRepository: sh.haven.core.data.repository.TotpSecretRepository,
     private val ageIdentityRepository: sh.haven.core.data.repository.AgeIdentityRepository,
     private val sshIdentityRepository: sh.haven.core.data.repository.SshIdentityRepository,
@@ -569,6 +574,65 @@ class KeysViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("KeysViewModel", "SK key import failed", e)
                 _error.value = "FIDO2 key import failed: ${e.message}"
+            }
+        }
+    }
+
+    /**
+     * Apps installed right now that can hold SSH keys on Haven's behalf
+     * (#487) — OpenKeychain and anything else implementing the SSH
+     * Authentication API. Empty when none is installed, which is what hides
+     * the option rather than offering something that cannot work.
+     */
+    fun openKeychainProviders(): List<OpenKeychainProvider> = OpenKeychainApi.providers(appContext)
+
+    /**
+     * Add a key held by [providerPackage], via its own key chooser.
+     *
+     * Haven stores the public key, the provider's name for it, and enough to
+     * ask that provider for a signature later. There is no private key to
+     * store — that is the point of the feature.
+     *
+     * Silent when the user backs out of the chooser: cancelling is not an
+     * error, and saying so would be noise on a deliberate action.
+     */
+    fun addProviderKey(providerPackage: String) {
+        viewModelScope.launch {
+            try {
+                val added = withContext(Dispatchers.IO) {
+                    val client = OpenKeychainClient(appContext, providerPackage)
+                    try {
+                        val selection = client.selectKey() ?: return@withContext null
+                        val publicKey = client.fetchPublicKey(selection.keyId)
+                        val data = OpenKeychainKeyData(
+                            providerPackage = providerPackage,
+                            keyId = selection.keyId,
+                            algorithm = publicKey.algorithm,
+                            publicKeyBlob = publicKey.blob,
+                            description = selection.description,
+                        )
+                        repository.save(
+                            SshKey(
+                                label = selection.description.ifBlank { "Key in $providerPackage" },
+                                keyType = OpenKeychainKeyData.KEY_TYPE,
+                                privateKeyBytes = OpenKeychainKeyData.serialize(data),
+                                publicKeyOpenSsh = "${publicKey.algorithm} " +
+                                    java.util.Base64.getEncoder().encodeToString(publicKey.blob),
+                                fingerprintSha256 = SkKeyParser.fingerprintSha256(publicKey.blob),
+                            ),
+                        )
+                        data
+                    } finally {
+                        client.close()
+                    }
+                }
+                if (added != null) {
+                    _message.value = "Added ${added.algorithm} key from the provider"
+                    Log.d("KeysViewModel", "Provider key added: ${added.algorithm} via $providerPackage")
+                }
+            } catch (e: Exception) {
+                Log.e("KeysViewModel", "Provider key import failed", e)
+                _error.value = "Could not add the key: ${e.message}"
             }
         }
     }

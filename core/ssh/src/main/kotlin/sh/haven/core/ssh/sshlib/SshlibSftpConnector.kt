@@ -65,6 +65,10 @@ internal object SshlibSftpConnector {
         is ConnectionConfig.AuthMethod.PrivateKeys ->
             if (method.keys.any { it.certificateBytes != null }) "OpenSSH certificate auth" else null
         is ConnectionConfig.AuthMethod.FidoKey -> "FIDO2 hardware keys"
+        // Same reason as FIDO: the signing delegation lives on the JSch
+        // engine only, so this connection falls back rather than
+        // failing to authenticate with a key that is perfectly valid (#487).
+        is ConnectionConfig.AuthMethod.ProviderKey -> "keys held in another app"
         // Chains run as their sub-methods in order plus a keyboard-interactive
         // follow-up (see authenticate); a sub-method we cannot do still gates.
         is ConnectionConfig.AuthMethod.Multi ->
@@ -261,10 +265,11 @@ internal object SshlibSftpConnector {
             }
             last
         }
-        // FidoKey is rejected by unsupportedReason before dialing; Password is
-        // filtered out by the caller; nested Multi is not a shape the profile
-        // editor can produce.
+        // FidoKey and ProviderKey are rejected by unsupportedReason before
+        // dialing; Password is filtered out by the caller; nested Multi is not
+        // a shape the profile editor can produce.
         is ConnectionConfig.AuthMethod.FidoKey,
+        is ConnectionConfig.AuthMethod.ProviderKey,
         is ConnectionConfig.AuthMethod.Multi,
         is ConnectionConfig.AuthMethod.Password,
         -> throw SshIoException("sshlib: unsupported auth method ${method::class.simpleName}")

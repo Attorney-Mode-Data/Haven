@@ -22,6 +22,12 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    // The SSH Authentication API is a bound AIDL service (#487). The
+    // interface is vendored rather than pulled from JitPack, but the binder
+    // still resolves it by its original name, so it has to be compiled here.
+    buildFeatures {
+        aidl = true
+    }
 }
 
 dependencies {

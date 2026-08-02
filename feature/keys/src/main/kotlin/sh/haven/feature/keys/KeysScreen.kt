@@ -91,6 +91,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import sh.haven.core.ssh.openkeychain.OpenKeychainKeyData
+import sh.haven.core.ssh.openkeychain.OpenKeychainProvider
 import sh.haven.core.ui.PasswordField
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -582,6 +584,9 @@ fun KeysScreen(
     }
 
     if (showAddKeyDialog) {
+        // Queried once per dialog rather than per recomposition; a
+        // provider appearing mid-dialog is not worth a live watch.
+        val keyProviders = remember { viewModel.openKeychainProviders() }
         AddKeyChooser(
             stepCaConfigCount = stepCaConfigs.size,
             onGenerate = {
@@ -599,6 +604,11 @@ fun KeysScreen(
             onSecurityKey = {
                 showAddKeyDialog = false
                 showSecurityKeyChooser = true
+            },
+            keyProviders = keyProviders,
+            onKeyProvider = { provider ->
+                showAddKeyDialog = false
+                viewModel.addProviderKey(provider.packageName)
             },
             onPaste = {
                 showAddKeyDialog = false
@@ -993,6 +1003,9 @@ private fun AddKeyChooser(
     onGenerateStepCa: () -> Unit,
     onImport: () -> Unit,
     onSecurityKey: () -> Unit,
+    /** Apps that can hold a key for Haven; empty hides the option (#487). */
+    keyProviders: List<OpenKeychainProvider>,
+    onKeyProvider: (OpenKeychainProvider) -> Unit,
     onPaste: () -> Unit,
     onAddTotpPaste: () -> Unit,
     onScanTotpQr: () -> Unit,
@@ -1060,6 +1073,22 @@ private fun AddKeyChooser(
                         Icon(Icons.Filled.VpnKey, contentDescription = null)
                     },
                 )
+                // Only shown when something is installed to serve it —
+                // an option that can only fail is worse than no option.
+                keyProviders.forEach { provider ->
+                    ListItem(
+                        modifier = Modifier.clickable { onKeyProvider(provider) },
+                        headlineContent = {
+                            Text(stringResource(R.string.keys_from_provider, provider.label))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.keys_from_provider_hint))
+                        },
+                        leadingContent = {
+                            Icon(Icons.Filled.Badge, contentDescription = null)
+                        },
+                    )
+                }
                 ListItem(
                     modifier = Modifier.clickable { onPaste() },
                     headlineContent = { Text(stringResource(R.string.keys_paste_from_clipboard)) },
@@ -1650,8 +1679,14 @@ private fun SshKeyAuditRow(
                     )
                 } else {
                     Icon(
-                        imageVector = if (sshKey.keyType.startsWith("sk-")) Icons.Filled.Key
-                        else Icons.Filled.VpnKey,
+                        // A provider-held key is worth telling apart at a
+                        // glance: it is the one that needs another app present
+                        // to connect (#487).
+                        imageVector = when {
+                            sshKey.keyType == OpenKeychainKeyData.KEY_TYPE -> Icons.Filled.Badge
+                            sshKey.keyType.startsWith("sk-") -> Icons.Filled.Key
+                            else -> Icons.Filled.VpnKey
+                        },
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 12.dp),
@@ -1718,6 +1753,13 @@ private fun SshKeyAuditRow(
             }
         }
 
+        // Two kinds of key have no private half stored here: a FIDO2/SK key
+        // lives on the token, and a provider key lives in another app (#487).
+        // Exporting, offering in the try-every-key pool, or attaching a
+        // certificate all assume material Haven does not have.
+        val isProviderKey = sshKey.keyType == OpenKeychainKeyData.KEY_TYPE
+        val havenHoldsPrivateKey = !sshKey.keyType.startsWith("sk-") && !isProviderKey
+
         DropdownMenu(
             expanded = menuOpen,
             onDismissRequest = onMenuDismiss,
@@ -1764,17 +1806,19 @@ private fun SshKeyAuditRow(
             // Per-key settings — moved off the card into the menu to keep the key
             // rows compact on tall phones; current state shows as a trailing ✓ and
             // as the top-right card badges (#238).
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.keys_require_biometric)) },
-                onClick = { onBiometricToggle(KeystoreFlag.BIOMETRIC_PROTECTED !in flags); onMenuDismiss() },
-                leadingIcon = { Icon(Icons.Filled.Fingerprint, contentDescription = null) },
-                trailingIcon = {
-                    if (KeystoreFlag.BIOMETRIC_PROTECTED in flags) {
-                        Icon(Icons.Filled.Check, contentDescription = null)
-                    }
-                },
-            )
-            if (!sshKey.keyType.startsWith("sk-")) {
+            if (!isProviderKey) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.keys_require_biometric)) },
+                    onClick = { onBiometricToggle(KeystoreFlag.BIOMETRIC_PROTECTED !in flags); onMenuDismiss() },
+                    leadingIcon = { Icon(Icons.Filled.Fingerprint, contentDescription = null) },
+                    trailingIcon = {
+                        if (KeystoreFlag.BIOMETRIC_PROTECTED in flags) {
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                        }
+                    },
+                )
+            }
+            if (havenHoldsPrivateKey) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.keys_offer_for_connections)) },
                     onClick = { onEnabledForAuthToggle(!sshKey.enabledForAuth); onMenuDismiss() },
@@ -1806,7 +1850,7 @@ private fun SshKeyAuditRow(
                 )
             }
             HorizontalDivider()
-            if (!sshKey.keyType.startsWith("sk-")) {
+            if (havenHoldsPrivateKey) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.keys_export_private_key)) },
                     onClick = { onMenuDismiss(); onExportPrivate() },

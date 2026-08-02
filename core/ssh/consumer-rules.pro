@@ -12,3 +12,10 @@
 -dontwarn com.jcraft.jsch.Slf4jLogger
 -dontwarn com.jcraft.jsch.jgss.**
 -dontwarn com.jcraft.jsch.JUnixSocketFactory
+
+# SSH Authentication API (#487). Both are resolved by NAME at runtime, so a
+# rename by R8 breaks them in release builds only:
+#   - the AIDL interface is matched against the provider app's descriptor;
+#   - the error Parcelable is looked up by class name by the unmarshaller,
+#     which is what reads a failed request's reason.
+-keep class org.openintents.ssh.authentication.** { *; }

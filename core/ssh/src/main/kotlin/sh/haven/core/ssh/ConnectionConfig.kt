@@ -200,6 +200,31 @@ data class ConnectionConfig(
             }
         }
         /**
+         * A key held by another app — signing delegated over the SSH
+         * Authentication API, usually to OpenKeychain and through it to an
+         * OpenPGP authentication subkey, often on a hardware token (#487).
+         *
+         * [keyData] is a serialised
+         * [sh.haven.core.ssh.openkeychain.OpenKeychainKeyData]: which app to
+         * ask, which key, and the public half to offer. Structurally this is
+         * [FidoKey] with a different signer at the far end — neither carries
+         * a private key.
+         */
+        data class ProviderKey(
+            val keyData: ByteArray,
+            /** Key name, shown in the provider's unlock prompt context. */
+            val keyLabel: String? = null,
+        ) : AuthMethod {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is ProviderKey) return false
+                return keyData.contentEquals(other.keyData) && keyLabel == other.keyLabel
+            }
+
+            override fun hashCode(): Int = keyData.contentHashCode() * 31 + (keyLabel?.hashCode() ?: 0)
+        }
+
+        /**
          * FIDO2 SK key — signing delegated to hardware security key.
          * Optional [certBytes] (raw `id_xxx-cert.pub` content) pairs the
          * hardware-resident key with a CA-issued certificate so servers

@@ -19711,9 +19711,25 @@
      }
     },
     {
+     "name": "keys_from_provider",
+     "en": "Use a key from %1$s",
+     "comment": "#487: a key held by another app (OpenKeychain), signed there, never copied here",
+     "args": [
+      "%1$s"
+     ],
+     "t": {}
+    },
+    {
+     "name": "keys_from_provider_hint",
+     "en": "Pick a key that app holds. It signs on Haven\\'s behalf — the private key stays where it is, including on a hardware token.",
+     "comment": "#487: a key held by another app (OpenKeychain), signed there, never copied here",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "keys_security_key_setup",
      "en": "Set up a new key on it",
-     "comment": "Security key (YubiKey) — one menu entry, two paths",
+     "comment": "#487: a key held by another app (OpenKeychain), signed there, never copied here",
      "args": [],
      "t": {
       "ar": "إعداد مفتاح جديد عليه",
@@ -19732,7 +19748,7 @@
     {
      "name": "keys_security_key_setup_hint",
      "en": "Create an SSH key on the security key (sets a PIN if it is new). No laptop or ssh-keygen.",
-     "comment": "Security key (YubiKey) — one menu entry, two paths",
+     "comment": "#487: a key held by another app (OpenKeychain), signed there, never copied here",
      "args": [],
      "t": {
       "ar": "أنشئ مفتاح SSH على مفتاح الأمان (يضبط رمز PIN إذا كان جديدًا). دون حاسوب محمول أو ssh-keygen.",
@@ -19751,7 +19767,7 @@
     {
      "name": "keys_security_key_import",
      "en": "Import keys already on it",
-     "comment": "Security key (YubiKey) — one menu entry, two paths",
+     "comment": "#487: a key held by another app (OpenKeychain), signed there, never copied here",
      "args": [],
      "t": {
       "ar": "استيراد المفاتيح الموجودة عليه بالفعل",
@@ -19770,7 +19786,7 @@
     {
      "name": "keys_security_key_import_hint",
      "en": "Add resident SSH-SK credentials already stored on the key (made elsewhere with ssh-keygen -O resident).",
-     "comment": "Security key (YubiKey) — one menu entry, two paths",
+     "comment": "#487: a key held by another app (OpenKeychain), signed there, never copied here",
      "args": [],
      "t": {
       "ar": "أضِف بيانات اعتماد SSH-SK المقيمة المخزّنة على المفتاح بالفعل (التي أُنشئت في مكان آخر عبر ssh-keygen -O resident).",

@@ -24,6 +24,7 @@ import sh.haven.core.ssh.HostKeyResult
 import sh.haven.core.ssh.HostKeyVerifier
 import sh.haven.core.ssh.SessionManager
 import sh.haven.core.ssh.SshClient
+import sh.haven.core.ssh.OpenKeychainClientFactory
 import sh.haven.core.ssh.SshSessionManager
 import sh.haven.core.ssh.SshSessionManager.SessionState
 import sh.haven.core.et.EtSessionManager
@@ -2504,6 +2505,7 @@ class TerminalViewModel @Inject constructor(
             } else null
             val client = reuseClient ?: SshClient().apply {
                 fidoAuthenticator = this@TerminalViewModel.fidoAuthenticator
+                openKeychainClients = OpenKeychainClientFactory.from(appContext)
             }
             val sessionId = sessionManager.registerSession(profileId, label, client)
             try {
@@ -2681,6 +2683,7 @@ class TerminalViewModel @Inject constructor(
             } else null
             val client = reuseClient ?: SshClient().apply {
                 fidoAuthenticator = this@TerminalViewModel.fidoAuthenticator
+                openKeychainClients = OpenKeychainClientFactory.from(appContext)
             }
             val sessionId = sessionManager.registerSession(profileId, label, client)
             try {

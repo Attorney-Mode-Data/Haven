@@ -963,6 +963,7 @@ class SshSessionManager @Inject constructor(
                     // security-key profile can re-authenticate on reconnect —
                     // otherwise addFidoIdentity NPEs on the null authenticator.
                     fidoAuthenticator = _sessions.value[sessionId]?.client?.fidoAuthenticator
+                    openKeychainClients = _sessions.value[sessionId]?.client?.openKeychainClients
                 }
                 val hostKeyEntry = newClient.connectBlocking(
                     config,

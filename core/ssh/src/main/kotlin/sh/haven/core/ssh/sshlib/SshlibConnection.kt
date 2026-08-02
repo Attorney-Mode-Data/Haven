@@ -83,6 +83,9 @@ internal class SshlibConnection : SshConnection {
     /** Unused on this engine — FIDO2 auth is refused by the capability gate. */
     override var fidoAuthenticator: FidoAuthenticator? = null
 
+    /** Unused on this engine — provider keys are refused by the same gate (#487). */
+    override var openKeychainClients: sh.haven.core.ssh.OpenKeychainClientFactory? = null
+
     /** Unused on this engine — sshlib has no JSch-style protocol logger hook. */
     override var verboseLogger: SshVerboseLogger? = null
 

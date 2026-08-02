@@ -27,6 +27,13 @@ interface SshConnection : Closeable {
     /** Set before connecting with a FidoKey auth method. */
     var fidoAuthenticator: FidoAuthenticator?
 
+    /**
+     * Set before connecting with a ProviderKey auth method (#487). Supplies a
+     * client for the app holding the key; a [android.content.Context] has to
+     * come from outside, since binding to that app's service needs one.
+     */
+    var openKeychainClients: OpenKeychainClientFactory?
+
     /** Set before connect() to capture verbose SSH protocol output. */
     var verboseLogger: SshVerboseLogger?
 

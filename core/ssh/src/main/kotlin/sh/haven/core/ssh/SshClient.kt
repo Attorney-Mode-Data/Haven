@@ -44,6 +44,8 @@ class SshClient : SshConnection {
     private val jsch = JSch()
     /** Set before connecting with a FidoKey auth method. */
     override var fidoAuthenticator: FidoAuthenticator? = null
+    /** Set before connecting with a ProviderKey auth method (#487). */
+    override var openKeychainClients: OpenKeychainClientFactory? = null
     /** Set before connect() to capture verbose SSH protocol output. */
     override var verboseLogger: SshVerboseLogger? = null
     private var session: Session? = null
@@ -182,6 +184,7 @@ class SshClient : SshConnection {
                 // profile listing several can accept whichever key the user
                 // actually presents instead of insisting on the first (#237).
                 is ConnectionConfig.AuthMethod.FidoKey -> { }
+                is ConnectionConfig.AuthMethod.ProviderKey -> addProviderIdentity(auth, sess)
             }
         }
         applyFidoAuth(
@@ -271,6 +274,45 @@ class SshClient : SshConnection {
                 "(add 'HavenSshEngine sshlib' to its SSH Options), or reconnect the jump " +
                 "host on JSch.",
         )
+
+    /**
+     * Offer a key held by another app, signing over the SSH Authentication
+     * API (#487).
+     *
+     * Unlike an SK key there is no detection step: the provider is asked for
+     * a signature only if the server challenges this key, so nothing prompts
+     * the user unless their key is actually wanted.
+     *
+     * [PubkeyAcceptedAlgorithms] gains the key's own algorithm. For RSA it
+     * also gains the SHA-2 names: a server that has dropped `ssh-rsa` — most
+     * have — accepts the same key under `rsa-sha2-256`/`512`, and the
+     * provider signs whichever JSch settles on.
+     */
+    private fun addProviderIdentity(auth: ConnectionConfig.AuthMethod.ProviderKey, sess: Session) {
+        val keyData = sh.haven.core.ssh.openkeychain.OpenKeychainKeyData.deserialize(auth.keyData)
+        val factory = openKeychainClients ?: throw IllegalStateException(
+            "Key '${auth.keyLabel ?: keyData.description}' is held by " +
+                "${keyData.providerPackage}, but no client for it was configured on this " +
+                "SshClient — set openKeychainClients before connect().",
+        )
+        Log.d(TAG, "Provider key: alg=${keyData.algorithm} via ${keyData.providerPackage}")
+        jsch.addIdentity(
+            sh.haven.core.ssh.openkeychain.OpenKeychainIdentity(
+                keyData,
+                factory.create(keyData.providerPackage),
+            ),
+            null,
+        )
+        val advertised = when (keyData.algorithm) {
+            "ssh-rsa" -> "rsa-sha2-512,rsa-sha2-256,ssh-rsa"
+            else -> keyData.algorithm
+        }
+        val currentAlgs = sess.getConfig("PubkeyAcceptedAlgorithms") ?: ""
+        sess.setConfig(
+            "PubkeyAcceptedAlgorithms",
+            if (currentAlgs.isNotEmpty()) "$advertised,$currentAlgs" else advertised,
+        )
+    }
 
     private fun addFidoIdentity(auth: ConnectionConfig.AuthMethod.FidoKey, sess: Session) {
         val skData = SkKeyData.deserialize(auth.skKeyData)

@@ -32,3 +32,10 @@ sh.haven.et.transport.EtTransport
 # Reflected by HavenUiBridge.dumpUi (dump_haven_ui) — see app/proguard-rules.pro (#355).
 androidx.compose.ui.platform.AndroidComposeView
 androidx.compose.ui.semantics.SemanticsOwner
+
+# SSH Authentication API — OpenKeychain and other external key providers (#487).
+# The binder matches the interface descriptor by name, and the error Parcelable
+# is unmarshalled by class name; renaming either breaks provider-held keys in
+# release builds while every debug test still passes.
+org.openintents.ssh.authentication.ISshAuthenticationService
+org.openintents.ssh.authentication.SshAuthenticationApiError
