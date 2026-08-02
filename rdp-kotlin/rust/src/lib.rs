@@ -1226,8 +1226,8 @@ fn run_rdp_session(
         return Err(format!("TLS handshake failed: {}", detail));
     }
 
-    let tls_stream = rustls::StreamOwned::new(tls_conn, socket);
-    let mut tls_framed = Framed::new_with_leftover(tls_stream, leftover);
+    let tls_shared = SharedTls::new(rustls::StreamOwned::new(tls_conn, socket));
+    let mut tls_framed = Framed::new_with_leftover(tls_shared.clone(), leftover);
 
     let upgraded = mark_as_upgraded(should_upgrade, &mut connector);
 
@@ -1241,9 +1241,8 @@ fn run_rdp_session(
     // always wrong. Reproducer (Devolutions/sspi-rs#651) shows full-DER
     // → AlertReceived(InternalError) and SPKI → success against the
     // same VM with the same credentials.
-    let raw_cert_der = tls_framed
-        .get_inner()
-        .0
+    let raw_cert_der = tls_shared
+        .lock()
         .conn
         .peer_certificates()
         .and_then(|certs| certs.first())
@@ -1373,6 +1372,84 @@ fn run_rdp_session(
     // Input state tracking
     let mut input_db = ironrdp_input::Database::new();
 
+    // #477: on a fast-path server, move input off the session loop entirely.
+    //
+    // Encoding fast-path input is a pure function of the events — ActiveStage's
+    // `process_fastpath_input` only reaches for the image to composite a
+    // client-side pointer, and Haven sets `pointer_software_rendering: false`
+    // so `image.pointer` is never populated and `move_pointer` is a no-op that
+    // records coordinates nobody reads (we draw the cursor in Kotlin, #212).
+    // That leaves the socket as the only thing input needs, so it can run on
+    // its own thread and stop waiting behind frame decodes.
+    //
+    // Slow-path servers (VirtualBox VRDP, #422) keep the in-loop path below:
+    // their PDUs go through `active_stage.encode_static`, which is not shareable.
+    let input_counters = Arc::new(InputCounters::default());
+    let stop_input = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let input_thread = if fastpath_input_supported {
+        let queue = Arc::clone(input_queue);
+        let mut sink = tls_shared.clone();
+        let st = Arc::clone(state);
+        let stop = Arc::clone(&stop_input);
+        let counters = Arc::clone(&input_counters);
+        // The thread keeps its own key/button state. `input_db` above is still
+        // fresh at this point and is only touched by the slow-path branch,
+        // which never runs while this thread exists.
+        let mut db = ironrdp_input::Database::new();
+        Some(std::thread::spawn(move || {
+            use ironrdp_pdu::input::fast_path::FastPathInput;
+            use std::io::Write as _;
+            use std::sync::atomic::Ordering;
+            loop {
+                if stop.load(Ordering::Acquire) || st.read().map(|s| s.shutdown).unwrap_or(true) {
+                    break;
+                }
+                // Scope the guard: a `match queue.lock() { .. }` holds it for the
+                // whole match, so sleeping in an arm would idle *while holding
+                // the queue* and starve the producer — measured as the offered
+                // rate collapsing from 60/s to 3.5/s.
+                let pending: Vec<InputEvent> = {
+                    match queue.lock() {
+                        Ok(mut q) => std::mem::take(&mut *q),
+                        Err(_) => break,
+                    }
+                };
+                if pending.is_empty() {
+                    // 3ms keeps a 60Hz drag from waiting a whole frame without
+                    // spinning a core when idle.
+                    std::thread::sleep(std::time::Duration::from_millis(3));
+                    continue;
+                }
+                let n = pending.len() as u64;
+                let events = fastpath_events_for(&mut db, pending);
+                if events.is_empty() {
+                    continue;
+                }
+                let frame = match FastPathInput::new(events.to_vec())
+                    .map_err(|e| format!("{e}"))
+                    .and_then(|pdu| ironrdp_core::encode_vec(&pdu).map_err(|e| format!("{e}")))
+                {
+                    Ok(f) => f,
+                    Err(e) => {
+                        error!("Fast-path input encode error: {e}");
+                        continue;
+                    }
+                };
+                if let Err(e) = sink.write_all(&frame) {
+                    // The session loop owns teardown; a write failing here just
+                    // means the connection is going away.
+                    debug!("Input write ended: {e}");
+                    break;
+                }
+                counters.flushes.fetch_add(1, Ordering::Relaxed);
+                counters.events.fetch_add(n, Ordering::Relaxed);
+            }
+            debug!("Input thread exiting");
+        }))
+    } else {
+        None
+    };
+
     // #477: queued input can only be flushed once per loop iteration, and each
     // iteration blocks on the socket read above. At a flat 100ms that caps
     // input at ~10 flushes/sec whenever the server is quiet, so a finger drag
@@ -1391,7 +1468,7 @@ fn run_rdp_session(
 
     // #466: nothing in the display path was timed, so "it is slow" could not be
     // attributed to a stage. Costs a couple of Instant::now() per frame.
-    let mut perf = FramePerf::new();
+    let mut perf = FramePerf::new(Arc::clone(&input_counters));
 
     // A slow-path PDU that arrived truncated, waiting for the rest (#422).
     // Holds at most one fragment: if the next frame does not complete it, both
@@ -1407,122 +1484,58 @@ fn run_rdp_session(
             }
         }
 
-        // Process queued input events
-        let pending_inputs: Vec<InputEvent> = {
-            if let Ok(mut q) = input_queue.lock() {
-                std::mem::take(&mut *q)
-            } else {
-                Vec::new()
-            }
+        // Process queued input events.
+        //
+        // With the input thread running (#477) the queue is drained there, so
+        // this yields nothing and the adaptive read timeout below is skipped —
+        // that existed only to flush input sooner, and the read is no longer
+        // what gates input. Slow-path servers still take this path.
+        let pending_inputs: Vec<InputEvent> = if input_thread.is_some() {
+            Vec::new()
+        } else if let Ok(mut q) = input_queue.lock() {
+            std::mem::take(&mut *q)
+        } else {
+            Vec::new()
         };
 
         if !pending_inputs.is_empty() {
+            use std::sync::atomic::Ordering;
             last_input_at = Some(std::time::Instant::now());
+            input_counters.flushes.fetch_add(1, Ordering::Relaxed);
+            input_counters.events.fetch_add(pending_inputs.len() as u64, Ordering::Relaxed);
         }
-        let want_timeout = match last_input_at {
-            Some(t) if t.elapsed() < INPUT_ACTIVE_WINDOW => INPUT_ACTIVE_TIMEOUT,
-            _ => IDLE_TIMEOUT,
-        };
-        if want_timeout != current_timeout
-            && stream_ctl.set_read_timeout(Some(want_timeout)).is_ok()
-        {
-            current_timeout = want_timeout;
-        }
-
-        for event in pending_inputs {
-            let fastpath_events = match event {
-                InputEvent::Key { scancode, pressed } => {
-                    let op = if pressed {
-                        ironrdp_input::Operation::KeyPressed(
-                            ironrdp_input::Scancode::from_u16(scancode)
-                        )
-                    } else {
-                        ironrdp_input::Operation::KeyReleased(
-                            ironrdp_input::Scancode::from_u16(scancode)
-                        )
-                    };
-                    input_db.apply(std::iter::once(op))
-                }
-                InputEvent::UnicodeKey { ch, pressed } => {
-                    if let Some(c) = char::from_u32(ch) {
-                        let op = if pressed {
-                            ironrdp_input::Operation::UnicodeKeyPressed(c)
-                        } else {
-                            ironrdp_input::Operation::UnicodeKeyReleased(c)
-                        };
-                        input_db.apply(std::iter::once(op))
-                    } else {
-                        smallvec::SmallVec::new()
-                    }
-                }
-                InputEvent::MouseMove { x, y } => {
-                    let op = ironrdp_input::Operation::MouseMove(
-                        ironrdp_input::MousePosition { x, y }
-                    );
-                    input_db.apply(std::iter::once(op))
-                }
-                InputEvent::MouseButton { button, pressed } => {
-                    let btn = match button {
-                        MouseButton::Left => ironrdp_input::MouseButton::Left,
-                        MouseButton::Right => ironrdp_input::MouseButton::Right,
-                        MouseButton::Middle => ironrdp_input::MouseButton::Middle,
-                    };
-                    let op = if pressed {
-                        ironrdp_input::Operation::MouseButtonPressed(btn)
-                    } else {
-                        ironrdp_input::Operation::MouseButtonReleased(btn)
-                    };
-                    input_db.apply(std::iter::once(op))
-                }
-                InputEvent::MouseWheel { vertical: _, delta } => {
-                    let op = ironrdp_input::Operation::WheelRotations(
-                        ironrdp_input::WheelRotations {
-                            is_vertical: true,
-                            rotation_units: delta as i16,
-                        }
-                    );
-                    input_db.apply(std::iter::once(op))
-                }
-                InputEvent::ClipboardText(_text) => {
-                    // Clipboard handled via CLIPRDR channel, not input
-                    smallvec::SmallVec::new()
-                }
+        perf.maybe_report();
+        if input_thread.is_none() {
+            let want_timeout = match last_input_at {
+                Some(t) if t.elapsed() < INPUT_ACTIVE_WINDOW => INPUT_ACTIVE_TIMEOUT,
+                _ => IDLE_TIMEOUT,
             };
+            if want_timeout != current_timeout
+                && stream_ctl.set_read_timeout(Some(want_timeout)).is_ok()
+            {
+                current_timeout = want_timeout;
+            }
+        }
 
-            if !fastpath_events.is_empty() {
-                if !fastpath_input_supported {
-                    // #422: slow-path input for servers that never negotiated
-                    // fast-path (VirtualBox VRDP). One TS_INPUT_PDU per apply.
-                    let events: Vec<_> = fastpath_events.iter().filter_map(slow_path_input_event).collect();
-                    if !events.is_empty() {
-                        use ironrdp_pdu::input::InputEventPdu;
-                        use ironrdp_pdu::rdp::headers::ShareDataPdu;
-                        let mut buf = ironrdp_core::WriteBuf::new();
-                        match active_stage.encode_static(&mut buf, ShareDataPdu::Input(InputEventPdu(events))) {
-                            Ok(_) => {
-                                if let Err(e) = tls_framed.write_all(buf.filled()) {
-                                    error!("Write input error: {:?}", e);
-                                }
-                            }
-                            Err(e) => {
-                                error!("Slow-path input encode error: {:?}", e);
-                            }
+        // Slow-path servers only — the fast-path case is handled on the input
+        // thread, which leaves `pending_inputs` empty here (#477).
+        if !pending_inputs.is_empty() {
+            let fastpath_events = fastpath_events_for(&mut input_db, pending_inputs);
+            // #422: slow-path input for servers that never negotiated fast-path
+            // (VirtualBox VRDP). One TS_INPUT_PDU per batch.
+            let events: Vec<_> = fastpath_events.iter().filter_map(slow_path_input_event).collect();
+            if !events.is_empty() {
+                use ironrdp_pdu::input::InputEventPdu;
+                use ironrdp_pdu::rdp::headers::ShareDataPdu;
+                let mut buf = ironrdp_core::WriteBuf::new();
+                match active_stage.encode_static(&mut buf, ShareDataPdu::Input(InputEventPdu(events))) {
+                    Ok(_) => {
+                        if let Err(e) = tls_framed.write_all(buf.filled()) {
+                            error!("Write input error: {:?}", e);
                         }
                     }
-                } else {
-                    match active_stage.process_fastpath_input(&mut image, &fastpath_events) {
-                        Ok(outputs) => {
-                            for output in outputs {
-                                if let ActiveStageOutput::ResponseFrame(frame) = output {
-                                    if let Err(e) = tls_framed.write_all(&frame) {
-                                        error!("Write input error: {:?}", e);
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            error!("Input processing error: {:?}", e);
-                        }
+                    Err(e) => {
+                        error!("Slow-path input encode error: {:?}", e);
                     }
                 }
             }
@@ -1754,6 +1767,15 @@ fn run_rdp_session(
         }
     }
 
+    // A session that ends on a read error rather than a shutdown request never
+    // sets state.shutdown, and the caller reads that flag to tell a clean exit
+    // from a failure — so signal the input thread separately rather than
+    // forging a shutdown it can misread (#477).
+    stop_input.store(true, std::sync::atomic::Ordering::Release);
+    if let Some(handle) = input_thread {
+        let _ = handle.join();
+    }
+
     Ok(())
 }
 
@@ -1773,10 +1795,133 @@ struct FramePerf {
     read_us: u64,
     process_us: u64,
     publish_us: u64,
+    /// Writes that carried input to the wire, and the events in them (#477).
+    /// Written by whichever side is delivering input — the dedicated thread on
+    /// a fast-path server, the session loop on a slow-path one — so the same
+    /// perf line describes both. Flushes far below the offered rate means
+    /// input is being batched behind something.
+    input: Arc<InputCounters>,
     since: std::time::Instant,
 }
 
 const PERF_REPORT_FRAMES: u64 = 60;
+const PERF_REPORT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// The TLS session shared between the session loop and the input thread (#477).
+///
+/// Input used to be flushed once per loop iteration, and every iteration also
+/// decoded a frame. Measured against a shadow server at 1280x800, the loop
+/// spent ~99% of its wall time inside `active_stage.process()`, so 60 mouse
+/// moves a second reached the wire as ~3.5 bursts a second — smooth under the
+/// finger, jumpy on the server.
+///
+/// Sharing works because **decoding never touches the socket**: `process()`
+/// operates on the `DecodedImage` and the active stage, and only the short
+/// response write at the end goes near the stream. So a writer contends with
+/// the *read* — bounded by the read timeout, 15ms while interacting — and
+/// never with the decode.
+///
+/// Each `read`/`write` takes the lock and drops it, so `Framed`'s multi-call
+/// reads interleave with input writes at TLS-record granularity, which rustls
+/// handles: it is one `ClientConnection` mutated under one mutex, never two.
+#[derive(Clone)]
+struct SharedTls(Arc<Mutex<rustls::StreamOwned<rustls::ClientConnection, std::net::TcpStream>>>);
+
+impl SharedTls {
+    fn new(stream: rustls::StreamOwned<rustls::ClientConnection, std::net::TcpStream>) -> Self {
+        Self(Arc::new(Mutex::new(stream)))
+    }
+
+    /// Lock, recovering from poisoning. A panicking peer thread leaves the TLS
+    /// state untouched (we only ever hold the guard across one read or write),
+    /// so continuing beats tearing down a working session.
+    fn lock(&self) -> std::sync::MutexGuard<'_, rustls::StreamOwned<rustls::ClientConnection, std::net::TcpStream>> {
+        self.0.lock().unwrap_or_else(|e| e.into_inner())
+    }
+}
+
+impl std::io::Read for SharedTls {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.lock().read(buf)
+    }
+}
+
+impl std::io::Write for SharedTls {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.lock().write(buf)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.lock().flush()
+    }
+}
+
+/// Input delivery counters, shared so the input thread can record what it sent
+/// and the session loop's perf line can report it (#477).
+#[derive(Default)]
+struct InputCounters {
+    flushes: std::sync::atomic::AtomicU64,
+    events: std::sync::atomic::AtomicU64,
+}
+
+/// Translate queued [`InputEvent`]s into fast-path events via the input
+/// database, which tracks key/button state across calls.
+///
+/// A whole batch is accumulated into one `Vec` so a drag leaves as a single
+/// PDU rather than one per position — fewer writes, and the positions stay
+/// contiguous on the wire.
+fn fastpath_events_for(
+    db: &mut ironrdp_input::Database,
+    pending: Vec<InputEvent>,
+) -> Vec<ironrdp_pdu::input::fast_path::FastPathInputEvent> {
+    let mut out = Vec::new();
+    for event in pending {
+        let ops = match event {
+            InputEvent::Key { scancode, pressed } => {
+                let sc = ironrdp_input::Scancode::from_u16(scancode);
+                db.apply(std::iter::once(if pressed {
+                    ironrdp_input::Operation::KeyPressed(sc)
+                } else {
+                    ironrdp_input::Operation::KeyReleased(sc)
+                }))
+            }
+            InputEvent::UnicodeKey { ch, pressed } => match char::from_u32(ch) {
+                Some(c) => db.apply(std::iter::once(if pressed {
+                    ironrdp_input::Operation::UnicodeKeyPressed(c)
+                } else {
+                    ironrdp_input::Operation::UnicodeKeyReleased(c)
+                })),
+                None => smallvec::SmallVec::new(),
+            },
+            InputEvent::MouseMove { x, y } => db.apply(std::iter::once(
+                ironrdp_input::Operation::MouseMove(ironrdp_input::MousePosition { x, y }),
+            )),
+            InputEvent::MouseButton { button, pressed } => {
+                let btn = match button {
+                    MouseButton::Left => ironrdp_input::MouseButton::Left,
+                    MouseButton::Right => ironrdp_input::MouseButton::Right,
+                    MouseButton::Middle => ironrdp_input::MouseButton::Middle,
+                };
+                db.apply(std::iter::once(if pressed {
+                    ironrdp_input::Operation::MouseButtonPressed(btn)
+                } else {
+                    ironrdp_input::Operation::MouseButtonReleased(btn)
+                }))
+            }
+            InputEvent::MouseWheel { vertical: _, delta } => {
+                db.apply(std::iter::once(ironrdp_input::Operation::WheelRotations(
+                    ironrdp_input::WheelRotations {
+                        is_vertical: true,
+                        rotation_units: delta as i16,
+                    },
+                )))
+            }
+            // Clipboard travels on the CLIPRDR channel, not the input path.
+            InputEvent::ClipboardText(_) => smallvec::SmallVec::new(),
+        };
+        out.extend(ops);
+    }
+    out
+}
 
 /// How many extra frames reactivation will pull in to complete a PDU that
 /// arrived split (#422). The observed case needs exactly one; the bound keeps
@@ -1784,30 +1929,45 @@ const PERF_REPORT_FRAMES: u64 = 60;
 const REACTIVATION_MAX_JOINS: u32 = 4;
 
 impl FramePerf {
-    fn new() -> Self {
+    fn new(input: Arc<InputCounters>) -> Self {
         Self {
             frames: 0,
             read_us: 0,
             process_us: 0,
             publish_us: 0,
+            input,
             since: std::time::Instant::now(),
         }
     }
 
     fn maybe_report(&mut self) {
-        if self.frames < PERF_REPORT_FRAMES {
+        // Frame count alone never fired on the EGFX path — surface updates
+        // publish through the egfx module rather than
+        // ActiveStageOutput::GraphicsUpdate, so `frames` stayed at 0 on exactly
+        // the sessions worth profiling. Report on elapsed time as well, and
+        // call this once per loop iteration so input-only activity (#477) is
+        // visible even when no frame arrives.
+        use std::sync::atomic::Ordering;
+        let elapsed = self.since.elapsed();
+        let idle = self.frames == 0 && self.input.events.load(Ordering::Relaxed) == 0;
+        if idle || (self.frames < PERF_REPORT_FRAMES && elapsed < PERF_REPORT_INTERVAL) {
             return;
         }
-        let secs = self.since.elapsed().as_secs_f64().max(0.000_001);
-        let n = self.frames;
+        let input_flushes = self.input.flushes.swap(0, Ordering::Relaxed);
+        let input_events = self.input.events.swap(0, Ordering::Relaxed);
+        let secs = elapsed.as_secs_f64().max(0.000_001);
+        let frames = self.frames;
+        let n = self.frames.max(1);
         info!(
-            "RDP perf: {:.1} fps over {n} frames — per frame: read {}us, process {}us, publish {}us (read = blocked on server, so a large read means the server is the limit, not us)",
-            n as f64 / secs,
+            "RDP perf: {:.1} fps over {frames} frames — per frame: read {}us, process {}us, publish {}us (read = blocked on server, so a large read means the server is the limit, not us); input {:.1} flushes/s, {:.1} events/s (#477: flushes/s tracking fps means input is stuck behind decode)",
+            frames as f64 / secs,
             self.read_us / n,
             self.process_us / n,
             self.publish_us / n,
+            input_flushes as f64 / secs,
+            input_events as f64 / secs,
         );
-        *self = Self::new();
+        *self = Self::new(Arc::clone(&self.input));
     }
 }
 

@@ -147,6 +147,52 @@ fn main() -> ExitCode {
         return ExitCode::from(1);
     }
 
+    // #477: RDP_MOUSE_HZ spawns a thread that sweeps the cursor back and forth
+    // at a fixed offered rate, standing in for a finger drag. Pair it with the
+    // session loop's "input N events/s" perf line: offered here vs delivered
+    // there is exactly the coupling this issue is about. The generator is
+    // deliberately on its own thread so the offered rate is independent of
+    // anything the session loop is doing.
+    if let Ok(hz) = std::env::var("RDP_MOUSE_HZ").map(|s| s.parse::<u64>().unwrap_or(0)) {
+        if hz > 0 {
+            let c = Arc::clone(&client);
+            let conn = connected.clone();
+            let period = Duration::from_micros(1_000_000 / hz);
+            std::thread::spawn(move || {
+                // RDP_MOUSE_STEP=0 parks the cursor: same PDU rate, no
+                // server-side pointer motion. Separates client-side lock
+                // contention from the server doing more repaint work now that
+                // input actually arrives promptly.
+                let step: u16 = std::env::var("RDP_MOUSE_STEP")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(4);
+                let mut x: u16 = 100;
+                let mut forward = true;
+                let mut sent: u64 = 0;
+                let start = Instant::now();
+                let mut last_log = Instant::now();
+                while conn.load(Ordering::Acquire) || start.elapsed() < Duration::from_secs(10) {
+                    if conn.load(Ordering::Acquire) {
+                        c.send_mouse_move(x, 300);
+                        sent += 1;
+                        if forward { x += step } else { x -= step }
+                        if x >= 900 { forward = false }
+                        if x <= 100 { forward = true }
+                        if last_log.elapsed() >= Duration::from_secs(5) {
+                            eprintln!(
+                                "[mouse] offered {:.1}/s ({sent} total)",
+                                sent as f64 / start.elapsed().as_secs_f64()
+                            );
+                            last_log = Instant::now();
+                        }
+                    }
+                    std::thread::sleep(period);
+                }
+            });
+        }
+    }
+
     // #422: RDP_KEYS = space/comma-separated hex scancodes sent as press +
     // release pairs after connect (0xE000 marker = extended, matching the
     // Kotlin SC_* constants). RDP_KEY_DELAY = seconds to wait first (default
