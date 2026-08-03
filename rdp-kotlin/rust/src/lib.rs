@@ -535,6 +535,17 @@ fn build_config(config: &RdpConfig) -> ironrdp_connector::Config {
         keyboard_subtype: 0,
         keyboard_functional_keys_count: 12,
         keyboard_layout: 0x0409, // US English
+        // Advertised network profile. Haven is a mobile client and the link is
+        // usually WAN or worse, but this only tunes the server's own
+        // heuristics — it does not gate any feature we depend on.
+        connection_type: gcc::ConnectionType::Lan,
+        // The whole reason the vendored connector fork existed: without this
+        // bit, modern Windows servers never open the EGFX dynamic virtual
+        // channel and Haven's ClearCodec/RemoteFX-Progressive decoders are
+        // never fed (#418, #425). The fork OR'd it in unconditionally; upstream
+        // takes it as an opt-in Config flag (Devolutions/IronRDP#1237), and
+        // Haven has the EGFX DVC processor wired, so it opts in.
+        support_dyn_vc_gfx_protocol: true,
         ime_file_name: String::new(),
         bitmap: Some(BitmapConfig {
             lossy_compression: true,
@@ -1651,6 +1662,18 @@ fn run_rdp_session(
                                     error!("Server disconnect: {}", reason);
                                     break;
                                 }
+                                // Both new in Devolutions/IronRDP#1501. Logged
+                                // rather than acted on: Haven has no session-resume
+                                // path to spend the cookie on, and storing a
+                                // credential-equivalent token we would never use
+                                // is not a trade worth making. Revisit if
+                                // reconnect-after-network-drop is ever built.
+                                ActiveStageOutput::SaveSessionInfo { logon_complete } => {
+                                    debug!("Save Session Info: logon_complete={logon_complete}");
+                                }
+                                ActiveStageOutput::AutoReconnectCookie(_) => {
+                                    debug!("Server issued an auto-reconnect cookie; not retained");
+                                }
                                 ActiveStageOutput::DeactivateAll => {
                                     // session 0.11.0 stopped handing the
                                     // activation sequence out with this event;
@@ -2420,6 +2443,10 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
             input_flags: _,
             enable_server_pointer,
             pointer_software_rendering,
+            // refresh_rect_support / suppress_output_support and anything
+            // upstream adds next: reactivation reuses the connect-time
+            // decisions, so nothing here consumes them.
+            ..
         } => {
             info!(
                 "Reactivation finalized: desktop {}x{}",
@@ -2437,7 +2464,10 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
                     share_id,
                     enable_server_pointer,
                     pointer_software_rendering,
-                    bulk_decompressor: None,
+                    // `bulk_decompressor` is gone: the processor always owns one
+                    // now (Devolutions/IronRDP#1255), which also means a
+                    // reactivation no longer drops the decompression history a
+                    // later compressed update refers back to.
                 }
                 .build(),
             );

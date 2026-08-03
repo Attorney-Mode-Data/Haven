@@ -76,24 +76,47 @@ optional = true
 [build-dependencies]
 uniffi = { version = "0.32", features = ["build"] }
 
-# Local fork of ironrdp-connector (0.10.0) carrying three Haven patches:
+# IronRDP comes from git, not crates.io.
 #
-#  1. Advertise SUPPORT_DYN_VC_GFX_PROTOCOL (0x0100) in the Client Core Data so
-#     servers open the EGFX dynamic virtual channel. Upstream rejects an
-#     unconditional default and still offers no config hook as of 0.10.0, so
-#     the fork cannot be dropped yet; a Config flag is the way out.
-#  2. Surface the server's Input capability flags on ConnectionResult and
-#     through the activation sequence, so fast-path input can be gated on what
-#     the server actually advertised (#422 — VirtualBox VRDP drops the link).
-#  3. Accept a short/empty Server Font Map during finalization rather than
-#     failing the connect on NotEnoughBytes (#422, VirtualBox VRDP again).
-#     Lived in the crate's legacy.rs until 0.10.0 deleted that module; the
-#     helper now sits in connection_finalization.rs with its own tests.
+# Two of the three patches the vendored connector fork carried are now upstream
+# — the server Input capability flags (#1488) and the lenient Server Font Map
+# (#1506, which superseded our #1472 with a better-scoped fix) — so the fork is
+# down to one patch: the SUPPORT_DYN_VC_GFX_PROTOCOL early-capability flag,
+# still open as #1237. That one patch is what `GlassOnTin/IronRDP` adds on top
+# of upstream master.
 #
-# Rebasing onto a new upstream: diff this tree against the matching
-# ironrdp-connector release to extract the patch, then re-apply.
+# What the released crates cost us: ironrdp-session 0.11.0 panics out of bounds
+# on a bitmap taller than its own destination rectangle, which is the crash in
+# #422 that closes Haven outright. Upstream fixed it in #1521 (merged
+# 2026-08-02) and there is no release carrying it. Waiting for one means
+# shipping a known app-killing crash.
+#
+# Pinned to an immutable tag, not a branch: `haven-pin-20260803` marks
+# 2ee58fb1 = upstream e9e0bb49 + the #1237 patch. The tag exists precisely so
+# the object survives force-pushes of feat/egfx-early-cap-flag, which is an
+# open PR and gets rebased. A `rev` alone would eventually be unreachable.
+#
+# ALL ironrdp crates must come from the same source. Mixing git and crates.io
+# links two copies of ironrdp-pdu and the types stop matching.
+#
+# To move the pin: rebase the fork branch, re-tag, update the tag here, then
+# rebuild the 3-ABI .so — the bump is inert until they are rebuilt.
+# To drop it entirely: once #1237 merges and a connector release carries it,
+# delete this block and set support_dyn_vc_gfx_protocol on ConnectorConfig.
 [patch.crates-io]
-ironrdp-connector = { path = "vendor/ironrdp-connector" }
+ironrdp-blocking = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-cliprdr = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-connector = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-core = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-displaycontrol = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-dvc = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-egfx = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-graphics = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-input = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-pdu = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-session = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-svc = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
+ironrdp-tls = { git = "https://github.com/GlassOnTin/IronRDP", tag = "haven-pin-20260803" }
 
 [profile.release]
 opt-level = "z"

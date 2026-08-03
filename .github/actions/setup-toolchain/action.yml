@@ -138,12 +138,14 @@ runs:
     # rather than drifting ahead on `stable`. Update both places together.
     #
     # Rust note: the rdp-kotlin/rust build is governed by that crate's
-    # rust-toolchain.toml (channel 1.89.0), which overrides the rustup default
+    # rust-toolchain.toml (channel 1.94.1), which overrides the rustup default
     # below. We set the same version here so the global default and the
-    # crate-scoped toolchain agree. ironrdp-graphics 0.7.0 needs >= 1.87
-    # (integer_sign_cast), so don't lower this. F-Droid's recipe still does
+    # crate-scoped toolchain agree. 1.94 is a hard floor, not a preference:
+    # the IronRDP crates are pinned to git and upstream's workspace
+    # `rust-version` is 1.94 (Devolutions/IronRDP#1495), so cargo refuses to
+    # build them on anything older. F-Droid's recipe still does
     # `rustup default 1.85.0`, but its rdp build also obeys the toml — align
-    # it to 1.89.0 in a follow-up for clarity.
+    # it to 1.94.1 in a follow-up for clarity.
     - name: Cache cargo-ndk
       id: cargo-ndk-cache
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
@@ -154,7 +156,7 @@ runs:
     - name: Set up Rust toolchain + cargo-ndk
       shell: bash
       run: |
-        rustup default 1.89.0
+        rustup default 1.94.1
         # Install every Android target up front (single-threaded). Leaving armv7
         # to the crates' rust-toolchain.toml `targets` auto-install let the
         # parallel rdp+spice cargo builds race to install rust-std-armv7 and hit
