@@ -5,6 +5,22 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.35
+
+🖥️ **App windows on a Debian 13 guest stop crashing** — opening an app in its own window failed roughly one time in three, and when it failed there was nothing on screen to say why. The cause was not in Haven: Debian 13 ships wayvnc 0.9.1, the piece that turns the guest's screen into something Haven can show, and that version crashes. Upstream declined to fix a version that old, and 0.10.1 does not crash.
+
+Debian 13 will not move to 0.10, and the newer version is packaged only in Debian's testing archive — which is a moving target, so pulling one package out of it onto a stable guest can leave that guest unusable later. Haven now compiles wayvnc 0.10.1 from source inside the guest instead, when it sets up a nested-Wayland desktop and finds the installed version too old. It touches no distro package, so there is no way for it to damage a guest.
+
+This costs a few minutes and a compiler the first time, on guests that need it — and nothing at all on guests that already have a new enough wayvnc, where the check takes under a second. Measured on a phone: eight app-window launches, eight connected, no crashes, against roughly one failure in three before.
+
+Two limits worth stating. **An existing desktop keeps its old wayvnc** until you reinstall it — or run `sh /usr/local/share/haven/wayvnc-build/build.sh` in the guest terminal yourself. And this fixes the crash; the freeze some people saw on the first frame was never reproduced here, so if video still freezes without a crash, that is a separate problem and worth reporting. (#473)
+
+🤖 **The agent endpoint repairs itself without you switching back to Haven** — if the MCP endpoint's listener died, Haven only noticed when you returned to the app or the network changed. For an AI app running on the same phone that is exactly backwards: switching to that app *is* what puts Haven in the background, and a connection over the phone's own loopback never causes a network change. So the one setup that needed the repair most could never trigger it. Haven now re-checks on a timer for as long as the connection notification is showing.
+
+Being straight about the limit: this recovers an endpoint whose listener has died. It cannot help when the phone's system has frozen Haven outright, because the timer is frozen with it. (#494)
+
+🔒 **An approval you gave after the agent gave up waiting is no longer wasted** — when a tool needs your approval every time, and the AI app's own timeout is shorter than the time you take to answer, the approval was meant to be held so the app's retry of the *same* action goes through instead of asking again. It never was: the approval was filed under one key and looked up under another, so it never matched, and every retry asked again. This has been broken since it was added. It matters most with an agent on the phone itself, where the approval cannot even be shown until you switch back, so the app is always the one to give up first. (#494)
+
 ## v5.86.34
 
 🖱️ **RDP: the pointer moves on the server the way it moves under your finger** — while the remote screen was busy, a drag reached the server as a handful of jumps rather than a continuous movement. Input was sent once per pass of the session loop, and every pass also decoded a frame, so input left only as often as frames arrived. Measured against a test server, sixty pointer positions a second were arriving in three and a half bursts — about seventeen at once, then a quarter-second of nothing.
