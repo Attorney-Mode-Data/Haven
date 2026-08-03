@@ -102,4 +102,12 @@ lto = true
 # build-android.sh uses a debug host build for bindgen to work around this.
 strip = true
 codegen-units = 1
-panic = "abort"
+# unwind, not abort: with abort, a panic anywhere in the decode path takes the
+# whole app down with a native tombstone and no Java stack — which is what
+# #422's "complete crash with closing Haven" is. IronRDP's bitmap paths index
+# the framebuffer directly (DecodedImage::apply_bgr24_bitmap derives its row
+# count from the decompressed buffer length, not the destination rectangle), so
+# a server sending a bitmap taller than its own dest rect panics out of bounds.
+# We cannot fix that from here, but a decoder bug should cost the session, not
+# the process — connect() catches the unwind and reports it through on_error.
+panic = "unwind"

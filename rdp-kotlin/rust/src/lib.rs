@@ -313,7 +313,31 @@ impl RdpClient {
         let handle = std::thread::Builder::new()
             .name("rdp-session".into())
             .spawn(move || {
-                let result = run_rdp_session(stream, &config, &state, &input_queue, &server_name, server_addr);
+                // #422: a panic in the decode path used to abort the process —
+                // the reporter's log ends in a native tombstone in
+                // librdp_transport.so with no Java frames, after 1550 24-bpp RLE
+                // bitmaps. Catch it here so a bad frame kills this session and
+                // reports itself, instead of taking Haven with it. Paired with
+                // panic = "unwind" in the release profile; under abort this
+                // never runs.
+                //
+                // AssertUnwindSafe is honest rather than convenient: past a
+                // panic we touch `state` only to mark the session dead.
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run_rdp_session(stream, &config, &state, &input_queue, &server_name, server_addr)
+                }))
+                .unwrap_or_else(|payload| {
+                    let what = payload
+                        .downcast_ref::<&'static str>()
+                        .map(|s| (*s).to_owned())
+                        .or_else(|| payload.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "unknown panic".to_owned());
+                    error!("RDP session panicked: {what}");
+                    Err(format!(
+                        "internal error decoding the RDP stream: {what} \
+                         — the session was dropped to keep the app running"
+                    ))
+                });
                 let session_cb = state.read().ok().and_then(|s| s.session_callback.clone());
                 match result {
                     Err(e) => {
@@ -1470,10 +1494,11 @@ fn run_rdp_session(
     // attributed to a stage. Costs a couple of Instant::now() per frame.
     let mut perf = FramePerf::new(Arc::clone(&input_counters));
 
-    // A slow-path PDU that arrived truncated, waiting for the rest (#422).
-    // Holds at most one fragment: if the next frame does not complete it, both
-    // are given up on rather than growing a buffer on a desynchronised stream.
-    let mut pending_partial: Option<Vec<u8>> = None;
+    // Consecutive PDUs dropped for a mis-declared length (#422). Reset by any
+    // frame that decodes, so this only climbs on a stream that has genuinely
+    // gone bad.
+    const MAX_SKIPPED_IN_A_ROW: u32 = 100;
+    let mut skipped_in_a_row: u32 = 0;
 
     // Active session loop
     loop {
@@ -1555,17 +1580,7 @@ fn run_rdp_session(
                     let n = frame.len().min(64);
                     debug!("FRAMEDIAG action={:?} len={} bytes={:02x?}", action, frame.len(), &frame[..n]);
                 }
-                // If we are holding the first half of a split PDU, glue this
-                // frame onto it and decode the pair (#422). Cleared either way:
-                // one attempt only, so a genuine desync fails fast instead of
-                // accumulating.
-                let joined: Option<Vec<u8>> = pending_partial.take().map(|mut head| {
-                    debug!("Reassembling {} + {} byte fragments", head.len(), frame.len());
-                    head.extend_from_slice(&frame);
-                    head
-                });
-                let frame_to_process: &[u8] = joined.as_deref().unwrap_or(&frame);
-                let was_reassembled = joined.is_some();
+                let frame_to_process: &[u8] = &frame;
 
                 let t_process = std::time::Instant::now();
                 match active_stage.process(&mut image, action, frame_to_process) {
@@ -1574,6 +1589,7 @@ fn run_rdp_session(
                         // tiles the MediaCodec round-trip plus YUV->RGB, since
                         // the decoder callback runs from in here.
                         perf.process_us += t_process.elapsed().as_micros() as u64;
+                        skipped_in_a_row = 0;
                         for output in outputs {
                             match output {
                                 ActiveStageOutput::ResponseFrame(response) => {
@@ -1727,25 +1743,51 @@ fn run_rdp_session(
                             } else {
                                 debug!("Skipping unhandled PDU: {}", msg);
                             }
-                        } else if msg.contains("NotEnoughBytes") && !was_reassembled {
-                            // #422: VirtualBox splits a large slow-path PDU across
-                            // two frames and we decoded each half on its own.
+                        } else if msg.contains("NotEnoughBytes") && msg.contains("ShareControlHeader") {
+                            // #422: this is NOT a truncated PDU, despite the name.
                             //
-                            // Two crash reports carried the SAME expected length
-                            // and complementary received lengths:
-                            //     received 4263, expected 4287
-                            //     received   24, expected 4287
-                            // and 4263 + 24 = 4287 exactly. Both immediately follow
-                            // a 4245-byte slow-path pointer update — a large cursor
-                            // bitmap, which is what pushes the PDU over the split.
-                            // The reporter noticed it happens when they go
-                            // fullscreen, which is when that cursor changes.
+                            // ShareControlHeader::decode ends with a cross-check
+                            // that the PDU it just decoded is the size the header
+                            // declared, and reports a mismatch as
+                            //     not_enough_bytes_err!(total_length, header_length)
+                            // — so `received` is the server's declared totalLength
+                            // and `expected` is the size IronRDP decoded. Neither
+                            // is a byte count off the wire.
                             //
-                            // Hold the fragment and try again once its other half
-                            // arrives, rather than killing a session over a PDU we
-                            // simply have not finished receiving.
-                            debug!("Holding {} byte fragment for reassembly: {}", frame.len(), msg);
-                            pending_partial = Some(frame.to_vec());
+                            // The reporter's `received: 24, expected: 8550` came on
+                            // an 8565-byte frame, and 8565 - 15 (TPKT 4 + X224 3 +
+                            // MCS SDI 8) = 8550 exactly: `expected` is the whole
+                            // MCS user_data, because a Pointer payload is decoded
+                            // greedily to the end of the cursor. The PDU was
+                            // entirely present; VirtualBox VRDP just under-declared
+                            // totalLength as 24. Reproduced by hand-building that
+                            // frame — see the test below.
+                            //
+                            // So there is nothing to wait for and nothing to
+                            // rejoin. Drop the frame (one pointer/bitmap update)
+                            // and keep the session, which is what the old
+                            // reassembly attempt was reaching for and could never
+                            // achieve: it glued two complete transport frames
+                            // together, each with its own TPKT/X224/MCS header, and
+                            // handed the pair to process() under the *second*
+                            // frame's action — turning this into a bogus
+                            // FastPathHeader error that killed the session anyway.
+                            //
+                            // Bounded, because "skip and carry on" and "the
+                            // stream has desynchronised" look identical from
+                            // here: on VirtualBox this fires once between many
+                            // good frames, so the counter never climbs. If it
+                            // does, the display has frozen and silence would be
+                            // a worse answer than an error.
+                            skipped_in_a_row += 1;
+                            if skipped_in_a_row > MAX_SKIPPED_IN_A_ROW {
+                                error!("{skipped_in_a_row} undecodable PDUs in a row: {msg}");
+                                return Err(format!(
+                                    "session error: {skipped_in_a_row} undecodable PDUs in a row \
+                                     — last was {msg}"
+                                ));
+                            }
+                            debug!("Skipping PDU with a mis-declared length: {}", msg);
                         } else {
                             // #437: a fatal protocol error is not a clean exit —
                             // surface it through on_error so the app layer marks
@@ -2307,16 +2349,23 @@ fn perform_reactivation<S: std::io::Read + std::io::Write>(
     if let Some(frame) = first_frame {
         // The frame that announced the reactivation can be only part of its
         // PDU. The loop below reads by hint and so always gets a whole one,
-        // but this first frame was already taken off the wire by the caller,
-        // and VirtualBox splits a large Demand Active across two X.224 frames
-        // — the reporter's crash was `NotEnoughBytes { received: 24, expected:
-        // 4287 }` with a 4263-byte frame immediately before it. The session
-        // loop already rejoins that pair for the active stage; reactivation
-        // had no such handling and died on the half it could see. (#422)
+        // but this first frame was already taken off the wire by the caller.
         //
-        // Reading the remainder here rather than holding it, because we are
-        // inside a blocking read loop and the rest of the PDU is already on
-        // its way — nobody else will deliver it to us.
+        // CAUTION (#422): this join was added on the reading that
+        // `NotEnoughBytes { received: 24, expected: 4287 }` meant a PDU split
+        // across two frames. That reading is wrong for the session loop —
+        // `received`/`expected` are the declared totalLength and the decoded
+        // size, so nothing is missing (see
+        // under_declared_share_control_length_is_not_a_truncated_pdu), and the
+        // matching in-session reassembly has been removed.
+        //
+        // It is left here because neither reporter log shows reactivation
+        // running at all, so there is no evidence about which branch fires on
+        // a Demand Active, and ripping it out on theory alone would risk the
+        // crash d312d2bf fixed. Bounded by REACTIVATION_MAX_JOINS. If a log
+        // ever shows "Reactivation: joining", check `expected` against the
+        // frame length first: if it equals frame - 15, it is the same
+        // under-declared quirk and this loop is chasing nothing.
         let mut pending = frame.to_vec();
         let mut joins = 0;
         loop {
@@ -2813,6 +2862,72 @@ mod tests {
         assert!(
             out.contains("colour depth"),
             "should hint at colour depth fix, got: {out}"
+        );
+    }
+
+    /// #422: pins what the reporter's NotEnoughBytes actually means, because
+    /// the name says the opposite and we already shipped a fix built on the
+    /// wrong reading.
+    ///
+    /// `ShareControlHeader::decode` finishes with a cross-check that the PDU it
+    /// decoded is the size the header declared, and reports a mismatch as
+    /// `not_enough_bytes_err!(total_length, header_length)` — so `received` is
+    /// the server's *declared* totalLength and `expected` is the size IronRDP
+    /// decoded, neither of them a count of bytes off the wire.
+    ///
+    /// Build the reporter's exact frame — 8565 bytes on the wire, so 8550 of
+    /// MCS user_data after TPKT(4) + X224(3) + MCS SDI(8) — with a greedily
+    /// decoded Pointer payload and totalLength under-declared as 24, and
+    /// assert it lands on their error verbatim. If this ever reproduces
+    /// `expected` != the full user_data length, the "the PDU is all here"
+    /// conclusion is wrong and the skip in the session loop needs revisiting.
+    #[test]
+    fn under_declared_share_control_length_is_not_a_truncated_pdu() {
+        use ironrdp_core::decode;
+        use ironrdp_pdu::rdp::headers::ShareControlHeader;
+
+        const SHARE_CONTROL_HEADER_SIZE: usize = 2 * 3 + 4;
+        const SHARE_DATA_HEADER_SIZE: usize = 1 + 1 + 2 + 1 + 1 + 2;
+        const PROTOCOL_VERSION: u16 = 0x10;
+        const DATA_PDU: u16 = 0x7;
+        const PDU_TYPE_POINTER: u8 = 0x1b;
+
+        // 8565 on the wire minus TPKT(4) + X224(3) + MCS SendDataIndication(8).
+        let user_data = 8565 - 15;
+        assert!(user_data > SHARE_CONTROL_HEADER_SIZE + SHARE_DATA_HEADER_SIZE);
+
+        let mut b = Vec::with_capacity(user_data);
+        b.extend_from_slice(&24u16.to_le_bytes()); // totalLength, under-declared
+        b.extend_from_slice(&(PROTOCOL_VERSION | DATA_PDU).to_le_bytes());
+        b.extend_from_slice(&1002u16.to_le_bytes()); // pduSource
+        b.extend_from_slice(&0x0001_0000u32.to_le_bytes()); // shareId
+        b.push(0); // padding
+        b.push(2); // streamPriority = Medium
+        b.extend_from_slice(&0u16.to_le_bytes()); // uncompressedLength
+        b.push(PDU_TYPE_POINTER); // pduType2
+        b.push(0); // compressionFlags | compressionType
+        b.extend_from_slice(&0u16.to_le_bytes()); // compressedLength
+        b.resize(user_data, 0);
+        assert_eq!(b.len(), 8550);
+
+        let err = decode::<ShareControlHeader>(&b)
+            .expect_err("an under-declared totalLength must not decode cleanly")
+            .to_string();
+
+        // The reporter's numbers, verbatim.
+        assert!(
+            err.contains("received 24 bytes, expected 8550 bytes"),
+            "should reproduce the #422 report exactly, got: {err}"
+        );
+        // `expected` is the whole user_data, not a shortfall: nothing is missing.
+        assert!(
+            err.contains(&format!("expected {user_data} bytes")),
+            "expected should be the full MCS user_data ({user_data}), got: {err}"
+        );
+        // And it must be the branch the session loop keys off.
+        assert!(
+            err.contains("ShareControlHeader"),
+            "the skip in the session loop matches on this context: {err}"
         );
     }
 
