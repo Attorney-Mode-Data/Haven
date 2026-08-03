@@ -50,7 +50,16 @@ ALLOWLIST=(
 # but our own release workflow does not run any of them, so deleting them today
 # would ship an APK without a desktop. Removal is blocked on wiring these into
 # CI, not on the scripts existing.
+# rclone-android/build/rcbridge-bindings.jar: untracking this broke main.
+# It is consumed as `api(files("build/rcbridge-bindings.jar"))`, and a file
+# dependency is resolved when a CONSUMER resolves its runtime classpath —
+# :app:checkArm64DebugDuplicateClasses demanded the jar before any task had
+# produced it. compileKotlin's dependsOn is too late, and attaching builtBy to
+# the file collection did not propagate through the artifact transform either
+# (tried; same failure). The real fix is for rclone-android to publish it as a
+# proper project artifact rather than a raw file path. Tracked in #493.
 GRANDFATHERED=(
+    "rclone-android/build/rcbridge-bindings.jar"
     "core/wayland/src/main/jniLibs/arm64-v8a/liblabwc_android.so"
     "core/wayland/src/main/jniLibs/arm64-v8a/libxwayland_wrapper.so"
     "core/wayland/src/main/jniLibs/arm64-v8a/libbenchmark_gles.so"
