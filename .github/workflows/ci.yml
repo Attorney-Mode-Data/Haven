@@ -57,7 +57,16 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45, not 30: on 4e06876c this job did 30m07s of real work against a 30m
+    # cap and was stamped `cancelled` two seconds into cleanup — with every
+    # step green and "BUILD SUCCESSFUL in 15m 14s" already in the log. That
+    # reads as a red main for a run that actually passed. The spend is
+    # genuine, not a hang: ~10.5m initialising submodules (the wayland tree
+    # alone is a dozen nested repos), ~3.5m toolchain, ~15m tests. Observed
+    # totals range 14m-30m depending on Gradle cache hits, so the cap has to
+    # clear the top of that spread, not sit on it. Cutting the submodule cost
+    # is the real fix; this stops it failing releases meanwhile.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
