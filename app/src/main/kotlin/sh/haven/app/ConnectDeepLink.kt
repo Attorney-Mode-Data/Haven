@@ -63,7 +63,13 @@ object ConnectDeepLink {
     /** Saved profiles whose host (and any supplied user/port/transport) match [p]. */
     fun matches(profiles: List<ConnectionProfile>, p: Params): List<ConnectionProfile> {
         if (p.id != null) {
-            return profiles.filter { it.id == p.id }
+            val byId = profiles.filter { it.id == p.id }
+            // An id that still exists is the exact answer and wins outright.
+            // One that doesn't is a stale link — a profile deleted and recreated
+            // keeps its host but gets a new id — so fall through to host matching
+            // when the link carried a host too, rather than returning nothing and
+            // opening a New-Connection editor with a blank host.
+            if (byId.isNotEmpty() || p.host.isEmpty()) return byId
         }
         val candidates = profiles.filter { prof ->
             prof.host.equals(p.host, ignoreCase = true) &&

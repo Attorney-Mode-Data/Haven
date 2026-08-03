@@ -163,6 +163,9 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    /** Last deep-link URI handled, with its elapsed-realtime stamp. See [isFreshDeepLink]. */
+    private var lastDeepLink: Pair<String, Long>? = null
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -344,9 +347,40 @@ class MainActivity : AppCompatActivity() {
      * directly — that would couple core/stepca to core/data — so the
      * Activity bridges the two.
      */
+    /**
+     * True the first time a given deep-link URI is seen, false for a repeat
+     * within [DEEP_LINK_DEDUPE_MS].
+     *
+     * `intent.data = null` below already stops the *same* Intent being replayed
+     * across a configuration change. It cannot help when the same URI arrives as
+     * two *different* Intents, which is exactly what [DeepLinkActivity] produces:
+     * it hands the URI straight to a live MainActivity (the ColorOS path, where
+     * onNewIntent is not reliably delivered) and *also* forwards an Intent that
+     * reaches onNewIntent wherever the platform behaves. On a device where both
+     * arrive, one tap would otherwise emit two connect commands.
+     *
+     * Deduping here rather than dropping one of the two delivery paths keeps the
+     * ColorOS workaround intact: whichever arrives first wins, the other is
+     * ignored, and neither has to be trusted to be the one that works.
+     */
+    private fun isFreshDeepLink(data: android.net.Uri): Boolean {
+        val key = data.toString()
+        val now = android.os.SystemClock.elapsedRealtime()
+        val previous = lastDeepLink
+        if (previous != null && previous.first == key &&
+            now - previous.second < DEEP_LINK_DEDUPE_MS
+        ) {
+            Log.d("MainActivity", "ignoring duplicate deep link within dedupe window")
+            return false
+        }
+        lastDeepLink = key to now
+        return true
+    }
+
     private fun handleRenewCertDeepLink(intent: Intent?) {
         val data = intent?.data ?: return
         if (data.scheme != "haven" || data.host != "renew-cert") return
+        if (!isFreshDeepLink(data)) return
         val keyId = data.lastPathSegment ?: return
         Log.d("MainActivity", "renew-cert deep link for key $keyId")
         agentUiCommandBus.emit(
@@ -369,6 +403,7 @@ class MainActivity : AppCompatActivity() {
         val data = intent?.data ?: return
         if (data.scheme != "haven" || data.host != "connect") return
         val params = ConnectDeepLink.parse { data.getQueryParameter(it) } ?: return
+        if (!isFreshDeepLink(data)) return
         intent.data = null
         Log.d("MainActivity", "connect deep link host=${params.host} transport=${params.transport}")
         MainScope().launch {
@@ -572,6 +607,12 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    /**
+     * Handle a deep link handed straight to a live instance by
+     * [DeepLinkActivity], bypassing the Intent system. Only needed because
+     * onNewIntent is not reliably delivered on ColorOS; deduped against the
+     * forwarded Intent by [isFreshDeepLink] so both paths can fire safely.
+     */
     fun handleDeepLinkUri(uri: android.net.Uri) {
         val intent = Intent().apply { data = uri }
         handleRenewCertDeepLink(intent)
@@ -579,6 +620,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        /**
+         * Long enough to cover the gap between DeepLinkActivity's direct call
+         * and the forwarded Intent landing in onNewIntent, short enough that a
+         * user deliberately re-firing the same link still works.
+         */
+        private const val DEEP_LINK_DEDUPE_MS = 3_000L
+
         @Volatile
         private var activeInstanceRef: java.lang.ref.WeakReference<MainActivity>? = null
 

@@ -18,6 +18,7 @@ class ConnectDeepLinkTest {
         type: String = "SSH",
         mosh: Boolean = false,
         et: Boolean = false,
+        remoteCommand: String? = null,
     ) = ConnectionProfile(
         id = id,
         label = host,
@@ -27,6 +28,7 @@ class ConnectDeepLinkTest {
         connectionType = type,
         useMosh = mosh,
         useEternalTerminal = et,
+        remoteCommand = remoteCommand,
     )
 
     /** A query getter backed by a map, standing in for `Uri::getQueryParameter`. */
@@ -206,5 +208,66 @@ class ConnectDeepLinkTest {
         assertTrue(cmd is AgentUiCommand.ConnectFromDeepLink)
         cmd as AgentUiCommand.ConnectFromDeepLink
         assertEquals("b", cmd.profileId)
+    }
+
+    // --- id fallback and ambiguity (maintainer additions on #486) ---
+
+    @Test
+    fun `a stale id falls back to host matching when the link carries a host`() {
+        // A profile deleted and recreated keeps its host but gets a new id, so a
+        // bookmarked link's id stops resolving. Falling through to the host beats
+        // opening an empty New-Connection editor.
+        val prof = profile(id = "new-id", host = "h")
+        val cmd = ConnectDeepLink.resolve(
+            listOf(prof),
+            ConnectDeepLink.parse(query("host" to "h", "id" to "old-id"))!!,
+        )
+        assertTrue(cmd is AgentUiCommand.ConnectFromDeepLink)
+        assertEquals("new-id", (cmd as AgentUiCommand.ConnectFromDeepLink).profileId)
+    }
+
+    @Test
+    fun `a stale id with no host still yields no match`() {
+        val prof = profile(id = "new-id", host = "h")
+        val matches = ConnectDeepLink.matches(
+            listOf(prof),
+            ConnectDeepLink.parse(query("id" to "old-id"))!!,
+        )
+        assertTrue(matches.isEmpty())
+    }
+
+    @Test
+    fun `a live id wins over a host that matches a different profile`() {
+        val a = profile(id = "a", host = "h", username = "one")
+        val b = profile(id = "b", host = "h", username = "two")
+        val cmd = ConnectDeepLink.resolve(
+            listOf(a, b),
+            ConnectDeepLink.parse(query("host" to "h", "user" to "one", "id" to "b"))!!,
+        )
+        assertEquals("b", (cmd as AgentUiCommand.ConnectFromDeepLink).profileId)
+    }
+
+    @Test
+    fun `session narrowing picks the one profile whose command contains it`() {
+        val a = profile(id = "a", host = "h", remoteCommand = "tmux new -A -s work")
+        val b = profile(id = "b", host = "h", remoteCommand = "tmux new -A -s play")
+        val cmd = ConnectDeepLink.resolve(
+            listOf(a, b),
+            ConnectDeepLink.parse(query("host" to "h", "session" to "play"))!!,
+        )
+        assertEquals("b", (cmd as AgentUiCommand.ConnectFromDeepLink).profileId)
+    }
+
+    @Test
+    fun `session narrowing that stays ambiguous prefills instead of guessing`() {
+        // Both commands contain the session string. Connecting to the wrong host
+        // is worse than asking, so this must NOT pick one.
+        val a = profile(id = "a", host = "h", remoteCommand = "tmux new -A -s work")
+        val b = profile(id = "b", host = "h", remoteCommand = "tmux new -A -s workshop")
+        val cmd = ConnectDeepLink.resolve(
+            listOf(a, b),
+            ConnectDeepLink.parse(query("host" to "h", "session" to "work"))!!,
+        )
+        assertTrue(cmd is AgentUiCommand.PrefillNewConnection)
     }
 }
