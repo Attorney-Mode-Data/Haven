@@ -49,6 +49,14 @@ class SshConnectionService : Service() {
     @Inject
     lateinit var reviveHooks: Set<@JvmSuppressWildcards ForegroundReviveHook>
 
+    /**
+     * Runs the same hooks on a timer, because both of the triggers above need
+     * something an on-device MCP client never produces — a return to the
+     * foreground, or a network transition (#494).
+     */
+    @Inject
+    lateinit var reviveTicker: ForegroundReviveTicker
+
     /** Live MCP activity, folded into the ongoing notification (#239). */
     @Inject
     lateinit var mcpStatusHolder: McpStatusHolder
@@ -101,6 +109,7 @@ class SshConnectionService : Service() {
         // Service.onCreate runs on the main thread, where ProcessLifecycleOwner
         // observers must be added.
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundObserver)
+        reviveTicker.start()
         serviceScope.launch {
             networkMonitor.events
                 .debounce(2_000) // network changes fire rapidly during handoff
@@ -168,6 +177,7 @@ class SshConnectionService : Service() {
 
     override fun onDestroy() {
         ProcessLifecycleOwner.get().lifecycle.removeObserver(foregroundObserver)
+        reviveTicker.stop()
         networkMonitor.stop()
         serviceScope.cancel()
         super.onDestroy()
