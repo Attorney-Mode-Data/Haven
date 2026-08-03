@@ -2680,6 +2680,40 @@ chmod +x /root/.vnc/xstartup""")
                 // call that path because it pulls in waybar / labwc-menu
                 // bits that don't apply.
                 writeNestedWaylandFuzzelConfig()
+
+                // Replace a too-old packaged wayvnc with a pinned source
+                // build (#473). Debian trixie's 0.9.1 SIGSEGVs on roughly
+                // one app-window launch in three and upstream will not fix
+                // an old version; 0.10.1 does not. The script gates itself
+                // on the installed version, so this is a sub-second no-op
+                // wherever the distro already ships >= 0.10 — but it is a
+                // multi-minute compile where it doesn't, hence its own
+                // progress step rather than silence.
+                //
+                // Deliberately non-fatal: if the build fails the guest is
+                // left with the distro's wayvnc, which is exactly what it
+                // would have had anyway. A desktop that mostly works beats
+                // an install marked failed.
+                stageWayvncBuildScript()
+                _desktopState.value = DesktopSetupState.Installing("Checking wayvnc version...")
+                val (wayvncOut, wayvncExit) = runCommandInProot(wayvncBuildCommand)
+                if (wayvncExit != 0) {
+                    Log.w(
+                        TAG,
+                        "[wayvnc-build] failed (exit $wayvncExit) — " +
+                            "keeping the packaged wayvnc: ${wayvncOut.takeLast(500)}",
+                    )
+                    installLogRepository.logEvent(
+                        distroId = activeDistro.id,
+                        phase = "DeConfig:${de.spec.id}",
+                        deId = de.spec.id,
+                        exit = wayvncExit,
+                        ok = false,
+                        message = "wayvnc source build failed; using the distro's wayvnc",
+                    )
+                } else {
+                    Log.d(TAG, "[wayvnc-build] ${wayvncOut.trim().takeLast(300)}")
+                }
             }
 
             Log.d(TAG, "[de-config ${de.spec.id}] complete")
@@ -2882,6 +2916,43 @@ chmod +x /root/.vnc/xstartup""")
     /** In-guest command that builds + caches the patched zink (idempotent, slow — ~20-40 min, needs network). */
     val mesaVenusFixBuildCommand: String get() = "sh /usr/local/share/haven/mesa-venus-fix/build.sh"
 
+    /**
+     * Stage the wayvnc-from-source build script into the active rootfs at
+     * /usr/local/share/haven/wayvnc-build/build.sh.
+     *
+     * Why (#473): Debian trixie pins wayvnc 0.9.1, which SIGSEGVs on roughly
+     * one app-window launch in three, and upstream declined to fix an old
+     * version. 0.10.1 fixes it (8/8 launches, 0 SIGSEGV, device-measured).
+     * The fix is packaged only in Debian forky/sid and Arch, and apt-pinning a
+     * moving testing archive onto a user's stable guest is not something to do
+     * for a display-server bug — so the three pinned tags are built instead.
+     *
+     * Text asset, ABI-independent; re-copied on every install so an app update
+     * ships a newer pin without a reinstall. The script itself is the gate: it
+     * exits without building when wayvnc is already >= 0.10, so distros that
+     * ship a fixed version (Arch) and any future stable pay nothing.
+     */
+    fun stageWayvncBuildScript() {
+        val target = File(activeRootfsDir, "usr/local/share/haven/wayvnc-build/build.sh")
+        try {
+            target.parentFile?.mkdirs()
+            context.assets.open("wayvnc-build/build.sh").use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            }
+            target.setReadable(true, false)
+            Log.d(TAG, "[wayvnc-build] staged build.sh (${target.length()} bytes)")
+        } catch (e: Exception) {
+            Log.w(TAG, "[wayvnc-build] failed to stage build.sh: ${e.message}")
+        }
+    }
+
+    /**
+     * In-guest command that builds wayvnc 0.10.1 from pinned source when the
+     * distro's own is too old. Idempotent and self-gating — a no-op in well
+     * under a second on a guest that already has >= 0.10.
+     */
+    val wayvncBuildCommand: String get() = "sh /usr/local/share/haven/wayvnc-build/build.sh"
+
     /** Absolute in-guest path of the LD_PRELOAD list written by [mesaVenusFixBuildCommand]. */
     val mesaVenusFixPreloadPath: String get() = "/usr/local/lib/haven/mesa-venus-fix/preload"
 
@@ -2898,6 +2969,13 @@ chmod +x /root/.vnc/xstartup""")
         // Refresh the venus GL coherency-fix assets too (patch + build script);
         // the built .so cache under the same dir is preserved.
         stageMesaVenusFix()
+        // Keep the wayvnc build script current too, so an app update ships a
+        // newer pin to an existing rootfs (#473). Staging only — this method
+        // runs on every desktop start and is not suspending, and the build is
+        // minutes long on a guest that needs it. An existing install therefore
+        // keeps its old wayvnc until the DE is reinstalled or the user runs
+        // the staged script themselves.
+        stageWayvncBuildScript()
         for ((relPath, content) in de.spec.configSeed) {
             val target = File(activeRootfsDir, relPath)
             val existing = if (target.exists()) {
