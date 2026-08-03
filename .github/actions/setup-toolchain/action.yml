@@ -52,7 +52,8 @@ runs:
           gcc-arm-linux-gnueabihf libc6-dev-armhf-cross \
           meson ninja-build pkg-config bison \
           autoconf automake libtool libtool-bin libltdl-dev \
-          libexpat1-dev libffi-dev xutils-dev python3-xcbgen
+          libexpat1-dev libffi-dev xutils-dev python3-xcbgen \
+          nasm yasm
 
     # The second group above is what core/wayland's buildWaylandNatives needs
     # (#493). Those five binaries are cross-compiled from the wayland-android
@@ -60,6 +61,14 @@ runs:
     # libxcb's autotools chain in the middle — none of which the GHA runner
     # image carries. F-Droid's recipe installs the same set in its `sudo:`
     # block, which is why their builds worked while ours had never tried.
+    #
+    # nasm/yasm are for x264 inside core/ffmpeg's buildFfmpegNatives, and are
+    # needed by the x86_64 ABI only — aarch64 and armv7 assemble through the
+    # NDK's own toolchain, x86_64 does not. That asymmetry is why this was
+    # missed: `ci.yml` builds arm64 alone, so the first thing ever to compile
+    # x264 for x86_64 was the v5.86.36 release matrix, which failed with
+    # "Found no assembler / Minimum version is nasm-2.13". F-Droid's `sudo:`
+    # list had both all along — treat that list as the spec.
     #
     # Kept in one apt-get with the cross-compilers on purpose: a second
     # `apt-get update` is another chance to hit the flaky third-party sources
