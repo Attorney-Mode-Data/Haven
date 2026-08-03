@@ -5,6 +5,30 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.36
+
+🖥️ **RDP on VirtualBox: the last two releases fixed the wrong thing, and one of them made it worse** — v5.86.34 told you Haven had learned to "rejoin a large message that VirtualBox had split across two network reads". That was wrong. Nothing was ever split.
+
+The error Haven was reading says "not enough bytes", and it does not mean what it sounds like. It is the end of a check that compares the size a message *claims* to be against the size it *actually decoded to*, and the two numbers in it are those two sizes — not an amount received and an amount still expected. VirtualBox sends a complete message that under-states its own length. Everything had already arrived.
+
+So Haven spent two releases waiting for a second half that did not exist, and then stitching the next unrelated message onto the end of it. That stitched-together result was handed to the decoder labelled as the wrong kind of message, which produced a fresh error and ended the session — five thousandths of a second after the "fix" ran. A reporter's log caught it doing exactly that.
+
+Haven now skips the one message it cannot read and keeps the session, which is what going fullscreen on a VirtualBox desktop needed all along. You may see a brief cursor glitch where a message was dropped. If a hundred messages in a row fail, it still stops with an error, because a frozen picture and no explanation is the worse outcome.
+
+The wrong reading was settled by rebuilding the reporter's exact 8565-byte message by hand and confirming it reproduces their error with nothing missing. That reconstruction ships as a test, so this cannot quietly regress. (#422)
+
+🛡️ **A fault in the remote-desktop decoder no longer closes Haven** — a second crash in the same reports had no error message at all: Haven simply vanished. The remote-desktop engine was built so that any internal fault stopped the whole app instantly, which is why it took Haven down rather than the connection. That is now contained — a fault of this kind ends the affected connection and tells you, and everything else keeps running.
+
+Two honest limits. This costs about a megabyte of app size, which is the price of being able to recover at all. And it is a safety net, not a repair: the specific fault suspected here is in the shared RDP library, upstream have since fixed it, and Haven will pick that up when they publish it. (#422)
+
+📦 **Everything in the app is now built from its source, not shipped as a pre-built file** — Haven used to carry twenty-five pre-built binaries in its source code, 206 MB of them, including the entire video engine. Nothing rebuilt those files, so what you installed from GitHub could quietly drift from what the source said. F-Droid never had this problem, because F-Droid always rebuilds from source — which meant their builds and ours were genuinely different artefacts, and theirs were missing pieces ours had.
+
+All of it is now compiled during the build, from pinned sources with verified checksums. One file remains, and it is tracked. What kept this undone was a cost estimate that turned out to be about twenty times too high: the video engine takes under three minutes to build, not the hour it was assumed to. Nobody had measured it. (#493, #469)
+
+📶 **Haven tells you when your phone, not Haven, cut the connection** — some phones stop background apps from using the network while leaving them apparently running, so a session died seconds after you switched away with no explanation and nothing in the logs to blame. When a connection drops right after Haven goes to the background, the connection log now says so and points at the specific setting on your make of phone. Haven cannot see those vendor switches directly, so this is worded as the likely cause rather than a certainty. (#495)
+
+🔗 **Opening a connection link twice in a row works** — a link handled while Haven was already running could be delivered along two paths at once and open two sessions, and a link naming a connection that no longer exists no longer fails outright when it also names a host. (#305, #486)
+
 ## v5.86.35
 
 🖥️ **App windows on a Debian 13 guest stop crashing** — opening an app in its own window failed roughly one time in three, and when it failed there was nothing on screen to say why. The cause was not in Haven: Debian 13 ships wayvnc 0.9.1, the piece that turns the guest's screen into something Haven can show, and that version crashes. Upstream declined to fix a version that old, and 0.10.1 does not crash.
