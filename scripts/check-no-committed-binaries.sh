@@ -42,14 +42,9 @@ ALLOWLIST=(
 # but our own release workflow does not, so deleting them would ship an APK
 # with no ffmpeg. Wiring that in costs ~an hour of build time per ABI and is
 # tracked separately.
-# core/wayland: all five now have (or already had) a from-source build —
-#   liblabwc_android.so     wayland-android/build_liblabwc_android.sh
-#   libxwayland_wrapper.so  wayland-android/build-native-helpers.sh  (new)
-#   libbenchmark_gles.so    wayland-android/build-native-helpers.sh  (new)
-#   libvirgl_*_server.so    NO BUILD SCRIPT YET — virglrenderer meson cross-build
-# but our own release workflow does not run any of them, so deleting them today
-# would ship an APK without a desktop. Removal is blocked on wiring these into
-# CI, not on the scripts existing.
+# core/wayland: DONE (#493) — all five are now built from source by
+# core/wayland's buildWaylandNatives task, which runs from preBuild in both our
+# CI and release workflows, and they are gitignored so they cannot come back.
 # rclone-android/build/rcbridge-bindings.jar: untracking this broke main.
 # It is consumed as `api(files("build/rcbridge-bindings.jar"))`, and a file
 # dependency is resolved when a CONSUMER resolves its runtime classpath —
@@ -60,11 +55,6 @@ ALLOWLIST=(
 # proper project artifact rather than a raw file path. Tracked in #493.
 GRANDFATHERED=(
     "rclone-android/build/rcbridge-bindings.jar"
-    "core/wayland/src/main/jniLibs/arm64-v8a/liblabwc_android.so"
-    "core/wayland/src/main/jniLibs/arm64-v8a/libxwayland_wrapper.so"
-    "core/wayland/src/main/jniLibs/arm64-v8a/libbenchmark_gles.so"
-    "core/wayland/src/main/jniLibs/arm64-v8a/libvirgl_test_server.so"
-    "core/wayland/src/main/jniLibs/arm64-v8a/libvirgl_render_server.so"
     "core/ffmpeg/src/main/jniLibs/arm64-v8a/libc++_shared.so"
     "core/ffmpeg/src/main/jniLibs/arm64-v8a/libffmpeg.so"
     "core/ffmpeg/src/main/jniLibs/arm64-v8a/libffprobe.so"

@@ -140,6 +140,10 @@ class ConnectionsViewModelSessionTest {
             repository = repository,
             portForwardRepository = portForwardRepository,
             sshSessionManager = sshSessionManager,
+            // Relaxed: looksLikeBackgroundRestriction() returns false, so the
+            // #495 attribution path stays quiet and these tests keep asserting
+            // ordinary session behaviour.
+            backgroundDisconnectDetector = mockk(relaxed = true),
             sshSessionAttacher = mockk(relaxed = true),
             reticulumSessionManager = reticulumSessionManager,
             moshSessionManager = moshSessionManager,

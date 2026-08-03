@@ -58,3 +58,9 @@ rdp-kotlin/jniLibs/
 # Build outputs of wayland-android/build-native-helpers.sh (submodule-local,
 # but listed here too so a stray copy into the parent tree is never staged).
 wayland-android/jniLibs/
+
+# Wayland native binaries — built from the wayland-android submodule by
+# core/wayland's buildWaylandNatives task (#493). Committed copies went three
+# versions stale and broke every app-window feature (#469); nothing may put
+# them back in the tree.
+core/wayland/src/main/jniLibs/*/*.so

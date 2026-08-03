@@ -185,7 +185,10 @@ jobs:
       # and Play Store fat distribution, not smoke-testing main. Cuts build
       # work roughly in half vs :app:assembleDebug (which expands to both).
       - name: Build arm64 debug APK
-        run: ./gradlew :app:assembleArm64Debug
+        # -PtargetAbi drives core/wayland's buildWaylandNatives, which builds the
+        # five arm64-only wayland binaries from the submodule instead of shipping
+        # committed copies. This job is what proves they still compile (#493).
+        run: ./gradlew :app:assembleArm64Debug -PtargetAbi=arm64
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -215,7 +218,7 @@ jobs:
       - uses: ./.github/actions/init-submodules-with-retry
       - uses: ./.github/actions/setup-toolchain
       - name: Build ${{ matrix.abi }} debug APK
-        run: ./gradlew :app:assemble${{ matrix.variant }}Debug
+        run: ./gradlew :app:assemble${{ matrix.variant }}Debug -PtargetAbi=${{ matrix.abi }}
 
   # Debug builds don't run R8, so an R8 rename of a reflectively-loaded class
   # can ship a feature 100% broken in release while every debug check stays

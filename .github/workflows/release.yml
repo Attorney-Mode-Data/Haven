@@ -130,8 +130,15 @@ jobs:
       - uses: ./.github/actions/setup-toolchain
       - name: Decode release keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > haven-release.jks
+      # -PtargetAbi lets core/wayland's buildWaylandNatives skip on the ABIs it
+      # has no binaries for. The five wayland natives are arm64-v8a only, so the
+      # x64 and armv7 jobs would otherwise spend ~20 minutes each building
+      # libraries they never package (#493).
       - name: Build signed APK + AAB (${{ matrix.abi }})
-        run: ./gradlew :app:assemble${{ matrix.variant }}Release :app:bundle${{ matrix.variant }}Release
+        run: >-
+          ./gradlew :app:assemble${{ matrix.variant }}Release
+          :app:bundle${{ matrix.variant }}Release
+          -PtargetAbi=${{ matrix.abi }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
