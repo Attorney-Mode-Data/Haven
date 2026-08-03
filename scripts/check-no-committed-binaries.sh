@@ -38,10 +38,10 @@ ALLOWLIST=(
 # exists, so a completed migration forces its removal here and the list cannot
 # quietly become a second allowlist. New binaries are never added.
 #
-# core/ffmpeg: build-ffmpeg/build.sh builds these and F-Droid already runs it,
-# but our own release workflow does not, so deleting them would ship an APK
-# with no ffmpeg. Wiring that in costs ~an hour of build time per ABI and is
-# tracked separately.
+# core/ffmpeg: DONE (#493) — built from pinned source by core/ffmpeg's
+# buildFfmpegNatives task from preBuild, and gitignored. The "~an hour per
+# ABI" that had kept them committed was a guess; measured, a clean build of
+# the whole chain is 2m42s on a 12-core desktop.
 # core/wayland: DONE (#493) — all five are now built from source by
 # core/wayland's buildWaylandNatives task, which runs from preBuild in both our
 # CI and release workflows, and they are gitignored so they cannot come back.
@@ -55,15 +55,6 @@ ALLOWLIST=(
 # proper project artifact rather than a raw file path. Tracked in #493.
 GRANDFATHERED=(
     "rclone-android/build/rcbridge-bindings.jar"
-    "core/ffmpeg/src/main/jniLibs/arm64-v8a/libc++_shared.so"
-    "core/ffmpeg/src/main/jniLibs/arm64-v8a/libffmpeg.so"
-    "core/ffmpeg/src/main/jniLibs/arm64-v8a/libffprobe.so"
-    "core/ffmpeg/src/main/jniLibs/armeabi-v7a/libc++_shared.so"
-    "core/ffmpeg/src/main/jniLibs/armeabi-v7a/libffmpeg.so"
-    "core/ffmpeg/src/main/jniLibs/armeabi-v7a/libffprobe.so"
-    "core/ffmpeg/src/main/jniLibs/x86_64/libc++_shared.so"
-    "core/ffmpeg/src/main/jniLibs/x86_64/libffmpeg.so"
-    "core/ffmpeg/src/main/jniLibs/x86_64/libffprobe.so"
 )
 
 is_allowed() {

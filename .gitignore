@@ -64,3 +64,8 @@ wayland-android/jniLibs/
 # versions stale and broke every app-window feature (#469); nothing may put
 # them back in the tree.
 core/wayland/src/main/jniLibs/*/*.so
+
+# FFmpeg binaries — built from pinned source by core/ffmpeg's
+# buildFfmpegNatives task (#493). 172 MB of committed blobs that nothing
+# rebuilt; F-Droid always built them from source, our releases never did.
+core/ffmpeg/src/main/jniLibs/*/*.so

@@ -89,7 +89,7 @@ jobs:
             build-proot/proot-termux
       - uses: ./.github/actions/setup-toolchain
       - name: Run release unit tests
-        run: ./gradlew testDebugUnitTest -PskipWaylandNatives=true
+        run: ./gradlew testDebugUnitTest -PskipWaylandNatives=true -PskipFfmpegNatives=true
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
