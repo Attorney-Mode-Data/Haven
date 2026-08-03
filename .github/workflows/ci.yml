@@ -93,6 +93,7 @@ jobs:
         run: >-
           ./gradlew testDebugUnitTest :app:testArm64DebugUnitTest
           -PexcludeSshlibContractTests=true
+          -PskipWaylandNatives=true
       - name: Run sshlib contract tests (non-gating, connectbot/cbssh#245)
         # Reported, never silent: a failure here is visible in the job summary
         # and the uploaded results, it just does not fail the build. If these
@@ -106,7 +107,7 @@ jobs:
         # "failed three times in a row" rather than "flaked once". The signal
         # is now worth acting on instead of squinting at.
         continue-on-error: true
-        run: ./gradlew :core:ssh:testDebugUnitTest --tests 'sh.haven.core.ssh.sshlib.*'
+        run: ./gradlew :core:ssh:testDebugUnitTest --tests 'sh.haven.core.ssh.sshlib.*' -PskipWaylandNatives=true
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

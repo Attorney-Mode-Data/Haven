@@ -67,32 +67,50 @@ val buildWaylandNatives by tasks.registering {
     // chain intermittently 5xxs), and when this build is for an ABI these
     // binaries are not shipped for.
     onlyIf {
+        // Unit-test jobs check out every submodule recursively but never
+        // package an APK, so building these there is ~20 minutes spent on
+        // binaries nothing consumes. They opt out explicitly rather than the
+        // task guessing from task names.
+        val skipped = providers.gradleProperty("skipWaylandNatives").orNull == "true"
         val abiWanted = when (targetAbi) {
             null -> true            // unqualified build: produce them
             "arm64" -> true
             else -> false
         }
         val present = labwc.exists() && helpers.exists() && virgl.exists()
+        if (skipped) logger.lifecycle("[wayland] -PskipWaylandNatives — not building")
         if (!present) {
             logger.lifecycle("[wayland] submodule not checked out — skipping native build")
         }
-        abiWanted && present
+        !skipped && abiWanted && present
     }
 
     doLast {
         val built = File(waylandScriptDir, "jniLibs/$waylandAbi")
-        // inheritIO, not a captured provider: these scripts are long and their
-        // failures are deep (a missing header surfaces thousands of lines into
-        // wlroots). Swallowing their output turns any of that into a bare
-        // "finished with non-zero exit value 1", which is what the first cut of
-        // this task did and it cost a debugging round.
+        // Pump the script's output through Gradle's logger rather than
+        // inheritIO(). inheritIO inherits the *daemon's* stdio, which never
+        // reaches the build console — on CI that turned a real failure into a
+        // bare "failed with exit code 1" with the cause nowhere in the log, and
+        // cost a round trip to discover the runner was missing meson/ninja.
         listOf(labwc, helpers, virgl).forEach { script ->
             val proc = ProcessBuilder("bash", script.absolutePath)
                 .directory(waylandScriptDir)
-                .inheritIO()
+                .redirectErrorStream(true)
                 .apply { environment()["ABI"] = waylandAbi }
                 .start()
+            val tail = ArrayDeque<String>()
+            proc.inputStream.bufferedReader().forEachLine { line ->
+                logger.info(line)
+                tail.addLast(line)
+                if (tail.size > 40) tail.removeFirst()
+            }
             val code = proc.waitFor()
+            if (code != 0) {
+                // At default log level `info` is hidden, so surface enough of
+                // the end to diagnose without needing --info and a re-run.
+                logger.error("--- ${script.name} last ${tail.size} lines ---")
+                tail.forEach { logger.error(it) }
+            }
             require(code == 0) { "${script.name} failed with exit code $code" }
         }
         copy {
