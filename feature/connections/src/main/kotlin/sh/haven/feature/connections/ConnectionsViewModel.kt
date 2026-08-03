@@ -216,6 +216,7 @@ class ConnectionsViewModel @Inject constructor(
     private val sshIdentityRepository: sh.haven.core.data.repository.SshIdentityRepository,
     private val portForwardRepository: PortForwardRepository,
     private val sshSessionManager: SshSessionManager,
+    private val backgroundDisconnectDetector: sh.haven.core.ssh.BackgroundDisconnectDetector,
     private val sshSessionAttacher: sh.haven.core.ssh.SshSessionAttacher,
     private val reticulumSessionManager: ReticulumSessionManager,
     private val moshSessionManager: MoshSessionManager,
@@ -317,6 +318,63 @@ class ConnectionsViewModel @Inject constructor(
                                 sh.haven.core.data.message.UserMessage.Severity.WARNING,
                             ),
                         )
+                    }
+                }
+            }
+        }
+        // #495: an SSH session that dies within seconds of the app going to the
+        // background, while the process and its foreground-service notification
+        // are both still alive, is the signature of a vendor background
+        // restriction rather than anything Haven did. Say so once, with the
+        // setting to check — Android's own battery-optimisation exemption cannot
+        // see those switches, so Haven otherwise reports "exempt, all good"
+        // while the thing killing connections sits in a screen it can't read.
+        //
+        // Deliberately NOT a general SSH-drop log: an intentional disconnect
+        // leaves an SSH session in the map as DISCONNECTED, unlike the serial
+        // transports above, so logging every transition would be noise. Gating
+        // on the background window keeps this to the case it can explain.
+        viewModelScope.launch {
+            val wasConnected = mutableSetOf<String>()
+            var alreadyReported = false
+            sshSessionManager.sessions.collect { map ->
+                map.values.forEach { s ->
+                    val connected = s.status == SshSessionManager.SessionState.Status.CONNECTED
+                    if (connected) {
+                        wasConnected += s.sessionId
+                    } else if (s.sessionId in wasConnected) {
+                        wasConnected -= s.sessionId
+                        if (!alreadyReported && backgroundDisconnectDetector.looksLikeBackgroundRestriction()) {
+                            alreadyReported = true
+                            val hint = sh.haven.core.ssh.BackgroundDisconnectDetector
+                                .vendorBackgroundSettingHint(android.os.Build.MANUFACTURER)
+                            connectionLogRepository.logEvent(
+                                s.profileId,
+                                ConnectionLog.Status.DISCONNECTED,
+                                details = buildString {
+                                    append(
+                                        "Dropped within ")
+                                    append(sh.haven.core.ssh.BackgroundDisconnectDetector.WINDOW_MS / 1000)
+                                    append("s of Haven going to the background, while the ")
+                                    append("connection notification was still showing. That is usually the ")
+                                    append("phone's own background restrictions cutting the connection, not ")
+                                    append("Haven closing it — and it is a separate setting from Android's ")
+                                    append("battery optimisation, which Haven cannot read. ")
+                                    if (hint != null) {
+                                        append("On ")
+                                        append(android.os.Build.MANUFACTURER)
+                                        append(": ")
+                                        append(hint)
+                                        append(".")
+                                    } else {
+                                        append(
+                                            "Look for an 'allow background activity' or 'autostart' " +
+                                                "switch in your phone's app settings.",
+                                        )
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }

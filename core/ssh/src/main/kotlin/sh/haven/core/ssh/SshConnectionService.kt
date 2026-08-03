@@ -61,6 +61,10 @@ class SshConnectionService : Service() {
     @Inject
     lateinit var mcpStatusHolder: McpStatusHolder
 
+    /** Stamps process background/foreground so a drop can be attributed (#495). */
+    @Inject
+    lateinit var backgroundDisconnectDetector: BackgroundDisconnectDetector
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
@@ -74,10 +78,18 @@ class SshConnectionService : Service() {
      */
     private val foregroundObserver = object : DefaultLifecycleObserver {
         override fun onStart(owner: LifecycleOwner) {
+            backgroundDisconnectDetector.onForegrounded()
             serviceScope.launch { sessionManager.probeAndReconnectStale() }
             // probeAndReconnectStale skips headless transports (the MCP tunnel);
             // give them their own immediate kick rather than the deferrable watchdog.
             reviveHooks.forEach { it.reviveNow() }
+        }
+
+        // Stamped here rather than in MainActivity.onPause because this is the
+        // *process* going background, which is what a ROM's background policy
+        // acts on — an Activity pause also fires for a permission dialog (#495).
+        override fun onStop(owner: LifecycleOwner) {
+            backgroundDisconnectDetector.onBackgrounded()
         }
     }
 
