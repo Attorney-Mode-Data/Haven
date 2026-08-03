@@ -313,7 +313,7 @@ class AgentConsentManager @Inject constructor() {
         // operation whose client timed out before the result arrived, so the
         // agent's retry of the SAME operation proceeds instead of re-prompting.
         if (level == ConsentLevel.EVERY_CALL) {
-            val grantKey = "$memoKey ${operationKey.orEmpty()}"
+            val grantKey = grantKey(memoKey, operationKey)
             mutex.withLock {
                 val expiry = retryGrants.remove(grantKey) // consume regardless
                 if (expiry != null && expiry > System.currentTimeMillis()) {
@@ -376,8 +376,15 @@ class AgentConsentManager @Inject constructor() {
                 ConsentLevel.ONCE_PER_SESSION -> mutex.withLock { sessionAllowed.add(memoKey) }
                 // Arm a single-use retry grant so the approval survives a client
                 // that timed out mid-wait (consumed on the retry; see retryGrants).
-                ConsentLevel.EVERY_CALL -> {
-                    val grantKey = "$memoKey ${operationKey.orEmpty()}"
+                //
+                // Only when the caller scoped the approval to an operation. With
+                // a null operationKey the grant would key on client+tool alone,
+                // so the *next* call of that tool — a different command, a
+                // different path — would consume an approval the user gave for
+                // something else. That is precisely the EVERY_CALL contract, so
+                // an unscoped caller gets no grant rather than a loose one.
+                ConsentLevel.EVERY_CALL -> if (operationKey != null) {
+                    val grantKey = grantKey(memoKey, operationKey)
                     mutex.withLock {
                         retryGrants[grantKey] = System.currentTimeMillis() + RETRY_GRANT_MS
                     }
@@ -661,6 +668,18 @@ class AgentConsentManager @Inject constructor() {
 
     private fun memoKey(clientHint: String?, toolName: String): String =
         "${clientHint ?: "unknown"}::$toolName"
+
+    /**
+     * Key for [retryGrants]. One function on purpose: the arming and consuming
+     * sites had drifted to different separators (a NUL on one side, a space on
+     * the other), so no grant ever matched its own retry and the whole
+     * mechanism was inert. `\u0000` cannot occur in a tool or operation name,
+     * so it can't be forged across the join. Written as an escape, never
+     * the raw byte: a file containing a raw NUL reads as binary to grep, which
+     * is how the two sides drifted apart unnoticed.
+     */
+    private fun grantKey(memoKey: String, operationKey: String?): String =
+        "$memoKey\u0000${operationKey.orEmpty()}"
 
     companion object {
         /**

@@ -104,6 +104,105 @@ class AgentConsentManagerTest {
     }
 
     @Test
+    fun `an approved EVERY_CALL operation arms a retry grant its retry consumes`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val mgr = AgentConsentManager()
+            mgr.setForegroundActive(true)
+            val first = async {
+                mgr.requestConsent(
+                    toolName = "run_command",
+                    clientHint = "agent-A",
+                    summary = "uname -a",
+                    level = ConsentLevel.EVERY_CALL,
+                    operationKey = "op-1",
+                )
+            }
+            mgr.respond(mgr.pending.value.single().id, ConsentDecision.ALLOW)
+            assertEquals(ConsentDecision.ALLOW, first.await())
+
+            // The client had already given up waiting (its read timeout is
+            // shorter than the consent wait) and retries the SAME operation.
+            // The grant armed above must carry that retry through with no
+            // second prompt — proven by backgrounding first, where anything
+            // that reaches the queue can only end in DENY.
+            mgr.setForegroundActive(false)
+            val retry = mgr.requestConsent(
+                toolName = "run_command",
+                clientHint = "agent-A",
+                summary = "uname -a",
+                level = ConsentLevel.EVERY_CALL,
+                operationKey = "op-1",
+            )
+            assertEquals(ConsentDecision.ALLOW, retry)
+            assertTrue("retry must not have queued a prompt", mgr.pending.value.isEmpty())
+        }
+
+    @Test
+    fun `a retry grant is single-use and scoped to its own operation`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val mgr = AgentConsentManager()
+            mgr.setForegroundActive(true)
+            val first = async {
+                mgr.requestConsent(
+                    "run_command", "agent-A", "uname -a", ConsentLevel.EVERY_CALL,
+                    operationKey = "op-1",
+                )
+            }
+            mgr.respond(mgr.pending.value.single().id, ConsentDecision.ALLOW)
+            first.await()
+            mgr.setForegroundActive(false)
+
+            // A *different* operation from the same client+tool is not covered.
+            assertEquals(
+                ConsentDecision.DENY,
+                mgr.requestConsent(
+                    "run_command", "agent-A", "rm -rf /", ConsentLevel.EVERY_CALL,
+                    timeoutMs = 1_000, operationKey = "op-2",
+                ),
+            )
+            // The grant is consumed by its first use, so a second retry prompts.
+            assertEquals(
+                ConsentDecision.ALLOW,
+                mgr.requestConsent(
+                    "run_command", "agent-A", "uname -a", ConsentLevel.EVERY_CALL,
+                    operationKey = "op-1",
+                ),
+            )
+            assertEquals(
+                ConsentDecision.DENY,
+                mgr.requestConsent(
+                    "run_command", "agent-A", "uname -a", ConsentLevel.EVERY_CALL,
+                    timeoutMs = 1_000, operationKey = "op-1",
+                ),
+            )
+        }
+
+    @Test
+    fun `an unscoped approval arms no grant, so the next call still prompts`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val mgr = AgentConsentManager()
+            mgr.setForegroundActive(true)
+            // No operationKey: a grant here could only key on client+tool, and
+            // would hand the next — different — call an approval the user gave
+            // for this one.
+            val first = async {
+                mgr.requestConsent("run_command", "agent-A", "uname -a", ConsentLevel.EVERY_CALL)
+            }
+            mgr.respond(mgr.pending.value.single().id, ConsentDecision.ALLOW)
+            first.await()
+
+            val second = async {
+                mgr.requestConsent(
+                    "run_command", "agent-A", "rm -rf /", ConsentLevel.EVERY_CALL,
+                    timeoutMs = Long.MAX_VALUE,
+                )
+            }
+            assertEquals("second call must still prompt", 1, mgr.pending.value.size)
+            mgr.respond(mgr.pending.value.single().id, ConsentDecision.DENY)
+            assertEquals(ConsentDecision.DENY, second.await())
+        }
+
+    @Test
     fun `backgrounded consent emits a blocked-notification event while holding`() =
         runTest(UnconfinedTestDispatcher()) {
             val mgr = AgentConsentManager()
