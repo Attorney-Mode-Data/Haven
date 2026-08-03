@@ -127,22 +127,54 @@ export PKG_CONFIG_PATH="$DEPS_SYSROOT/lib/pkgconfig"
 export CC CXX AR RANLIB STRIP NM
 
 # --- Dep build helpers ---------------------------------------------------
+#
+# Everything fetched here is PINNED AND VERIFIED, because everything fetched
+# here is compiled into a binary that ships in the APK.
+#
+# F-Droid's rule is that a binary in the APK must be reproducible from source in
+# their builder; the accepted recipes pin their sources to do it (mpv-android:
+# `srclibs: FFmpeg@a7425f7`, and for a plain download
+# `curl -Lo lua.tar.gz … ; echo "<sha256>  lua.tar.gz" | sha256sum -c -`).
+# Fetching an unpinned tarball over HTTPS satisfies neither half: TLS says who
+# served the bytes, never which bytes, and an unpinned ref says nothing at all.
+#
+# The hashes below were recorded from each project's canonical HTTPS URL and
+# cross-checked against an independent re-download. They are trust-on-first-use
+# pins, NOT verification against upstream signatures — they prove the source has
+# not changed since it was pinned, which is what catches a substitution or a
+# silently re-rolled release. Verifying signatures would be strictly better and
+# is not what is implemented here.
+#
+# To bump a dependency: change the version, run the build, take the hash from
+# the failure message, and check it against upstream before committing it.
+
 fetch_git_tag() {
-    # fetch_git_tag <name> <repo> <tag>
-    local name="$1" repo="$2" tag="$3"
+    # fetch_git_tag <name> <repo> <ref> <expected-commit-sha>
+    local name="$1" repo="$2" ref="$3" want="$4"
     local dst="$SRC_DIR/$name"
     if [ ! -d "$dst/.git" ]; then
-        echo "  [fetch] $name @ $tag"
+        echo "  [fetch] $name @ $ref"
         rm -rf "$dst"
-        git clone --depth 1 --branch "$tag" "$repo" "$dst" 2>&1 | tail -3
+        git clone --depth 1 --branch "$ref" "$repo" "$dst" 2>&1 | tail -3
     else
         echo "  [cached] $name"
+    fi
+    # Verify the commit, not the ref name. A tag can be moved and a branch moves
+    # by definition — x264 was tracked at `stable`, a branch, so every build was
+    # free to compile different source with nothing to notice it by.
+    local got
+    got="$(cd "$dst" && git rev-parse HEAD)"
+    if [ "$got" != "$want" ]; then
+        echo "ERROR: $name is at $got, expected $want" >&2
+        echo "       ($repo @ $ref)" >&2
+        echo "       The ref moved. Confirm the new commit is legitimate, then update the pin." >&2
+        exit 1
     fi
 }
 
 fetch_tarball() {
-    # fetch_tarball <name> <url> <tarball-filename> <extracted-dir>
-    local name="$1" url="$2" tarball="$3" extracted="$4"
+    # fetch_tarball <name> <url> <tarball-filename> <extracted-dir> <sha256>
+    local name="$1" url="$2" tarball="$3" extracted="$4" sha="$5"
     local dst="$SRC_DIR/$name"
     if [ -d "$dst" ]; then echo "  [cached] $name"; return; fi
     [ -f "$DL_DIR/$tarball" ] || {
@@ -156,11 +188,23 @@ fetch_tarball() {
             --connect-timeout 15 --max-time 600 \
             -o "$DL_DIR/$tarball" "$url"
     }
+    # Checked on every run, not just after a download: a cached tarball from an
+    # earlier build is exactly as unverified as a fresh one.
+    local got
+    got="$(sha256sum "$DL_DIR/$tarball" | cut -d' ' -f1)"
+    if [ "$got" != "$sha" ]; then
+        echo "ERROR: $tarball sha256 mismatch" >&2
+        echo "       expected $sha" >&2
+        echo "       got      $got" >&2
+        echo "       Refusing to build. Delete $DL_DIR/$tarball to re-download," >&2
+        echo "       or update the pin if the release was legitimately re-rolled." >&2
+        exit 1
+    fi
     tar -xf "$DL_DIR/$tarball" -C "$SRC_DIR"
     if [ "$extracted" != "$name" ]; then
         mv "$SRC_DIR/$extracted" "$dst"
     fi
-    echo "  [fetched] $name"
+    echo "  [fetched+verified] $name"
 }
 
 # Common flags used by every autotools dep.
@@ -207,7 +251,10 @@ build_x264() {
     fi
     echo "=== Building libx264 for $ABI ==="
     # x264 moves slowly; "stable" branch is the recommended line for embedded.
-    fetch_git_tag "$name" "https://code.videolan.org/videolan/x264.git" "stable"
+    # NB: `stable` is a BRANCH — it moves. The pin is what makes this
+    # reproducible; without it every build could compile different x264.
+    fetch_git_tag "$name" "https://code.videolan.org/videolan/x264.git" "stable" \
+        "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"
 
     local SRC="$SRC_DIR/$name"
     local LOG="$SCRIPT_DIR/dep-$name.log"
@@ -245,7 +292,8 @@ build_x264() {
 build_mp3lame() {
     fetch_tarball lame \
         "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz" \
-        "lame-3.100.tar.gz" "lame-3.100"
+        "lame-3.100.tar.gz" "lame-3.100" \
+        "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
     build_autotools lame "$DEPS_SYSROOT/lib/libmp3lame.a" \
         --disable-frontend --disable-decoder
 }
@@ -253,7 +301,8 @@ build_mp3lame() {
 build_opus() {
     fetch_tarball opus \
         "https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz" \
-        "opus-1.5.2.tar.gz" "opus-1.5.2"
+        "opus-1.5.2.tar.gz" "opus-1.5.2" \
+        "65c1d2f78b9f2fb20082c38cbe47c951ad5839345876e46941612ee87f9a7ce1"
     build_autotools opus "$DEPS_SYSROOT/lib/libopus.a" \
         --disable-doc --disable-extra-programs
 }
@@ -261,14 +310,16 @@ build_opus() {
 build_libogg() {
     fetch_tarball ogg \
         "https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz" \
-        "libogg-1.3.5.tar.gz" "libogg-1.3.5"
+        "libogg-1.3.5.tar.gz" "libogg-1.3.5" \
+        "0eb4b4b9420a0f51db142ba3f9c64b333f826532dc0f48c6410ae51f4799b664"
     build_autotools ogg "$DEPS_SYSROOT/lib/libogg.a"
 }
 
 build_libvorbis() {
     fetch_tarball vorbis \
         "https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz" \
-        "libvorbis-1.3.7.tar.gz" "libvorbis-1.3.7"
+        "libvorbis-1.3.7.tar.gz" "libvorbis-1.3.7" \
+        "0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
     build_autotools vorbis "$DEPS_SYSROOT/lib/libvorbis.a" \
         --with-ogg="$DEPS_SYSROOT" --disable-examples
 }
@@ -280,7 +331,7 @@ build_vpx() {
         return
     fi
     echo "=== Building libvpx for $ABI ==="
-    fetch_git_tag vpx "https://chromium.googlesource.com/webm/libvpx" "v1.14.1"
+    fetch_git_tag vpx "https://chromium.googlesource.com/webm/libvpx" "v1.14.1" "12f3a2ac603e8f10742105519e0cd03c3b8f71dd"
     local SRC="$SRC_DIR/vpx"
     local LOG="$SCRIPT_DIR/dep-vpx.log"
     local VPX_TARGET VPX_AS
@@ -337,7 +388,8 @@ build_vpx() {
 build_freetype() {
     fetch_tarball freetype \
         "https://downloads.sourceforge.net/project/freetype/freetype2/2.13.3/freetype-2.13.3.tar.xz" \
-        "freetype-2.13.3.tar.xz" "freetype-2.13.3"
+        "freetype-2.13.3.tar.xz" "freetype-2.13.3" \
+        "0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f063289"
     build_autotools freetype "$DEPS_SYSROOT/lib/libfreetype.a" \
         --without-harfbuzz --without-bzip2 --without-png \
         --without-brotli --without-zlib
@@ -346,7 +398,8 @@ build_freetype() {
 build_fribidi() {
     fetch_tarball fribidi \
         "https://github.com/fribidi/fribidi/releases/download/v1.0.16/fribidi-1.0.16.tar.xz" \
-        "fribidi-1.0.16.tar.xz" "fribidi-1.0.16"
+        "fribidi-1.0.16.tar.xz" "fribidi-1.0.16" \
+        "1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c"
     build_autotools fribidi "$DEPS_SYSROOT/lib/libfribidi.a" \
         --disable-docs --disable-tests
 }
@@ -357,7 +410,8 @@ build_harfbuzz() {
     # Freetype must already be built so harfbuzz can find it via pkg-config.
     fetch_tarball harfbuzz \
         "https://github.com/harfbuzz/harfbuzz/releases/download/8.5.0/harfbuzz-8.5.0.tar.xz" \
-        "harfbuzz-8.5.0.tar.xz" "harfbuzz-8.5.0"
+        "harfbuzz-8.5.0.tar.xz" "harfbuzz-8.5.0" \
+        "77e4f7f98f3d86bf8788b53e6832fb96279956e1c3961988ea3d4b7ca41ddc27"
     build_autotools harfbuzz "$DEPS_SYSROOT/lib/libharfbuzz.a" \
         --with-freetype --without-glib --without-icu --without-cairo \
         --disable-introspection
@@ -372,7 +426,8 @@ build_mbedtls() {
     echo "=== Building mbedtls for $ABI ==="
     fetch_tarball mbedtls \
         "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.2/mbedtls-3.6.2.tar.bz2" \
-        "mbedtls-3.6.2.tar.bz2" "mbedtls-3.6.2"
+        "mbedtls-3.6.2.tar.bz2" "mbedtls-3.6.2" \
+        "8b54fb9bcf4d5a7078028e0520acddefb7900b3e66fec7f7175bb5b7d85ccdca"
     local SRC="$SRC_DIR/mbedtls"
     local LOG="$SCRIPT_DIR/dep-mbedtls.log"
     local BUILD="$SCRIPT_DIR/build-$ABI/deps/mbedtls"
@@ -400,7 +455,8 @@ build_mbedtls() {
 build_libass() {
     fetch_tarball libass \
         "https://github.com/libass/libass/releases/download/0.17.3/libass-0.17.3.tar.xz" \
-        "libass-0.17.3.tar.xz" "libass-0.17.3"
+        "libass-0.17.3.tar.xz" "libass-0.17.3" \
+        "eae425da50f0015c21f7b3a9c7262a910f0218af469e22e2931462fed3c50959"
     build_autotools libass "$DEPS_SYSROOT/lib/libass.a" \
         --disable-require-system-font-provider
 }
@@ -412,7 +468,7 @@ build_x265() {
         return
     fi
     echo "=== Building libx265 for $ABI ==="
-    fetch_git_tag x265 "https://bitbucket.org/multicoreware/x265_git.git" "4.1"
+    fetch_git_tag x265 "https://bitbucket.org/multicoreware/x265_git.git" "4.1" "1d117bed4747758b51bd2c124d738527e30392cb"
     local SRC="$SRC_DIR/x265"
     local LOG="$SCRIPT_DIR/dep-x265.log"
     local BUILD="$SCRIPT_DIR/build-$ABI/deps/x265"
@@ -489,6 +545,23 @@ if [ ! -d "$FFMPEG_SRC/.git" ]; then
 else
     echo "=== FFmpeg source already present at $FFMPEG_SRC ==="
     (cd "$FFMPEG_SRC" && git fetch --depth 1 origin "$FFMPEG_REF" 2>/dev/null || true)
+fi
+
+# Verify the commit, not the tag. FFmpeg is the largest thing compiled into the
+# APK, and until now the only thing identifying it was a tag name — which a
+# repository can move, and which two mirrors need not agree on. Checked here
+# rather than inside the clone loop so a cached tree from an earlier build is
+# verified too. Skipped when FFMPEG_REF is overridden, so a developer can test
+# another release without editing the pin.
+FFMPEG_COMMIT="${FFMPEG_COMMIT:-140fd653aed8cad774f991ba083e2d01e86420c7}"   # n8.0
+if [ "$FFMPEG_REF" = "n8.0" ]; then
+    got="$(cd "$FFMPEG_SRC" && git rev-parse HEAD)"
+    if [ "$got" != "$FFMPEG_COMMIT" ]; then
+        echo "ERROR: FFmpeg $FFMPEG_REF is at $got, expected $FFMPEG_COMMIT" >&2
+        echo "       The tag moved, or a mirror disagrees. Verify before updating the pin." >&2
+        exit 1
+    fi
+    echo "=== FFmpeg commit verified: $got ==="
 fi
 
 # --- Configure + build ---------------------------------------------------

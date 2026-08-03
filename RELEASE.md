@@ -150,6 +150,64 @@ Things Haven's CI does **not** exercise but F-Droid does:
   ```
   Anything in `core/wayland/src/main/jniLibs/` that no build step regenerates is **deleted from the F-Droid APK and never replaced** — that is how their builds shipped with no XWayland wrapper, no GLES benchmark and no GPU renderer. Whenever you add a binary there, add the build step to the fdroiddata recipe in the same change. The two `libvirgl_*_server.so` binaries still have no build script and are still missing from F-Droid builds.
 
+## Native binaries: the rules
+
+Haven ships native code that F-Droid must be able to rebuild from source. Three
+rules follow from that, and all three came from failures rather than theory.
+
+**1. Never commit a binary.** `scripts/check-no-committed-binaries.sh` enforces
+it, in CI and in `preflight.sh` (so the pre-push hook catches it first). Detection
+is by content magic — ELF, Mach-O, PE, dex, Java/Android archive — not by file
+extension, so renaming a blob does not get it past. `gradle-wrapper.jar` is the
+only allowlist entry.
+
+A committed binary is unauditable in review, corresponds to no source change,
+and goes stale in silence. It has bitten us three times: #469 (a
+`liblabwc_android.so` three versions behind the source — the cage crashed while
+the code looked right), rdp (armv7 missing from the cargo target list, so armv7
+users ran whatever was checked in), and the wayland set below.
+
+The `GRANDFATHERED` list in that script holds the binaries that predate the gate.
+It may only shrink — the check fails if an entry stops being tracked, so
+completing a migration forces its own cleanup and the list cannot quietly become
+a second allowlist. Tracked in #493.
+
+**2. A binary with no build step is deleted from the F-Droid APK and never
+replaced.** Their recipe `scandelete`s the jniLibs directories and rebuilds what
+its `build:` block names. `core/wayland/src/main/jniLibs` was scandeleted while
+only `liblabwc_android.so` was rebuilt, so F-Droid's APK shipped with **no
+XWayland wrapper, no GLES benchmark and no GPU renderer** — for months, silently,
+because our own APK carried the committed copies and nothing compared the two.
+**Whenever you add a binary to a jniLibs directory, add its build step to the
+fdroiddata recipe in the same change**, on the *last* `Builds` entry —
+`AutoUpdateMode: Version` clones that entry for every new tag, so an omission
+propagates forever. The two `libvirgl_*_server.so` binaries still have no build
+script and are still missing from F-Droid builds.
+
+**3. Every fetched source is pinned and verified.** F-Droid's rule is that a
+binary in the APK must be reproducible from source in their builder, and the
+accepted recipes pin their sources to achieve it (mpv-android:
+`srclibs: FFmpeg@a7425f7`; for a plain download,
+`curl -Lo lua.tar.gz … ; echo "<sha256>  lua.tar.gz" | sha256sum -c -`). So:
+
+- **source may be downloaded when pinned and hash-checked; a binary may not be,
+  at any hash.** A checksum proves a blob is unchanged, never that it
+  corresponds to any source — which is why "just pin the sha256 of the committed
+  `.so`" is not a fix.
+- `build-ffmpeg/build.sh` verifies all nine dependency tarballs by sha256 and all
+  four git sources by **commit**, not by ref name. Ref names are not pins: x264
+  was tracked at `stable`, a *branch*, so every build was free to compile
+  different source with nothing to notice it by.
+- Bumping a dependency means changing the version, running the build, taking the
+  hash from the failure message, and checking it against upstream before
+  committing it.
+
+Note what is and is not claimed for those hashes: they were recorded from each
+project's canonical HTTPS URL and cross-checked against an independent
+re-download. They are trust-on-first-use pins, **not** verification against
+upstream signatures. They catch a substitution or a silently re-rolled release;
+they do not establish that the original tarball was genuine.
+
 ### If the F-Droid build fails
 
 Watch [fdroid/fdroiddata merge requests tagged with our app](https://gitlab.com/fdroid/fdroiddata/-/merge_requests?scope=all&search=sh.haven.app). The bot MR shows the build log; common causes are tool-version skew vs what's above, new apt deps the recipe's `sudo:` block doesn't install, or submodule commits the buildserver can't reach. When fixed, comment `@fdroidbot rebuild` on the MR.
