@@ -98,6 +98,13 @@ jobs:
         # and the uploaded results, it just does not fail the build. If these
         # start failing *every* run rather than intermittently, that is a real
         # regression and not the upstream race — check before dismissing it.
+        #
+        # That last sentence used to be the reader's job. Since #475 the
+        # test-retry plugin gives SshlibExecContractTest three attempts (and
+        # only that class — verified by making a test in another core:ssh class
+        # fail and watching it run once), so a red step here already means
+        # "failed three times in a row" rather than "flaked once". The signal
+        # is now worth acting on instead of squinting at.
         continue-on-error: true
         run: ./gradlew :core:ssh:testDebugUnitTest --tests 'sh.haven.core.ssh.sshlib.*'
       - name: Upload test results
