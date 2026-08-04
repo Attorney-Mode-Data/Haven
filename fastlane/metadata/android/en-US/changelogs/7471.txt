@@ -1,0 +1,1 @@
+🖥️ RDP on VirtualBox: the connection now completes instead of failing on the last message of the handshake. VirtualBox understates that message's length by the 8 bytes of content it carries; nothing was ever missing, so Haven now uses it as received. Earlier releases could only skip a message like that once a session was running — this one arrives before there is one. (#422)

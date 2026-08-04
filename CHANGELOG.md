@@ -5,6 +5,16 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.38
+
+🖥️ **RDP on VirtualBox: the connection now completes instead of failing at the last step** — a reporter on v5.86.37 could not connect at all. The session got all the way through the handshake and then stopped on the final message of it, with "not enough bytes: received 18, expected 26".
+
+Nothing was missing. That message is the tail end of a check comparing the size a message *claims* against the size it *actually decoded to* — the same misleading error that sent the last two releases down the wrong path. VirtualBox's server states the length of that final message as 18, which counts its two headers and forgets the 8 bytes of content following them. All 26 bytes had arrived.
+
+v5.86.36 taught Haven to skip a message like that and carry on, but only once a session was running. This one arrives while the connection is still being set up, before there is a session to carry on with — so the connect failed outright, every time. The fix therefore sits in the RDP library itself, where it covers both: a length that under-states a message is now believed no more than it deserves to be, and the message is used as received. A genuinely short message is still rejected, because that fails earlier for a different reason.
+
+Confirmed by rebuilding both reporters' exact messages — this one and the 8565-byte one from the earlier report — and watching them go from their reported errors to decoding cleanly. Both ship as tests. (#422)
+
 ## v5.86.37
 
 🖥️ **Remote desktop picks up a batch of upstream fixes, including one that could close the app** — Haven's RDP engine is the IronRDP library, and Haven had been using its published releases. The current published release has a fault where a picture update whose stated size disagrees with the area it is painting into writes past the end of the display buffer, which stops the app rather than the connection. That is one of the two crashes reported in #422. It is fixed upstream, but there is no published release carrying the fix, and waiting for one meant knowingly shipping a crash — so Haven now builds against the fixed upstream code directly, at a fixed point that cannot move underneath it.
