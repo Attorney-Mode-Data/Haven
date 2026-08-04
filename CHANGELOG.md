@@ -15,6 +15,22 @@ v5.86.36 taught Haven to skip a message like that and carry on, but only once a 
 
 Confirmed by rebuilding both reporters' exact messages — this one and the 8565-byte one from the earlier report — and watching them go from their reported errors to decoding cleanly. Both ship as tests. (#422)
 
+📡 **Mosh no longer gives up on reconnecting after one bad moment** — a reporter's log showed Haven correctly noticing a dead session, scheduling a reconnect, trying it fifteen seconds after the network came back, failing to look up the host name, and then never trying again.
+
+The host name was a router-local one that had worked when the session was first opened. It failed once, most likely because Android had not yet picked up the DNS server from the network it had just rejoined. One transient miss ended automatic reconnection for good.
+
+The reason it was permanent: the retry schedule could only be started by a session *dying*. When the reconnect's own attempt failed, that was logged and dropped — and there was no session left to die a second time, so nothing could restart the sequence. A failed attempt now re-enters the same bounded schedule as before: three tries, backing off, then it stops and waits for you.
+
+This makes Haven recover from that stall. It does not stop the stall happening — that half of the report is still open, and needs a capture from the server side. (#421)
+
+📊 **Remote desktop timings you can actually send** — when a remote desktop is laggy, the numbers that say *why* — frame rate, and how long each frame spends being decompressed, decoded and drawn — were written only to the Android system log, which needs a cable and a terminal to read. So the people best placed to report a problem were the least able to measure it.
+
+Those numbers now also appear in the connection's verbose log, which is already in the Audit Log and already copyable. If you have reported a laggy RDP session, this is the thing worth pasting next. (#477)
+
+⚡ **A wasteful copy removed from the H.264 remote desktop path** — every decoded frame was being duplicated on its way out of the decoder: about 8 MB per frame at 1080p, roughly 250 MB a second of throwaway work at 30 frames per second.
+
+Being honest about what this is: real waste that is now gone, and almost certainly not what anyone reporting remote desktop lag is actually seeing. Expect to notice nothing. (#477)
+
 ## v5.86.37
 
 🖥️ **Remote desktop picks up a batch of upstream fixes, including one that could close the app** — Haven's RDP engine is the IronRDP library, and Haven had been using its published releases. The current published release has a fault where a picture update whose stated size disagrees with the area it is painting into writes past the end of the display buffer, which stops the app rather than the connection. That is one of the two crashes reported in #422. It is fixed upstream, but there is no published release carrying the fix, and waiting for one meant knowingly shipping a crash — so Haven now builds against the fixed upstream code directly, at a fixed point that cannot move underneath it.
