@@ -155,9 +155,35 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
             w = w, h = h,
             cw = minOf(w, image.width), ch = minOf(h, image.height),
         )
-        // ByteArray of exactly need bytes for the UniFFI Vec<u8>.
-        return if (out.size == need) out.copyOf() else out.copyOf(need)
+        return exactly(out, need)
     }
+
+    /**
+     * The exactly-[need]-byte array UniFFI's `Vec<u8>` wants, without copying
+     * when the scratch buffer is already that size (#477).
+     *
+     * This used to be `if (out.size == need) out.copyOf() else out.copyOf(need)`
+     * — a defensive copy of the whole frame on every single frame, because
+     * [rgba] is reused. It is not needed. The generated binding marshals the
+     * return value inside the callback body:
+     *
+     *     uniffiOutReturn.setValue(FfiConverterByteArray.lower(value))
+     *
+     * `lower` allocates a RustBuffer and copies the bytes into native memory
+     * synchronously, before control returns to the decode loop that would
+     * overwrite [rgba]. Nothing retains the Kotlin array, so handing over the
+     * scratch buffer is safe and the copy bought nothing.
+     *
+     * What it cost: a full-frame heap allocation per frame — 8.29 MB at 1080p,
+     * 33.2 MB at 4K — so roughly 250 MB/s of garbage at 30 fps, on the path
+     * whose symptom is periodic stutter.
+     *
+     * ★ The safety argument is the synchronous marshalling. If the decoder
+     * callback ever becomes asynchronous, or a caller starts holding the
+     * returned array across frames, restore the copy.
+     */
+    internal fun exactly(out: ByteArray, need: Int): ByteArray =
+        if (out.size == need) out else out.copyOf(need)
 
     private fun clamp(v: Int): Byte = (if (v < 0) 0 else if (v > 255) 255 else v).toByte()
 

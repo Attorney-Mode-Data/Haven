@@ -3,6 +3,8 @@ package sh.haven.core.rdp
 import java.nio.ByteBuffer
 import kotlin.random.Random
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 /**
@@ -83,4 +85,47 @@ class Avc420YuvToRgbaTest {
         check(w = 32, h = 16, cw = 17, ch = 16, uPix = 2, seed = 6)
 
     @Test fun `single decoded column`() = check(w = 16, h = 8, cw = 1, ch = 8, uPix = 2, seed = 7)
+
+    /**
+     * #477: the frame handed to UniFFI must not be copied when the scratch
+     * buffer is already the right size.
+     *
+     * The decoder reuses one RGBA buffer, and the old code copied all of it on
+     * every frame to avoid handing out shared state — 8.29 MB per frame at
+     * 1080p, ~250 MB/s of garbage at 30 fps. The copy was unnecessary because
+     * the generated binding lowers the array into a RustBuffer synchronously,
+     * inside the callback, before anything can overwrite it.
+     *
+     * Asserting *identity* here is the point: an equality check would pass just
+     * as happily with the copy reinstated, and the allocation is the whole cost
+     * being removed.
+     */
+    @Test
+    fun `an exactly-sized frame is handed over without copying`() {
+        val decoder = Avc420MediaCodecDecoder()
+        val scratch = ByteArray(64) { it.toByte() }
+
+        assertSame(
+            "a frame already the requested size must be passed through, not reallocated",
+            scratch,
+            decoder.exactly(scratch, 64),
+        )
+    }
+
+    /**
+     * The other half of the contract: UniFFI wants exactly `need` bytes, so an
+     * oversized scratch buffer — left over from a larger frame before the
+     * desktop was resized down — must still be trimmed rather than passed
+     * through with junk on the end.
+     */
+    @Test
+    fun `an oversized scratch buffer is trimmed to the frame size`() {
+        val decoder = Avc420MediaCodecDecoder()
+        val scratch = ByteArray(128) { it.toByte() }
+
+        val out = decoder.exactly(scratch, 64)
+
+        assertEquals("must be trimmed to the requested length", 64, out.size)
+        assertArrayEquals("and keep the leading bytes", scratch.copyOf(64), out)
+    }
 }
