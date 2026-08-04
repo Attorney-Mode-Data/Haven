@@ -1412,6 +1412,16 @@ fn run_rdp_session(
     // packet length is incorrect 0x0004" in VBox.log) — the reason arrow
     // keys killed VRDE sessions. Such servers get slow-path TS_INPUT_PDUs,
     // as mstsc/FreeRDP do.
+    // #422: does the server accept TS_UNICODE_KEYBOARD_EVENT at all?
+    let unicode_input_supported = {
+        use ironrdp_pdu::rdp::capability_sets::InputFlags;
+        connection_result.input_flags.contains(InputFlags::UNICODE)
+    };
+    let unicode_dropped = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    if !unicode_input_supported {
+        info!("Server did not advertise unicode input; non-ASCII characters cannot be sent");
+    }
+
     let fastpath_input_supported = {
         use ironrdp_pdu::rdp::capability_sets::InputFlags;
         let flags = connection_result.input_flags;
@@ -1445,6 +1455,11 @@ fn run_rdp_session(
 
     // Input state tracking
     let mut input_db = ironrdp_input::Database::new();
+    let mut input_dumps = 0usize;
+    info!(
+        "TEMP #422: share_id={} user_channel={} io_channel={}",
+        connection_result.share_id, connection_result.user_channel_id, connection_result.io_channel_id
+    );
 
     // #477: on a fast-path server, move input off the session loop entirely.
     //
@@ -1470,6 +1485,8 @@ fn run_rdp_session(
         // fresh at this point and is only touched by the slow-path branch,
         // which never runs while this thread exists.
         let mut db = ironrdp_input::Database::new();
+        let uni_ok = unicode_input_supported;
+        let uni_dropped = Arc::clone(&unicode_dropped);
         Some(std::thread::spawn(move || {
             use ironrdp_pdu::input::fast_path::FastPathInput;
             use std::io::Write as _;
@@ -1495,7 +1512,7 @@ fn run_rdp_session(
                     continue;
                 }
                 let n = pending.len() as u64;
-                let events = fastpath_events_for(&mut db, pending);
+                let events = fastpath_events_for(&mut db, pending, uni_ok, &uni_dropped);
                 if events.is_empty() {
                     continue;
                 }
@@ -1595,7 +1612,8 @@ fn run_rdp_session(
         // Slow-path servers only — the fast-path case is handled on the input
         // thread, which leaves `pending_inputs` empty here (#477).
         if !pending_inputs.is_empty() {
-            let fastpath_events = fastpath_events_for(&mut input_db, pending_inputs);
+            let fastpath_events =
+                fastpath_events_for(&mut input_db, pending_inputs, unicode_input_supported, &unicode_dropped);
             // #422: slow-path input for servers that never negotiated fast-path
             // (VirtualBox VRDP). One TS_INPUT_PDU per batch.
             let events: Vec<_> = fastpath_events.iter().filter_map(slow_path_input_event).collect();
@@ -1605,6 +1623,16 @@ fn run_rdp_session(
                 let mut buf = ironrdp_core::WriteBuf::new();
                 match active_stage.encode_static(&mut buf, ShareDataPdu::Input(InputEventPdu(events))) {
                     Ok(_) => {
+                        // TEMP #422: dump the first few input PDUs on the wire.
+                        if input_dumps < 3 {
+                            input_dumps += 1;
+                            let b = buf.filled();
+                            info!(
+                                "INPUT-WIRE[{input_dumps}] {} bytes: {}",
+                                b.len(),
+                                b.iter().map(|x| format!("{x:02x}")).collect::<Vec<_>>().join(" ")
+                            );
+                        }
                         if let Err(e) = tls_framed.write_all(buf.filled()) {
                             error!("Write input error: {:?}", e);
                         }
@@ -1958,12 +1986,33 @@ struct InputCounters {
 /// A whole batch is accumulated into one `Vec` so a drag leaves as a single
 /// PDU rather than one per position — fewer writes, and the positions stay
 /// contiguous on the wire.
+/// #422: `unicode_supported` is the server's INPUT_FLAG_UNICODE. A server that
+/// did not advertise it silently discards `TS_UNICODE_KEYBOARD_EVENT`
+/// (MS-RDPBCGR 2.2.8.1.1.3.1.1.2) — VirtualBox's VRDP advertises
+/// `InputFlags(SCANCODES)` alone and does exactly that. Dropping those events
+/// here instead costs nothing and makes the loss visible: it was invisible
+/// before, which is why "the keyboard does nothing" took so long to place.
 fn fastpath_events_for(
     db: &mut ironrdp_input::Database,
     pending: Vec<InputEvent>,
+    unicode_supported: bool,
+    unicode_dropped: &std::sync::atomic::AtomicU64,
 ) -> Vec<ironrdp_pdu::input::fast_path::FastPathInputEvent> {
     let mut out = Vec::new();
     for event in pending {
+        if matches!(event, InputEvent::UnicodeKey { .. }) && !unicode_supported {
+            use std::sync::atomic::Ordering;
+            let n = unicode_dropped.fetch_add(1, Ordering::Relaxed) + 1;
+            if n == 1 || n % 50 == 0 {
+                warn!(
+                    "Dropped {n} unicode key event(s): this server did not advertise \
+                     INPUT_FLAG_UNICODE, so it would discard them anyway. ASCII typing \
+                     uses scancodes and is unaffected; non-ASCII characters cannot be \
+                     delivered to this server (#422)."
+                );
+            }
+            continue;
+        }
         let ops = match event {
             InputEvent::Key { scancode, pressed } => {
                 let sc = ironrdp_input::Scancode::from_u16(scancode);
@@ -2917,6 +2966,61 @@ mod tests {
             out.contains("colour depth"),
             "should hint at colour depth fix, got: {out}"
         );
+    }
+
+    /// #422: a server that never advertised INPUT_FLAG_UNICODE discards
+    /// TS_UNICODE_KEYBOARD_EVENT silently (MS-RDPBCGR 2.2.8.1.1.3.1.1.2).
+    /// VirtualBox's VRDP advertises `InputFlags(SCANCODES)` alone and does
+    /// exactly that — verified against VBox 7.2.6 with a Windows 11 guest,
+    /// where scancodes drive the guest and unicode events change nothing.
+    /// Drop them here so the loss is counted and logged rather than invisible.
+    #[test]
+    fn unicode_keys_are_dropped_when_the_server_cannot_take_them() {
+        use super::{fastpath_events_for, InputEvent};
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        let dropped = AtomicU64::new(0);
+        let mut db = ironrdp_input::Database::new();
+        let events = vec![
+            InputEvent::UnicodeKey { ch: 'e' as u32, pressed: true },
+            InputEvent::UnicodeKey { ch: 'e' as u32, pressed: false },
+        ];
+        let out = fastpath_events_for(&mut db, events, false, &dropped);
+        assert!(out.is_empty(), "nothing should reach the wire");
+        assert_eq!(2, dropped.load(Ordering::Relaxed), "both drops counted");
+    }
+
+    /// The same events on a server that *did* advertise unicode still go out —
+    /// the gate must not become a blanket ban.
+    #[test]
+    fn unicode_keys_survive_when_the_server_advertises_unicode() {
+        use super::{fastpath_events_for, InputEvent};
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        let dropped = AtomicU64::new(0);
+        let mut db = ironrdp_input::Database::new();
+        let events = vec![InputEvent::UnicodeKey { ch: 'e' as u32, pressed: true }];
+        let out = fastpath_events_for(&mut db, events, true, &dropped);
+        assert!(!out.is_empty(), "unicode must still reach a server that takes it");
+        assert_eq!(0, dropped.load(Ordering::Relaxed));
+    }
+
+    /// Scancodes are the path the app uses for ASCII and must be untouched by
+    /// the unicode gate — this is what actually drives a VirtualBox guest.
+    #[test]
+    fn scancodes_are_unaffected_by_the_unicode_gate() {
+        use super::{fastpath_events_for, InputEvent};
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        let dropped = AtomicU64::new(0);
+        let mut db = ironrdp_input::Database::new();
+        let events = vec![
+            InputEvent::Key { scancode: 0x1c, pressed: true },
+            InputEvent::Key { scancode: 0x1c, pressed: false },
+        ];
+        let out = fastpath_events_for(&mut db, events, false, &dropped);
+        assert!(!out.is_empty(), "scancodes must still be sent");
+        assert_eq!(0, dropped.load(Ordering::Relaxed));
     }
 
     /// #422: pins that an under-declared totalLength decodes, because the error
