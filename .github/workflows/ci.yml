@@ -132,8 +132,11 @@ jobs:
         run: ./scripts/check-changelog.sh
       - name: Check for hardcoded UI strings (#210)
         run: ./scripts/check-i18n-hardcoded.sh
-      - name: Check committed native libs resolve their stubs (#469)
-        run: ./scripts/check-native-libs.sh
+      # check-native-libs.sh is NOT here: this job does not build, and since
+      # #493 stopped committing the wayland .so there is nothing for it to read
+      # at this point. It printed "does not exist; nothing to check" on every
+      # run — a gate reporting success for doing nothing. It now runs in `build`,
+      # after the binaries exist.
       - name: Check no new binaries are committed
         # Binaries are unauditable in review and go stale silently (#469).
         # Blocks any NEW one; the pre-existing set is grandfathered in the
@@ -191,6 +194,14 @@ jobs:
         # five arm64-only wayland binaries from the submodule instead of shipping
         # committed copies. This job is what proves they still compile (#493).
         run: ./gradlew :app:assembleArm64Debug -PtargetAbi=arm64
+      # Runs here rather than in `checks` because it reads the built binaries,
+      # and nothing builds them there. #469 was a wayland library linked without
+      # gen-stubs.sh's weak stubs: 51 undefined symbols, dlopen refused it, and
+      # every cage/app-window feature died on-device with a green build. Source
+      # now, rather than a committed copy, does not make that unlinkable-output
+      # case impossible — only unobservable until someone runs it.
+      - name: Assert native libs resolve their stubs (#469)
+        run: ./scripts/check-native-libs.sh
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

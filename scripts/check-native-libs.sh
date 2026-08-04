@@ -1,28 +1,32 @@
 #!/bin/bash
 set -euo pipefail
 
-# The .so files under core/wayland/src/main/jniLibs are committed binaries —
-# core/wayland/build.gradle.kts only does jniLibs.srcDirs("src/main/jniLibs"),
-# so whatever is checked in is what ships. They are produced by hand from the
-# wayland-android submodule (whose own jniLibs/ is gitignored), which makes
-# "someone rebuilt the submodule but forgot to copy the result here" a silent,
-# shipping-by-default failure mode.
+# The .so files under core/wayland/src/main/jniLibs are no longer committed —
+# #493 moved them to core/wayland's buildWaylandNatives task, which builds them
+# from the wayland-android submodule during preBuild, and .gitignore keeps them
+# out. This checks whatever is in that directory, which now means build output.
 #
-# That is exactly what #469 was: the committed liblabwc_android.so was three
-# weeks behind the source and left 51 symbols undefined, so ld.so refused to
-# load it and every cage/app-window feature died with
+# #469 was the committed liblabwc_android.so three weeks behind its source,
+# leaving 51 symbols undefined, so ld.so refused to load it and every
+# cage/app-window feature died with
 #   dlopen failed: cannot locate symbol "wlr_output_is_drm"
-# The app itself was fine; only the binary was stale. Nothing failed until a
-# user hit the feature on a device.
+# The app itself was fine; only the binary was bad. Nothing failed until a user
+# hit the feature on a device.
 #
-# wlroots is built with -Dbackends=[] and no libinput, so these symbols have no
-# real implementation — gen-stubs.sh emits weak stubs for them at link time. If
-# any of them is UND in a committed library, that library was linked without
-# the generated stubs and will not load. There is no case where shipping one is
-# correct, which is what makes this checkable rather than a heuristic.
+# Building from source removes the *staleness* half of that and NOT the
+# unlinkable half: wlroots is built with -Dbackends=[] and no libinput, so these
+# symbols have no real implementation — gen-stubs.sh emits weak stubs for them
+# at link time. A fresh build that misses the stubs is just as undlopenable as a
+# stale copy was, and just as green at build time. If any of these is UND in a
+# shipped library it will not load, and there is no case where shipping one is
+# correct — which is what makes this checkable rather than a heuristic.
 #
-# readelf reads foreign-architecture ELFs fine, so this needs no NDK and runs in
-# the no-submodule `checks` job.
+# Consequently this must run AFTER a build. It sat in CI's `checks` job, which
+# does not build, and reported "nothing to check" on every run once the
+# binaries stopped being committed. It now runs in ci.yml's `build` job and in
+# release.yml's build job, both after the Gradle build.
+#
+# readelf reads foreign-architecture ELFs fine, so this needs no NDK.
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 JNI_DIR="$REPO_ROOT/core/wayland/src/main/jniLibs"
@@ -37,8 +41,12 @@ if ! command -v readelf > /dev/null 2>&1; then
 fi
 
 if [ ! -d "$JNI_DIR" ]; then
-    echo "check-native-libs: $JNI_DIR does not exist; nothing to check" >&2
-    exit 0
+    # Deliberately not `exit 0`. This used to return success here, which also
+    # skipped the entirely independent rdp section below — so once the wayland
+    # binaries stopped being committed, BOTH halves of this gate silently
+    # stopped running while still reporting a pass. Fall through; whether
+    # having checked nothing is acceptable is decided at the end.
+    echo "check-native-libs: $JNI_DIR does not exist — no wayland libraries to check" >&2
 fi
 
 status=0
@@ -61,7 +69,7 @@ while IFS= read -r so; do
         [ "$count" -gt 20 ] && echo "    … and $((count - 20)) more"
         status=1
     fi
-done < <(find "$JNI_DIR" -name '*.so' -type f | sort)
+done < <(find "$JNI_DIR" -name '*.so' -type f 2>/dev/null | sort)
 
 if [ "$status" -ne 0 ]; then
     cat >&2 <<'MSG'
@@ -79,7 +87,9 @@ MSG
     exit 1
 fi
 
-echo "✓ $checked committed native librar$([ "$checked" = 1 ] && echo y || echo ies) have no unresolved stub symbols."
+if [ "$checked" -gt 0 ]; then
+    echo "✓ $checked wayland native librar$([ "$checked" = 1 ] && echo y || echo ies) have no unresolved stub symbols."
+fi
 
 # ---------------------------------------------------------------------------
 # rdp-kotlin/jniLibs — committed too, but a different failure mode.
@@ -117,10 +127,12 @@ rdp_expected_machine() {
     esac
 }
 
-if [ -d "$RDP_DIR" ]; then
-    rdp_status=0
-    rdp_checked=0
+# Initialised out here so the "did this gate inspect anything?" assertion at the
+# bottom can read it even when RDP_DIR is absent (set -u would otherwise abort).
+rdp_status=0
+rdp_checked=0
 
+if [ -d "$RDP_DIR" ]; then
     for abi_dir in "$RDP_DIR"/*/; do
         [ -d "$abi_dir" ] || continue
         abi="$(basename "$abi_dir")"
@@ -164,4 +176,27 @@ MSG
     else
         echo "✓ $rdp_checked rdp native libraries match their ABI and export the JNI entry point."
     fi
+fi
+
+# The point of this block: for every run after #493 untracked the binaries, this
+# script printed "nothing to check" and exited 0. A gate that passes because it
+# found nothing to inspect is indistinguishable, in CI, from one that inspected
+# everything and approved it — and this particular gate guards a failure (#469)
+# whose entire character is that the build stays green.
+#
+# Both call sites now run after a Gradle build, so an empty tree means the build
+# did not produce what it was supposed to.
+if [ "$checked" -eq 0 ] && [ "$rdp_checked" -eq 0 ]; then
+    cat >&2 <<MSG
+
+check-native-libs: FAILED — no native libraries were inspected at all.
+
+Nothing was found under either:
+    $JNI_DIR
+    $RDP_DIR
+
+This checks BUILD OUTPUT, so it has to run after a build. By hand:
+    ./gradlew :app:assembleArm64Debug -PtargetAbi=arm64
+MSG
+    exit 1
 fi
