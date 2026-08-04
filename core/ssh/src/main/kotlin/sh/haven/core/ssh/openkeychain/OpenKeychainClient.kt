@@ -32,11 +32,40 @@ private const val BIND_TIMEOUT_SECONDS = 10L
  */
 private const val USER_INTERACTION_TIMEOUT_SECONDS = 180L
 
+/**
+ * How many consecutive prompts a provider may ask for before Haven treats it
+ * as stuck. OpenKeychain's longest legitimate run is three — app permission,
+ * key chooser, then PIN and tap for an on-card key — so four leaves a round of
+ * headroom without letting a genuinely looping provider hold the caller.
+ */
+private const val MAX_USER_INTERACTION_ROUNDS = 4
+
 /** The provider refused the request; [error] is its code, if it sent one. */
 class OpenKeychainException(
     message: String,
     val error: Int? = null,
 ) : Exception(message)
+
+/**
+ * Plain-language name for an [SshAuthenticationApiError] code (#487). Falls
+ * back to the number rather than hiding it — an unrecognised code is still
+ * something a reporter can quote.
+ */
+internal fun describeError(code: Int): String = when (code) {
+    SshAuthenticationApiError.CLIENT_SIDE_ERROR -> "the request was malformed (client-side error)"
+    SshAuthenticationApiError.GENERIC_ERROR -> "no reason given (generic error)"
+    SshAuthenticationApiError.INCOMPATIBLE_API_VERSIONS ->
+        "the provider speaks a different version of the SSH Authentication API"
+    SshAuthenticationApiError.INTERNAL_ERROR -> "the provider hit an internal error"
+    SshAuthenticationApiError.UNKNOWN_ACTION -> "the provider does not support this operation"
+    SshAuthenticationApiError.NO_KEY_ID -> "no key id was sent with the request"
+    SshAuthenticationApiError.NO_SUCH_KEY -> "the provider has no key with that id"
+    SshAuthenticationApiError.NO_AUTH_KEY ->
+        "that key has no authentication subkey the provider can use for SSH"
+    SshAuthenticationApiError.INVALID_ALGORITHM -> "the provider rejected the key algorithm"
+    SshAuthenticationApiError.INVALID_HASH_ALGORITHM -> "the provider rejected the hash algorithm"
+    else -> "provider error code $code"
+}
 
 /**
  * Talks to an SSH Authentication API provider (#487).
@@ -61,6 +90,12 @@ class OpenKeychainClient(
     @Volatile
     private var service: ISshAuthenticationService? = null
     private var connection: ServiceConnection? = null
+
+    /** Test seam: hand a request to the bound provider service. */
+    internal var callService: (Intent) -> Intent = { bind().execute(it) }
+
+    /** Test seam: run one provider prompt, false if the user backed out. */
+    internal var runPrompt: (PendingIntent) -> Boolean = { OpenKeychainPromptActivity.await(appContext, it) }
 
     /**
      * Bind, blocking until the service arrives or [BIND_TIMEOUT_SECONDS]
@@ -113,34 +148,51 @@ class OpenKeychainClient(
     }
 
     /**
-     * Send [request], resolving one round of user interaction if the provider
-     * asks for it.
+     * Send [request], resolving up to [MAX_USER_INTERACTION_ROUNDS] rounds of
+     * user interaction.
      *
-     * Only one round is resolved. A provider that asks again after the user
-     * has already satisfied a prompt is not making progress, and retrying
-     * indefinitely would trap the connection in a prompt loop with no way out.
+     * ★ #487: this used to resolve exactly one round, on the reasoning that a
+     * provider asking again after the user had satisfied a prompt was not
+     * making progress. That reasoning was wrong. Consecutive prompts are the
+     * normal path, and they are *different* prompts: OpenKeychain asks first
+     * for permission to talk to this app, then shows its key chooser, then —
+     * for an on-card key — asks for the PIN and a tap. Each is one round.
+     *
+     * Stopping after one turned the second prompt into a failure, and a
+     * silent-looking one: a `USER_INTERACTION_REQUIRED` reply carries a
+     * PendingIntent and no error extra, so it fell through to [errorFrom],
+     * which found nothing to report and produced the bare "the key provider
+     * refused the request" with no code behind it. A reporter whose app
+     * permission was already granted saw exactly that — the permission round
+     * resolved with nothing on screen, and the chooser round was rejected as
+     * a refusal before it could be shown.
+     *
+     * Still bounded, for the original reason: a provider that really is stuck
+     * re-prompting must not trap the caller forever. The bound is a count of
+     * rounds rather than a "same prompt twice" check, because two rounds
+     * legitimately carry equal PendingIntents when the provider reuses one.
      */
-    private fun execute(request: Intent): Intent {
+    internal fun execute(request: Intent): Intent {
         request.putExtra(OpenKeychainApi.EXTRA_API_VERSION, OpenKeychainApi.API_VERSION)
-        val first = bind().execute(request)
-        return when (first.getIntExtra(OpenKeychainApi.EXTRA_RESULT_CODE, OpenKeychainApi.RESULT_CODE_ERROR)) {
-            OpenKeychainApi.RESULT_CODE_SUCCESS -> first
-            OpenKeychainApi.RESULT_CODE_USER_INTERACTION_REQUIRED -> {
-                val pending = pendingIntentOf(first)
-                    ?: throw OpenKeychainException("Provider asked for user interaction but sent no prompt")
-                if (!OpenKeychainPromptActivity.await(appContext, pending)) {
-                    throw OpenKeychainException("Cancelled")
+        var result = callService(request)
+        var rounds = 0
+        while (true) {
+            when (result.getIntExtra(OpenKeychainApi.EXTRA_RESULT_CODE, OpenKeychainApi.RESULT_CODE_ERROR)) {
+                OpenKeychainApi.RESULT_CODE_SUCCESS -> return result
+                OpenKeychainApi.RESULT_CODE_USER_INTERACTION_REQUIRED -> {
+                    if (++rounds > MAX_USER_INTERACTION_ROUNDS) {
+                        throw OpenKeychainException(
+                            "$providerPackage asked for user interaction $MAX_USER_INTERACTION_ROUNDS " +
+                                "times without completing the request",
+                        )
+                    }
+                    val pending = pendingIntentOf(result)
+                        ?: throw OpenKeychainException("Provider asked for user interaction but sent no prompt")
+                    if (!runPrompt(pending)) throw OpenKeychainException("Cancelled")
+                    result = callService(request)
                 }
-                val second = bind().execute(request)
-                if (second.getIntExtra(OpenKeychainApi.EXTRA_RESULT_CODE, OpenKeychainApi.RESULT_CODE_ERROR) ==
-                    OpenKeychainApi.RESULT_CODE_SUCCESS
-                ) {
-                    second
-                } else {
-                    throw errorFrom(second)
-                }
+                else -> throw errorFrom(result)
             }
-            else -> throw errorFrom(first)
         }
     }
 
@@ -209,10 +261,13 @@ class OpenKeychainClient(
     private fun errorFrom(result: Intent): OpenKeychainException {
         val error = errorExtra(result)
         val detail = error?.message?.takeIf { it.isNotBlank() }
-        return OpenKeychainException(
-            detail ?: "The key provider refused the request",
-            error?.error,
-        )
+        val code = error?.error
+        // #487: a bare "refused the request" is unactionable, and the reporter
+        // who got one had no way to tell it apart from a bug in Haven. The
+        // provider sends a code even when it sends no text, so say which.
+        val fallback = code?.let { "The key provider refused the request: ${describeError(it)}" }
+            ?: "The key provider refused the request"
+        return OpenKeychainException(detail ?: fallback, code)
     }
 
     @Suppress("DEPRECATION")
