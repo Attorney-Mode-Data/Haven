@@ -117,9 +117,10 @@ fn main() -> ExitCode {
         enable_credssp,
         // Host CLI: no persisted pin store; accept-and-report on first use.
         pinned_cert_sha256: std::env::var("RDP_PINNED_CERT").ok(),
-        // #418: enable WBT_TILE_UPGRADE refinement decoding for capture
-        // verification against a real host — `HAVEN_RFX_UPGRADE=1 rdp-cli …`.
-        progressive_upgrade: std::env::var("HAVEN_RFX_UPGRADE").is_ok(),
+        // #418/#496: WBT_TILE_UPGRADE refinement decoding, on by default to
+        // match the app. `HAVEN_RFX_UPGRADE=0 rdp-cli …` turns it off, which is
+        // how the before/after comparison on #496 was measured.
+        progressive_upgrade: std::env::var("HAVEN_RFX_UPGRADE").map(|v| v != "0").unwrap_or(true),
         // #425: advertise AVC420 for KRDP capture — `HAVEN_RDP_AVC=1 rdp-cli …`.
         // No MediaCodec on the host, so tiles are dumped (EGFX_DUMP_DIR) and
         // dropped (no Avc420Decoder registered); capture-only.

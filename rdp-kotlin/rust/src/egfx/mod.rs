@@ -274,6 +274,9 @@ impl EgfxProcessor {
                     p.monitors.len()
                 );
                 self.surfaces.reset();
+                // #496: refinement state is per-tile and sized by surface area;
+                // a rebuilt graphics context invalidates all of it.
+                self.progressive_decoder.forget_all();
                 self.resize_framebuffer(p.width, p.height);
             }
             GfxPdu::CreateSurface(p) => {
@@ -286,6 +289,10 @@ impl EgfxProcessor {
             GfxPdu::DeleteSurface(p) => {
                 debug!("EGFX[{n}]: DeleteSurface id={}", p.surface_id);
                 self.surfaces.delete_surface(p);
+                // #496: ~48 KB per 64x64 tile of that surface, and nothing else
+                // evicts it. Must go with the surface, not linger for the
+                // lifetime of the connection.
+                self.progressive_decoder.forget_surface(p.surface_id);
             }
             GfxPdu::MapSurfaceToOutput(p) => {
                 debug!(

@@ -17,7 +17,7 @@ object RdpDebugToggles {
     /** Enable WBT_TILE_UPGRADE refinement decoding in the native decoder. */
     @Volatile
     @JvmField
-    var progressiveUpgrade: Boolean = false
+    var progressiveUpgrade: Boolean = true
 
     /**
      * #425: advertise EGFX H.264/AVC420. On by default (device-verified against

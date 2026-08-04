@@ -248,8 +248,11 @@ class UserPreferencesRepository @Inject constructor(
      * for capture verification before it becomes the default. Bridged to the
      * native decoder via `RdpDebugToggles` in HavenApp.
      */
+    // #496: on by default since v5.86.40. Windows sends 500+ refinement tiles
+    // per 15s even on an idle desktop, and dropping them is what produced the
+    // ringing around text reported there.
     val rdpProgressiveUpgrade: Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[rdpProgressiveUpgradeKey] ?: false
+        prefs[rdpProgressiveUpgradeKey] ?: true
     }
 
     suspend fun setRdpProgressiveUpgrade(enabled: Boolean) {

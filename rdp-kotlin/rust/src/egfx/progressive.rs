@@ -246,10 +246,12 @@ pub struct ProgressiveDecoder {
     work_cr: Box<[i16; SUBBAND_LEN]>,
     /// IDWT temporary buffer.
     work_tmp: Box<[i16; SUBBAND_LEN]>,
-    /// #418: WBT_TILE_UPGRADE refinement support. OFF by default — the wire
-    /// parse + refinement are ported from the reference but NOT yet verified
-    /// against a real Windows upgrade stream, and a mis-decode paints garbage
-    /// (worse than the current black). Enable only for capture-verified builds.
+    /// #418/#496: WBT_TILE_UPGRADE refinement support. **ON by default since
+    /// v5.86.40**, verified against a real Windows 11 24H2 stream rather than
+    /// assumed: an idle desktop sends 500+ refinement tiles per 15s, dropping
+    /// them leaves visible wavelet ringing around every glyph, and decoding
+    /// them produced zero errors and clean output. The old comment feared a
+    /// mis-decode painting garbage; measurement said otherwise.
     upgrade_enabled: bool,
     /// Per-tile refinement state, keyed by (surface_id, xIdx, yIdx). Populated
     /// on FIRST/SIMPLE only when `upgrade_enabled`.
@@ -281,7 +283,7 @@ impl ProgressiveDecoder {
             work_cb: Box::new([0; SUBBAND_LEN]),
             work_cr: Box::new([0; SUBBAND_LEN]),
             work_tmp: Box::new([0; SUBBAND_LEN]),
-            upgrade_enabled: false,
+            upgrade_enabled: true,
             tile_states: std::collections::HashMap::new(),
             upgrades_skipped: 0,
             diff_tiles_skipped: 0,
@@ -294,6 +296,38 @@ impl ProgressiveDecoder {
     #[allow(dead_code)]
     pub fn set_upgrade_enabled(&mut self, enabled: bool) {
         self.upgrade_enabled = enabled;
+    }
+
+    /// Drop the refinement state for a surface the server has deleted (#496).
+    ///
+    /// ★ Each entry is ~48 KB (3 components × current+sign × 4096 × i16), and
+    /// there is one per 64×64 tile — about 12 MB of state for a 1280×800
+    /// surface, 25 MB at 1080p. Nothing else evicts them, so a server that
+    /// creates and deletes surfaces across a session (Windows does, on
+    /// resolution changes and reconnects) would leave every abandoned
+    /// surface's worth behind for the life of the connection.
+    ///
+    /// Harmless while refinement decoding was off, because nothing populated
+    /// the map at all — which is exactly why turning it on has to bring this
+    /// with it rather than after it.
+    pub fn forget_surface(&mut self, surface_id: u16) {
+        let before = self.tile_states.len();
+        self.tile_states.retain(|(sid, _, _), _| *sid != surface_id);
+        let dropped = before - self.tile_states.len();
+        if dropped > 0 {
+            debug!("Progressive: dropped {dropped} tile state(s) for deleted surface {surface_id}");
+        }
+    }
+
+    /// Drop all refinement state — the graphics context is being rebuilt.
+    pub fn forget_all(&mut self) {
+        if !self.tile_states.is_empty() {
+            debug!(
+                "Progressive: dropped {} tile state(s) on graphics reset",
+                self.tile_states.len()
+            );
+            self.tile_states.clear();
+        }
     }
 
     /// Decode one Progressive PDU's bitmap_data, appending all decoded
@@ -523,9 +557,11 @@ impl ProgressiveDecoder {
                         self.upgrades_skipped += 1;
                         if should_report(self.upgrades_skipped) {
                             warn!(
-                                "Progressive: dropped {} refinement tile(s) so far — those areas stay \
-                                 at coarse quality. Settings → Diagnostics → 'RDP: Progressive \
-                                 upgrade tile decoding' decodes them (experimental, #418).",
+                                "Progressive: dropped {} refinement tile(s) so far — those areas \
+                                 stay at coarse quality, which looks like haloing around text. \
+                                 Refinement decoding is ON by default; something has turned it off \
+                                 (Settings → Diagnostics → 'RDP: decode progressive refinement \
+                                 tiles') (#496).",
                                 self.upgrades_skipped
                             );
                         }
@@ -1663,7 +1699,11 @@ mod tests {
     #[test]
     fn upgrade_pdu_ignored_when_gate_disabled() {
         let pdu = upgrade_only_pdu();
-        let mut dec = ProgressiveDecoder::new(); // upgrade_enabled = false
+        // Explicitly disabled rather than relying on the default: refinement
+        // decoding is ON by default since #496, but a user can still turn it
+        // off, and this pins what happens when they do.
+        let mut dec = ProgressiveDecoder::new();
+        dec.set_upgrade_enabled(false);
         let mut tiles = Vec::new();
         dec.decode(0, &pdu, &mut tiles).unwrap();
         assert!(tiles.is_empty());
@@ -1674,10 +1714,43 @@ mod tests {
         assert_eq!(1, dec.upgrades_skipped);
     }
 
+    /// #496: refinement state is ~48 KB per 64x64 tile and nothing else evicts
+    /// it, so it has to die with its surface. Latent while the gate was off —
+    /// the map was never populated — which is why it had to be fixed in the
+    /// same change that turns refinement decoding on.
+    #[test]
+    fn tile_state_dies_with_its_surface() {
+        let mut dec = ProgressiveDecoder::new();
+        // Two surfaces' worth of refinement state.
+        for sid in [1u16, 2u16] {
+            for x in 0..3u16 {
+                dec.tile_states.insert((sid, x, 0), Box::new(TileState::new()));
+            }
+        }
+        assert_eq!(6, dec.tile_states.len());
+
+        dec.forget_surface(1);
+        assert_eq!(3, dec.tile_states.len(), "surface 1's tiles should be gone");
+        assert!(
+            dec.tile_states.keys().all(|(sid, _, _)| *sid == 2),
+            "only surface 2's tiles should remain",
+        );
+
+        // Deleting a surface that has no state is not an error.
+        dec.forget_surface(99);
+        assert_eq!(3, dec.tile_states.len());
+
+        dec.forget_all();
+        assert!(dec.tile_states.is_empty(), "a graphics reset drops everything");
+    }
+
     #[test]
     fn dropped_refinements_keep_counting() {
         let pdu = upgrade_only_pdu();
+        // Refinement decoding is on by default since #496; this pins the
+        // counter that reports what a user who turns it off is losing.
         let mut dec = ProgressiveDecoder::new();
+        dec.set_upgrade_enabled(false);
         let mut tiles = Vec::new();
         for _ in 0..3 {
             dec.decode(0, &pdu, &mut tiles).unwrap();

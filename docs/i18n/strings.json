@@ -24752,7 +24752,7 @@
     },
     {
      "name": "settings_rdp_progressive_upgrade_title",
-     "en": "RDP: decode progressive upgrade tiles (experimental)",
+     "en": "RDP: decode progressive refinement tiles",
      "comment": "Logging section",
      "args": [],
      "t": {
@@ -24771,7 +24771,7 @@
     },
     {
      "name": "settings_rdp_progressive_upgrade_subtitle",
-     "en": "Fills the black squares seen on some Windows RDP desktops by decoding RemoteFX-Progressive refinement tiles. Experimental (#418) — if the picture looks worse, turn this off",
+     "en": "On by default. Windows sends each part of the picture roughly first and then sharpens it; without this those areas stay coarse, which looks like haloing around text. Turn it off only to compare (#496)",
      "comment": "Logging section",
      "args": [],
      "t": {
