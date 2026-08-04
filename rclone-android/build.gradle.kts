@@ -11,14 +11,27 @@ repositories {
     google()
 }
 
+// Produced by tools/build-android.sh via gomobile; see buildRcloneNative below.
+val rcbridgeJar: File = layout.buildDirectory.file("rcbridge-bindings.jar").get().asFile
+
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     // gomobile-generated Java bindings (produced by build-android.sh).
-    // Use `api` so downstream consumers (core:rclone, core:tunnel) can
-    // reference the bound classes directly — the Kotlin wrappers in
-    // kotlin/sh/haven/rclone/bridge/ cover rcbridge, but the wgbridge
-    // classes are consumed raw from core:tunnel.
-    api(files("build/rcbridge-bindings.jar"))
+    //
+    // ★ #493: this used to be `api(files("build/rcbridge-bindings.jar"))`, and
+    // that is why the jar could not be untracked. A raw file dependency has no
+    // producing task, so it is demanded the moment a *consumer* resolves its
+    // runtime classpath — :app:checkArm64DebugDuplicateClasses asks for it long
+    // before buildRcloneNative has run, and `compileKotlin dependsOn(...)` is
+    // far too late to help. Attaching builtBy to the file collection does not
+    // survive AGP's artifact transform either.
+    //
+    // So: compile against it here (compileKotlin already depends on the task
+    // that produces it), and fold its classes into this project's own jar
+    // below. Consumers then get the bound classes through the ordinary project
+    // dependency, with no raw file for them to resolve early.
+    compileOnly(files(rcbridgeJar))
+    testImplementation(files(rcbridgeJar))
     testImplementation("junit:junit:4.13.2")
 }
 
@@ -51,6 +64,10 @@ val buildRcloneNative by tasks.registering(Exec::class) {
     inputs.dir(goDir)
     inputs.file(toolsDir.resolve("build-android.sh"))
     outputs.dir(jniDir)
+    // NOT `outputs.file(rcbridgeJar)` — yet. Declaring it makes Gradle delete a
+    // *tracked* file as a stale output on every build. It goes in at the same
+    // time as the untracking, once F-Droid's recipe stops scandelete-ing
+    // rclone-android/build (see #493).
 
     // Up-to-date checking is driven by Gradle's inputs/outputs above: the
     // expensive Go cross-compile is skipped when `go/` and build-android.sh are
@@ -89,4 +106,14 @@ val buildRcloneNative by tasks.registering(Exec::class) {
 // because compileKotlin needs rcbridge-bindings.jar produced by gomobile.
 tasks.named("compileKotlin") {
     dependsOn(buildRcloneNative)
+}
+
+// #493: carry the gomobile classes in this project's own jar, so consumers
+// (core:rclone, core:tunnel) reach them through `project(":rclone-android")`
+// rather than through a raw file path they would have to resolve themselves.
+// That is what lets the jar stop being a committed binary.
+tasks.named<Jar>("jar") {
+    dependsOn(buildRcloneNative)
+    from(provider { if (rcbridgeJar.isFile) zipTree(rcbridgeJar) else files() })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

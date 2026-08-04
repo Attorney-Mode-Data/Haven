@@ -19,7 +19,12 @@ AAR_DIR="$PROJECT_DIR/build"
 export PATH="/usr/local/go/bin:${GOPATH:-$HOME/go}/bin:${PATH}"
 
 # gobind needs -mod=mod to resolve golang.org/x/mobile/bind from the module cache
-export GOFLAGS="${GOFLAGS:+$GOFLAGS }-mod=mod"
+# -buildvcs=false: this module sits inside the Haven git repo, and gomobile
+# builds it from a temp dir, so Go's VCS stamping shells out to git and fails
+# with "error obtaining VCS status: exit status 128" — the whole bind aborts on
+# a checkout that is otherwise fine. The stamp is of no use to us and embedding
+# git state in a shipped binary works against reproducible builds anyway (#493).
+export GOFLAGS="${GOFLAGS:+$GOFLAGS }-mod=mod -buildvcs=false"
 
 # Detect Android SDK/NDK from environment
 ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
