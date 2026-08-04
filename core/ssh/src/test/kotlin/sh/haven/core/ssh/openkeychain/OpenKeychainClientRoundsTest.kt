@@ -29,6 +29,19 @@ class OpenKeychainClientRoundsTest {
         return OpenKeychainClient(context, "org.sufficientlysecure.keychain")
     }
 
+    /**
+     * What a prompt hands back: OpenKeychain returns the request we sent with
+     * what it learned added, so a non-empty extras bundle is the signal that
+     * there is something to carry forward.
+     */
+    private fun answer(): Intent {
+        val intent = mockk<Intent>(relaxed = true)
+        val extras = mockk<android.os.Bundle>(relaxed = true)
+        every { extras.isEmpty } returns false
+        every { intent.extras } returns extras
+        return intent
+    }
+
     /** A provider reply carrying [code], and a prompt when it needs one. */
     private fun reply(code: Int, pending: PendingIntent? = null): Intent {
         val intent = mockk<Intent>(relaxed = true)
@@ -65,7 +78,7 @@ class OpenKeychainClientRoundsTest {
 
         val client = client()
         client.callService = { replies.removeFirst() }
-        client.runPrompt = { promptsShown++; true }
+        client.runPrompt = { promptsShown++; answer() }
 
         assertEquals(success, client.execute(mockk(relaxed = true)))
         assertEquals("both prompts should be shown to the user", 2, promptsShown)
@@ -82,7 +95,7 @@ class OpenKeychainClientRoundsTest {
 
         val client = client()
         client.callService = { replies.removeFirst() }
-        client.runPrompt = { true }
+        client.runPrompt = { answer() }
 
         assertEquals(success, client.execute(mockk(relaxed = true)))
     }
@@ -93,7 +106,7 @@ class OpenKeychainClientRoundsTest {
         val prompt = mockk<PendingIntent>(relaxed = true)
         val client = client()
         client.callService = { reply(OpenKeychainApi.RESULT_CODE_USER_INTERACTION_REQUIRED, prompt) }
-        client.runPrompt = { true }
+        client.runPrompt = { answer() }
 
         val e = assertThrows(OpenKeychainException::class.java) { client.execute(mockk(relaxed = true)) }
         assertTrue(
@@ -113,10 +126,69 @@ class OpenKeychainClientRoundsTest {
 
         val client = client()
         client.callService = { replies.removeFirst() }
-        client.runPrompt = { ++shown < 2 }
+        client.runPrompt = { if (++shown < 2) answer() else null }
 
         val e = assertThrows(OpenKeychainException::class.java) { client.execute(mockk(relaxed = true)) }
         assertEquals("Cancelled", e.message)
+    }
+
+    /**
+     * ★ The half that actually made the chooser unreachable. OpenKeychain's
+     * key chooser returns *our request with the chosen key id added*
+     * (`RemoteSelectAuthenticationKeyActivity`: `originalIntent.putExtra(
+     * EXTRA_KEY_ID, …); setResult(RESULT_OK, originalIntent)`). Re-sending our
+     * own copy throws that away, and the provider redirects to key selection
+     * again — which is why a bounded loop alone would just show the chooser
+     * four times and then give up.
+     */
+    @Test
+    fun `the request sent after a prompt is the one the prompt handed back`() {
+        val prompt = mockk<PendingIntent>(relaxed = true)
+        val answered = answer()
+        val sent = mutableListOf<Intent>()
+        val replies = ArrayDeque(
+            listOf(
+                reply(OpenKeychainApi.RESULT_CODE_USER_INTERACTION_REQUIRED, prompt),
+                reply(OpenKeychainApi.RESULT_CODE_SUCCESS),
+            ),
+        )
+
+        val client = client()
+        client.callService = { sent += it; replies.removeFirst() }
+        client.runPrompt = { answered }
+
+        client.execute(mockk(relaxed = true))
+
+        assertEquals("two requests should have gone to the provider", 2, sent.size)
+        assertEquals(
+            "the second request must be the intent the prompt returned, not the original",
+            answered,
+            sent[1],
+        )
+    }
+
+    /** A prompt that hands back nothing falls back to the request we sent. */
+    @Test
+    fun `an empty prompt answer does not blank out the request`() {
+        val prompt = mockk<PendingIntent>(relaxed = true)
+        val empty = mockk<Intent>(relaxed = true)
+        every { empty.extras } returns null
+        val sent = mutableListOf<Intent>()
+        val replies = ArrayDeque(
+            listOf(
+                reply(OpenKeychainApi.RESULT_CODE_USER_INTERACTION_REQUIRED, prompt),
+                reply(OpenKeychainApi.RESULT_CODE_SUCCESS),
+            ),
+        )
+
+        val client = client()
+        client.callService = { sent += it; replies.removeFirst() }
+        client.runPrompt = { empty }
+
+        client.execute(mockk(relaxed = true))
+
+        assertEquals(2, sent.size)
+        assertEquals("should re-send the original, not the empty answer", sent[0], sent[1])
     }
 
     /** A genuine error still surfaces as one, unchanged. */
@@ -124,7 +196,7 @@ class OpenKeychainClientRoundsTest {
     fun `an error reply is still an error`() {
         val client = client()
         client.callService = { reply(OpenKeychainApi.RESULT_CODE_ERROR) }
-        client.runPrompt = { true }
+        client.runPrompt = { answer() }
 
         assertThrows(OpenKeychainException::class.java) { client.execute(mockk(relaxed = true)) }
     }
