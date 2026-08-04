@@ -5,6 +5,28 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.39
+
+🔑 **Keys from OpenKeychain can be imported again** — a reporter with a YubiKey could not add one: "The key provider refused the request", a couple of seconds after the prompt opened, and nothing in the message to act on. Nothing was wrong with their key, their card, or their permissions — they had already checked all three, which is what made this findable.
+
+Two faults, both Haven's.
+
+**Haven was throwing away the answer.** When OpenKeychain needs to ask you something, it hands Haven a prompt to show, and when you have answered it, it hands back Haven's own request *with what it learned added to it* — the key you picked, or the result of unlocking the card. That returned request is the answer, and it is what the next call has to carry. Haven kept only "did that come back OK?" and dropped the rest. So it asked again with the same empty request, and OpenKeychain, quite correctly, asked the same question again.
+
+**And Haven only ever answered one question.** It handled a single prompt and treated the next one as a refusal — though OpenKeychain routinely asks more than once, and asks something different each time: permission to talk to Haven, then which key you want, then the PIN and a tap on the card.
+
+Together those made the import impossible to complete, and made the failure look like a flat refusal with no explanation: a "please ask the user" reply carries no error with it, so once Haven had decided it was a failure there was nothing to report and it fell back to a generic sentence.
+
+Both are fixed, and not just for picking a key — the passphrase and card-unlock prompts answer by the same route, so signing needed it too.
+
+Separately, when a provider does refuse for a real reason, Haven now says what it was — "that key has no authentication subkey", "no key with that id", "incompatible API version" — instead of the same generic sentence every time, and an unrecognised reason prints its code rather than disappearing.
+
+Honest limit: **not verified on a device.** The sequence is read off OpenKeychain's own source rather than guessed, which is better than it was, but nobody here has run it against a real card. (#487)
+
+🖥️ **A remote-desktop warning pointed at a settings screen that does not exist** — when Haven skips picture-refinement data it cannot decode, it says so, and tells you which setting turns that decoding on. It named "Settings → RDP". There is no RDP section — the switch lives under Diagnostics. Anyone who hit the warning and went looking would not have found it. (#496, #418)
+
+📊 **Verbose connection logging now admits it covers RDP** — the setting's description listed SSH, Mosh and ET. It has covered RDP since March, and RDP is now where it matters most, because that is where the frame timings for a slow remote desktop turn up. (#477)
+
 ## v5.86.38
 
 🖥️ **RDP on VirtualBox: the connection now completes instead of failing at the last step** — a reporter on v5.86.37 could not connect at all. The session got all the way through the handshake and then stopped on the final message of it, with "not enough bytes: received 18, expected 26".
