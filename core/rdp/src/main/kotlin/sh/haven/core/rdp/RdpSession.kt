@@ -204,6 +204,9 @@ class RdpSession(
             // calls it (blocking) on the session thread per frame.
             if (RdpDebugToggles.avcEnabled) {
                 val dec = Avc420MediaCodecDecoder()
+                // #466: route the decode split into the verbose log, so the
+                // number that settles this reaches a reporter without adb.
+                dec.perfSink = { line -> log("D", line) }
                 avcDecoder = dec
                 c.setAvcDecoder(dec)
             }

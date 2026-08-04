@@ -27,7 +27,29 @@ private const val TAG = "Avc420Decoder"
  * it caps the framerate. See #425.
  */
 class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
+
+    /**
+     * #466: where the per-frame decode time actually goes.
+     *
+     * A reporter's 1080p KRDP session reports `decode` at 120-243 ms per frame
+     * while `publish` is under 3 ms, so decode is ~98% of the frame — but
+     * `decode` spans MediaCodec *and* the CPU YUV->RGBA conversion, and
+     * attributing it by eye is how the last three rounds of this issue went
+     * wrong. A desktop-JVM benchmark puts the conversion alone at 7 ms for
+     * 1080p, which extrapolates to tens of ms on a phone and does **not**
+     * account for the rest. So measure the split rather than argue about it.
+     *
+     * Set by [RdpSession] so the line reaches the in-app verbose log (#477)
+     * rather than needing adb.
+     */
+    var perfSink: ((String) -> Unit)? = null
+
+    private var pFrames = 0L
+    private var pCodecNs = 0L
+    private var pConvertNs = 0L
+    private var pPolls = 0L
     private var codec: MediaCodec? = null
+    private var lastConvertNs = 0L
     private var configuredWidth = 0
     private var configuredHeight = 0
     private var ptsUs = 0L
@@ -50,8 +72,21 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
         } ?: return ByteArray(0)
 
         return try {
+            val t0 = System.nanoTime()
             queueInput(mc, annexB)
-            drainToRgba(mc, w, h) ?: ByteArray(0)
+            val out = drainToRgba(mc, w, h) ?: ByteArray(0)
+            pFrames++
+            pCodecNs += System.nanoTime() - t0 - lastConvertNs
+            pConvertNs += lastConvertNs
+            lastConvertNs = 0L
+            if (pFrames >= PERF_REPORT_FRAMES) {
+                val line = "AVC420 decode split over $pFrames frames — mediacodec ${pCodecNs / pFrames / 1000}us, " +
+                    "yuv->rgba ${pConvertNs / pFrames / 1000}us, polls/frame ${"%.1f".format(pPolls.toDouble() / pFrames)}"
+                Log.i(TAG, line)
+                perfSink?.invoke(line)
+                pFrames = 0; pCodecNs = 0; pConvertNs = 0; pPolls = 0
+            }
+            out
         } catch (e: Exception) {
             Log.e(TAG, "AVC420 decode failed: ${e.message}")
             failed = true
@@ -109,12 +144,20 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
     private fun drainToRgba(mc: MediaCodec, w: Int, h: Int): ByteArray? {
         var polls = 0
         while (polls++ < MAX_OUTPUT_POLLS) {
+            pPolls++
             val outIx = mc.dequeueOutputBuffer(bufferInfo, OUTPUT_TIMEOUT_US)
             when {
                 outIx >= 0 -> {
                     val out = try {
                         val image = mc.getOutputImage(outIx)
-                        if (image != null) yuvImageToRgba(image, w, h) else null
+                        if (image != null) {
+                            val c0 = System.nanoTime()
+                            val r = yuvImageToRgba(image, w, h)
+                            lastConvertNs += System.nanoTime() - c0
+                            r
+                        } else {
+                            null
+                        }
                     } finally {
                         mc.releaseOutputBuffer(outIx, /* render = */ false)
                     }
@@ -277,6 +320,7 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
         const val INPUT_TIMEOUT_US = 20_000L
         const val OUTPUT_TIMEOUT_US = 10_000L
         const val MAX_OUTPUT_POLLS = 8
+        const val PERF_REPORT_FRAMES = 30L
 
         /** Index offset into [CLAMP]; the BT.601 terms reach about -258..534. */
         const val CLAMP_BIAS = 512
