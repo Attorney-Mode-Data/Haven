@@ -26,12 +26,58 @@
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-# The only permitted binary. Gradle's wrapper jar cannot bootstrap itself, is
-# an accepted prebuilt on F-Droid's trusted-source list, and its integrity is
-# checked separately by gradle/wrapper-validation in CI.
+# The only permitted binary. Gradle's wrapper jar cannot bootstrap itself and is
+# an accepted prebuilt on F-Droid's trusted-source list.
+#
+# gradle/actions/wrapper-validation in CI proves it is an official Gradle
+# release jar. It does NOT check WHICH release, and that gap is not theoretical:
+# the jar committed in 6b4ad367 was Gradle 8.12's and stayed there while
+# distributionUrl moved 8.11.1 -> 9.4.1, because bumping the URL does not touch
+# the jar. Validation passed the whole time, correctly — the jar was genuine,
+# just for a different Gradle than the one this project declares.
+# check_gradle_wrapper below closes that.
 ALLOWLIST=(
     "gradle/wrapper/gradle-wrapper.jar"
 )
+
+# Pinned rather than fetched from services.gradle.org on purpose: a gate that
+# needs the network fails when the network does, which is exactly how an
+# unreachable bitbucket.org took down CI run 30887507336.
+#
+# To bump Gradle, regenerate the jar rather than editing the URL by hand:
+#   ./gradlew wrapper --gradle-version <v> --distribution-type bin \
+#       --gradle-distribution-sha256-sum <sha of gradle-<v>-bin.zip>
+# then set both values here from
+#   https://services.gradle.org/distributions/gradle-<v>-wrapper.jar.sha256
+WRAPPER_VERSION="9.4.1"
+WRAPPER_JAR_SHA256="55243ef57851f12b070ad14f7f5bb8302daceeebc5bce5ece5fa6edb23e1145c"
+
+# Assert the allowed jar is the jar for the distribution we actually declare.
+check_gradle_wrapper() {
+    local props="gradle/wrapper/gradle-wrapper.properties"
+    local jar="gradle/wrapper/gradle-wrapper.jar"
+    [ -f "$props" ] && [ -f "$jar" ] || return 0
+
+    local declared
+    declared="$(sed -n 's|^distributionUrl=.*/gradle-\(.*\)-bin\.zip$|\1|p' "$props")"
+    if [ "$declared" != "$WRAPPER_VERSION" ]; then
+        echo "✗ gradle-wrapper.properties declares Gradle '$declared', this gate pins '$WRAPPER_VERSION'" >&2
+        echo "  Bumping the version means regenerating the jar — see the comment in $0" >&2
+        return 1
+    fi
+
+    local got
+    got="$(sha256sum "$jar" | cut -d' ' -f1)"
+    if [ "$got" != "$WRAPPER_JAR_SHA256" ]; then
+        echo "✗ gradle-wrapper.jar is not the Gradle $WRAPPER_VERSION wrapper jar" >&2
+        echo "    expected $WRAPPER_JAR_SHA256" >&2
+        echo "    got      $got" >&2
+        echo "  Regenerate it with the ./gradlew wrapper command in $0 rather than" >&2
+        echo "  updating this hash — a jar that does not match its own release is" >&2
+        echo "  the failure this check exists for." >&2
+        return 1
+    fi
+}
 
 # Binaries that predate this gate and are still being migrated to a build step.
 # This list may only ever SHRINK — the check below fails if an entry no longer
@@ -130,4 +176,7 @@ EOF
     exit 1
 fi
 
+check_gradle_wrapper || exit 1
+
 echo "✓ no new committed binaries (${#FILES[@]} tracked files checked, ${#GRANDFATHERED[@]} grandfathered)"
+echo "✓ gradle-wrapper.jar is the Gradle $WRAPPER_VERSION wrapper jar"
