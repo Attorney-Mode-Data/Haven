@@ -74,7 +74,11 @@ pub(crate) struct EgfxPerf {
 const EGFX_PERF_REPORT_FRAMES: u64 = 30;
 
 impl EgfxPerf {
-    fn maybe_report(&mut self) {
+    /// `state` is where the line is parked for the host to drain (#477). It
+    /// went only to the Android log before, which needs adb — so the number
+    /// that says whether decode is the bottleneck could not reach the app's
+    /// own verbose log, and reporters had no way to send it.
+    fn maybe_report(&mut self, state: &Arc<RwLock<SessionState>>) {
         let started = *self.since_report.get_or_insert_with(std::time::Instant::now);
         if self.frames < EGFX_PERF_REPORT_FRAMES {
             return;
@@ -85,7 +89,7 @@ impl EgfxPerf {
         // also wraps — so decode_us contains flush_us. Subtract, or the two
         // numbers overlap and "decode" looks worse than it is.
         let decode_only = self.decode_us.saturating_sub(self.flush_us);
-        info!(
+        let line = format!(
             "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us, publish {}us, total {}us",
             n as f64 / secs,
             self.zgfx_us / n,
@@ -93,6 +97,10 @@ impl EgfxPerf {
             self.flush_us / n,
             (self.zgfx_us + self.decode_us) / n,
         );
+        info!("{line}");
+        if let Ok(mut s) = state.write() {
+            s.push_perf(line);
+        }
         *self = Self::default();
     }
 }
@@ -241,7 +249,8 @@ impl DvcProcessor for EgfxProcessor {
             self.perf.decode_us += t_pdu.elapsed().as_micros() as u64;
             if is_end_frame {
                 self.perf.frames += 1;
-                self.perf.maybe_report();
+                // Disjoint field borrows: &mut self.perf and &self.state.
+                self.perf.maybe_report(&self.state);
             }
         }
         Ok(out_messages)
@@ -917,7 +926,54 @@ mod tests {
             pointer_callback: None,
             avc_decoder: None,
             shutdown: false,
+            perf_log: Vec::new(),
         }))
+    }
+
+    /// #477: the perf summary must reach the shared state, not just the
+    /// Android log.
+    ///
+    /// This is the whole point of the change — the number was always being
+    /// computed, it just could not get anywhere a reporter could copy it from.
+    /// Asserting on `state` rather than on the log is what distinguishes the
+    /// two, so this fails if the line goes back to being log-only.
+    #[test]
+    fn perf_summary_reaches_the_host_state() {
+        let state = test_state(64, 32);
+        let mut perf = EgfxPerf::default();
+
+        // One short of the reporting threshold: nothing should be recorded yet,
+        // or the "report every N frames" batching is not actually happening.
+        perf.frames = EGFX_PERF_REPORT_FRAMES - 1;
+        perf.maybe_report(&state);
+        assert!(
+            state.read().unwrap().perf_log.is_empty(),
+            "must not report before {EGFX_PERF_REPORT_FRAMES} frames",
+        );
+
+        perf.frames = EGFX_PERF_REPORT_FRAMES;
+        perf.decode_us = 3_000;
+        perf.flush_us = 1_000;
+        perf.zgfx_us = 500;
+        perf.maybe_report(&state);
+
+        let log = state.read().unwrap().perf_log.clone();
+        assert_eq!(log.len(), 1, "one summary line recorded");
+        assert!(log[0].starts_with("EGFX perf:"), "recognisable line: {}", log[0]);
+        assert!(
+            log[0].contains(&format!("over {EGFX_PERF_REPORT_FRAMES} frames")),
+            "carries the frame count: {}",
+            log[0],
+        );
+
+        // Reporting resets the accumulator, so a second call at the same
+        // instant must not emit a duplicate off stale counters.
+        perf.maybe_report(&state);
+        assert_eq!(
+            state.read().unwrap().perf_log.len(),
+            1,
+            "counters reset after reporting",
+        );
     }
 
     /// Surface 0 covering the whole output, which is what a server sets up
@@ -1051,6 +1107,7 @@ mod tests {
             pointer_callback: None,
             avc_decoder: None,
             shutdown: false,
+            perf_log: Vec::new(),
         }));
         let mut proc = EgfxProcessor::new(state.clone(), false, true);
         proc.capabilities_received = true;

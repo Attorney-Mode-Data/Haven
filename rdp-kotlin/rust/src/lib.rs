@@ -200,6 +200,31 @@ struct SessionState {
     /// None unless the host registered one via `set_avc_decoder`.
     avc_decoder: Option<Arc<dyn Avc420Decoder>>,
     shutdown: bool,
+    /// EGFX per-frame timing summaries, drained by the host into the in-app
+    /// verbose log (#477).
+    ///
+    /// These already went to the Android log, which needs adb to read — so the
+    /// one measurement that discriminates "decode is slow" from "frames are
+    /// arriving late" was invisible to the people reporting that it is slow.
+    /// A reporter on #477 spent three rounds describing symptoms nobody could
+    /// attribute because of it.
+    perf_log: Vec<String>,
+}
+
+/// Perf lines kept before the oldest is dropped. A reporter needs the recent
+/// steady state, not a session's whole history, and this is held in memory for
+/// the life of the session.
+const MAX_PERF_LOG_LINES: usize = 64;
+
+impl SessionState {
+    /// Record a perf line for the host to drain, discarding the oldest once
+    /// full so a long session cannot grow this without bound.
+    fn push_perf(&mut self, line: String) {
+        if self.perf_log.len() >= MAX_PERF_LOG_LINES {
+            self.perf_log.remove(0);
+        }
+        self.perf_log.push(line);
+    }
 }
 
 /// Input events queued by the Kotlin side, consumed by the session thread.
@@ -247,6 +272,7 @@ impl RdpClient {
                 pointer_callback: None,
             avc_decoder: None,
             shutdown: false,
+            perf_log: Vec::new(),
         }));
         let bitmap_bridge_id = bitmap_bridge::register(&state);
         Self {
@@ -427,6 +453,19 @@ impl RdpClient {
     pub fn get_dirty_rects(&self) -> Vec<RdpRect> {
         if let Ok(mut s) = self.state.write() {
             std::mem::take(&mut s.dirty_rects)
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// Drain the EGFX per-frame timing summaries recorded since the last call
+    /// (#477), so the host can put them in the verbose log a reporter can copy.
+    ///
+    /// Draining rather than reading: the host appends these to a log it already
+    /// keeps, and returning them twice would duplicate lines in it.
+    pub fn take_perf_log(&self) -> Vec<String> {
+        if let Ok(mut s) = self.state.write() {
+            std::mem::take(&mut s.perf_log)
         } else {
             Vec::new()
         }
@@ -3009,6 +3048,39 @@ mod framebuffer_publish_tests {
     const W: u16 = 64;
     const H: u16 = 32;
 
+    /// #477: the host drains these, so a second drain must come back empty or
+    /// every Audit Log view repeats the previous view's lines; and a long
+    /// session must not grow the buffer without bound while nobody drains.
+    #[test]
+    fn perf_log_drains_once_and_stays_bounded() {
+        let mut s = blank_state();
+
+        s.push_perf("first".to_owned());
+        s.push_perf("second".to_owned());
+        assert_eq!(
+            std::mem::take(&mut s.perf_log),
+            vec!["first".to_owned(), "second".to_owned()],
+            "drained in order",
+        );
+        assert!(s.perf_log.is_empty(), "a drain empties it");
+
+        // A session nobody ever looks at: the oldest go, the newest stay.
+        for i in 0..(MAX_PERF_LOG_LINES + 10) {
+            s.push_perf(format!("line {i}"));
+        }
+        assert_eq!(s.perf_log.len(), MAX_PERF_LOG_LINES, "capped");
+        assert_eq!(
+            s.perf_log.last().map(String::as_str),
+            Some(format!("line {}", MAX_PERF_LOG_LINES + 9).as_str()),
+            "keeps the most recent",
+        );
+        assert_eq!(
+            s.perf_log.first().map(String::as_str),
+            Some(format!("line {}", 10).as_str()),
+            "drops the oldest",
+        );
+    }
+
     fn blank_state() -> SessionState {
         SessionState {
             connected: true,
@@ -3020,6 +3092,7 @@ mod framebuffer_publish_tests {
             pointer_callback: None,
             avc_decoder: None,
             shutdown: false,
+            perf_log: Vec::new(),
         }
     }
 

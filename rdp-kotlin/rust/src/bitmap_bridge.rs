@@ -204,6 +204,7 @@ mod tests {
             pointer_callback: None,
             avc_decoder: None,
             shutdown: false,
+            perf_log: Vec::new(),
         }))
     }
 

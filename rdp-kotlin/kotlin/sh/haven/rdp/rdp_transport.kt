@@ -877,6 +877,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_rdp_transport_checksum_method_rdpclient_set_session_callback(
     ): Int
+    external fun uniffi_rdp_transport_checksum_method_rdpclient_take_perf_log(
+    ): Int
     external fun uniffi_rdp_transport_checksum_method_sessioncallback_on_connected(
     ): Int
     external fun uniffi_rdp_transport_checksum_method_sessioncallback_on_error(
@@ -992,6 +994,8 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_rdp_transport_fn_method_rdpclient_set_session_callback(`ptr`: Long,`cb`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    external fun uniffi_rdp_transport_fn_method_rdpclient_take_perf_log(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_rdp_transport_fn_clone_sessioncallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_rdp_transport_fn_free_sessioncallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1201,6 +1205,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_rdpclient_set_session_callback() != 53109) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rdp_transport_checksum_method_rdpclient_take_perf_log() != 28309) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_sessioncallback_on_connected() != 30846) {
@@ -3222,6 +3229,15 @@ public interface RdpClientInterface {
     
     fun `setSessionCallback`(`cb`: SessionCallback)
     
+    /**
+     * Drain the EGFX per-frame timing summaries recorded since the last call
+     * (#477), so the host can put them in the verbose log a reporter can copy.
+     *
+     * Draining rather than reading: the host appends these to a log it already
+     * keeps, and returning them twice would duplicate lines in it.
+     */
+    fun `takePerfLog`(): List<kotlin.String>
+    
     companion object
 }
 
@@ -3599,6 +3615,26 @@ open class RdpClient: Disposable, AutoCloseable, RdpClientInterface
 }
     }
     
+    
+
+    
+    /**
+     * Drain the EGFX per-frame timing summaries recorded since the last call
+     * (#477), so the host can put them in the verbose log a reporter can copy.
+     *
+     * Draining rather than reading: the host appends these to a log it already
+     * keeps, and returning them twice would duplicate lines in it.
+     */override fun `takePerfLog`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_rdp_transport_fn_method_rdpclient_take_perf_log(
+        it,
+        _status)
+}
+    }
+    )
+    }
     
 
     
@@ -4586,6 +4622,34 @@ public object FfiConverterOptionalTypeSocksProxyConfig: FfiConverterRustBuffer<S
         } else {
             buf.put(1)
             FfiConverterTypeSocksProxyConfig.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
+    override fun read(buf: ByteBuffer): List<kotlin.String> {
+        val len = buf.getInt()
+        return List<kotlin.String>(len) {
+            FfiConverterString.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.String>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterString.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.String>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterString.write(it, buf)
         }
     }
 }

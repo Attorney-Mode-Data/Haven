@@ -517,9 +517,32 @@ class RdpSession(
         client?.sendClipboardText(text)
     }
 
+    /**
+     * Pull the native EGFX frame timings into the verbose buffer (#477).
+     *
+     * These say whether decode is actually the bottleneck, and they used to go
+     * only to the Android log — needing adb to read, so the one measurement
+     * that settles a lag report was invisible to the people filing them.
+     *
+     * Best-effort: a diagnostic that breaks the log it is being written into
+     * would be worse than no diagnostic.
+     */
+    private fun drainNativePerfLog() {
+        val lines = try {
+            client?.takePerfLog().orEmpty()
+        } catch (e: Exception) {
+            log("E", "Could not read native perf log: ${e.message}")
+            return
+        }
+        lines.forEach { log("D", it) }
+    }
+
     /** Drain captured verbose logs. Returns null if verbose logging was not enabled. */
     fun drainVerboseLog(): String? {
         val buf = verboseBuffer ?: return null
+        // Before the empty check, not after: a session whose only entries are
+        // perf lines would otherwise report having nothing to say.
+        drainNativePerfLog()
         if (buf.isEmpty()) return null
         val sb = StringBuilder()
         while (true) {
