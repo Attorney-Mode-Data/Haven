@@ -154,8 +154,30 @@ fetch_git_tag() {
     local dst="$SRC_DIR/$name"
     if [ ! -d "$dst/.git" ]; then
         echo "  [fetch] $name @ $ref"
-        rm -rf "$dst"
-        git clone --depth 1 --branch "$ref" "$repo" "$dst" 2>&1 | tail -3
+        # Retry, for the same reason fetch_tarball retries and FFmpeg carries a
+        # mirror list: one unreachable host aborts the entire build. bitbucket.org
+        # stopped answering for 300s on CI run 30887507336 (2026-08-04) and took
+        # the arm64 build down with it, on a change that touched no native code.
+        #
+        # git has no --connect-timeout, so each attempt is bounded externally.
+        # A healthy --depth 1 clone of the largest of these is ~1s, so 60s is
+        # slack rather than a limit, and three bounded attempts cost less on the
+        # bad path than the single 300s hang did.
+        local attempt
+        for attempt in 1 2 3; do
+            rm -rf "$dst"
+            if timeout 60 git clone --depth 1 --branch "$ref" "$repo" "$dst" 2>&1 | tail -3; then
+                break
+            fi
+            echo "  clone of $name failed (attempt $attempt/3) — retrying" >&2
+            sleep 5
+        done
+        # Checked rather than trusted to the loop: the pin verification below
+        # reads $dst, and must never run against a directory a failed clone left.
+        if [ ! -d "$dst/.git" ]; then
+            echo "ERROR: could not clone $name from $repo @ $ref" >&2
+            exit 1
+        fi
     else
         echo "  [cached] $name"
     fi
