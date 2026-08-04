@@ -68,6 +68,15 @@ pub(crate) struct EgfxPerf {
     /// Publishing the frame: dirty-rect copy plus the callback into the app.
     flush_us: u64,
     zgfx_us: u64,
+    /// The AVC decoder round trip as Rust sees it: the host decode plus the
+    /// UniFFI marshalling of the returned frame. The host reports its own
+    /// internal split separately, and the two did not agree — 107ms inside the
+    /// Kotlin decoder against 309ms for the whole dispatch at 2560x1440 (#477).
+    /// Splitting the round trip from the blit is what says which of the two
+    /// carries that ~200ms, instead of it being attributed by guesswork.
+    avc_call_us: u64,
+    /// `blit_rgba` of the decoded frame into the surface.
+    blit_us: u64,
     since_report: Option<std::time::Instant>,
 }
 
@@ -90,10 +99,13 @@ impl EgfxPerf {
         // numbers overlap and "decode" looks worse than it is.
         let decode_only = self.decode_us.saturating_sub(self.flush_us);
         let line = format!(
-            "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us, publish {}us, total {}us",
+            "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us \
+             (avc round trip {}us, blit {}us), publish {}us, total {}us",
             n as f64 / secs,
             self.zgfx_us / n,
             decode_only / n,
+            self.avc_call_us / n,
+            self.blit_us / n,
             self.flush_us / n,
             (self.zgfx_us + self.decode_us) / n,
         );
@@ -735,7 +747,9 @@ impl EgfxProcessor {
                 // to the destination. ponytail: multi-region partial blits
                 // (Windows/AVC444) collapse to a full-dest repaint here — still
                 // correct pixels, just not minimal; refine in slice 3.
+                let t_avc = std::time::Instant::now();
                 let rgba = decoder.decode(stream.data.to_vec(), w as u16, h as u16);
+                self.perf.avc_call_us += t_avc.elapsed().as_micros() as u64;
                 let want = (w * h * 4) as usize;
                 if rgba.len() < want {
                     warn!("EGFX[{n}]: AVC420 decoder returned {} bytes, need {} ({w}x{h}) — dropping", rgba.len(), want);
@@ -745,7 +759,9 @@ impl EgfxProcessor {
                     warn!("EGFX[{n}]: WireToSurface1 unknown surface {}", p.surface_id);
                     return;
                 };
+                let t_blit = std::time::Instant::now();
                 surface.blit_rgba(u32::from(r.left), u32::from(r.top), w, h, &rgba);
+                self.perf.blit_us += t_blit.elapsed().as_micros() as u64;
                 self.surfaces.dirty.push((p.surface_id, r.clone()));
             }
             Codec1Type::Avc444 | Codec1Type::Avc444v2 => {
@@ -1055,6 +1071,77 @@ mod tests {
         // Neighbours untouched — the tile must not smear.
         assert_eq!(at(5, 5), vec![0, 0, 0, 0], "pixel past the tile");
         assert_eq!(at(3, 6), vec![0, 0, 0, 0], "pixel below the tile");
+    }
+
+    /// #466/#477: the AVC round-trip and blit timers must actually fire on the
+    /// AVC420 path.
+    ///
+    /// Both reporters' logs show the Rust-side per-frame decode cost far
+    /// exceeding what the Kotlin decoder reports for the same frames — 107ms
+    /// against 309ms at 2560x1440 — and these two counters exist to say where
+    /// the difference lives. An earlier timer on this same path was attached to
+    /// an event EGFX never emits and produced nothing but zeroes for a whole
+    /// session, so "the numbers appear in the line" is not enough: this drives
+    /// a real dispatch through a decoder that sleeps a known time, and fails if
+    /// either counter stays at zero.
+    #[test]
+    fn avc420_round_trip_and_blit_are_measured() {
+        struct SlowDecoder {
+            delay: std::time::Duration,
+            pixels: usize,
+        }
+        impl crate::Avc420Decoder for SlowDecoder {
+            fn decode(&self, _annex_b: Vec<u8>, _w: u16, _h: u16) -> Vec<u8> {
+                std::thread::sleep(self.delay);
+                vec![0xAB; self.pixels * 4]
+            }
+        }
+
+        let (w, h) = (64u16, 64u16);
+        let state = test_state(w, h);
+        let delay = std::time::Duration::from_millis(20);
+        state.write().unwrap().avc_decoder = Some(Arc::new(SlowDecoder {
+            delay,
+            pixels: w as usize * h as usize,
+        }));
+
+        let mut proc = EgfxProcessor::new(state.clone(), false, false);
+        proc.capabilities_received = true;
+        let mut out = Vec::new();
+        create_full_surface(&mut proc, &mut out, w, h);
+
+        // RFX_AVC420_BITMAP_STREAM: one full-frame region, then an Annex-B AU.
+        let mut payload: Vec<u8> = vec![0x01, 0x00, 0x00, 0x00];
+        payload.extend_from_slice(&[0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x40, 0x00]);
+        payload.extend_from_slice(&[0x16, 0x64]);
+        payload.extend_from_slice(&[0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0xC0]);
+
+        proc.dispatch(
+            12,
+            &GfxPdu::WireToSurface1(WireToSurface1Pdu {
+                surface_id: 0,
+                codec_id: Codec1Type::Avc420,
+                pixel_format: PixelFormat::XRgb,
+                destination_rectangle: ExclusiveRectangle { left: 0, top: 0, right: w, bottom: h },
+                bitmap_data: payload,
+            }),
+            &mut out,
+        );
+
+        assert!(
+            proc.perf.avc_call_us >= delay.as_micros() as u64,
+            "the AVC round trip must be timed: got {}us for a decoder that slept {}us",
+            proc.perf.avc_call_us,
+            delay.as_micros(),
+        );
+        assert!(proc.perf.blit_us > 0, "the blit must be timed, got 0us");
+        // And the frame really was painted — otherwise the timers could be
+        // measuring a path that bails out before doing the work.
+        let surface = proc.surfaces.surface(0).expect("surface");
+        assert!(
+            surface.pixels.iter().any(|&b| b == 0xAB),
+            "the decoded frame must reach the surface",
+        );
     }
 
     /// A short payload must be refused rather than read past its end.
