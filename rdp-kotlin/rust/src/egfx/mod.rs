@@ -531,27 +531,37 @@ impl EgfxProcessor {
         }
     }
 
-    /// If `EGFX_DUMP_DIR` is set, write surface 0 as a PPM after each
-    /// EndFrame. Useful for visual diff against a VNC reference shot from
-    /// the host smoke driver — no extra image-crate dependency.
+    /// If `EGFX_DUMP_DIR` is set, write every live surface as a PPM after each
+    /// EndFrame. Useful for visual diff against a reference shot of the source
+    /// display — no extra image-crate dependency.
+    ///
+    /// ★ #496: this used to dump surface **0** only, and returned silently
+    /// when there wasn't one. FreeRDP's shadow server allocates surface id 1,
+    /// so the whole visual-diff path produced nothing at all — tile payloads
+    /// appeared in the dump directory but never a rendered frame, with no hint
+    /// as to why. Whichever ids the server picked now get dumped.
     fn maybe_dump_surface(&self, frame_id: u32) {
         let Ok(dir) = std::env::var("EGFX_DUMP_DIR") else {
             return;
         };
-        let Some(s) = self.surfaces.surface(0) else {
+        let surfaces = self.surfaces.all_surfaces();
+        if surfaces.is_empty() {
+            warn!("EGFX[{frame_id}]: surface dump requested but no surface exists yet");
             return;
-        };
-        let path = format!("{dir}/surface0_frame{frame_id:04}.ppm");
-        let mut buf = format!("P6\n{} {}\n255\n", s.width, s.height).into_bytes();
-        // Surface stores RGBA8888; PPM is RGB.
-        buf.reserve(s.pixels.len() / 4 * 3);
-        for px in s.pixels.chunks_exact(4) {
-            buf.extend_from_slice(&px[..3]);
         }
-        if let Err(e) = std::fs::write(&path, &buf) {
-            warn!("EGFX surface dump to {path} failed: {e}");
-        } else {
-            info!("EGFX surface dumped to {path}");
+        for (id, s) in surfaces {
+            let path = format!("{dir}/surface{id}_frame{frame_id:04}.ppm");
+            let mut buf = format!("P6\n{} {}\n255\n", s.width, s.height).into_bytes();
+            // Surface stores RGBA8888; PPM is RGB.
+            buf.reserve(s.pixels.len() / 4 * 3);
+            for px in s.pixels.chunks_exact(4) {
+                buf.extend_from_slice(&px[..3]);
+            }
+            if let Err(e) = std::fs::write(&path, &buf) {
+                warn!("EGFX surface dump to {path} failed: {e}");
+            } else {
+                info!("EGFX surface dumped to {path}");
+            }
         }
     }
 

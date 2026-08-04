@@ -285,6 +285,17 @@ impl SurfaceManager {
         self.surfaces.get(&id)
     }
 
+    /// Every live surface, lowest id first. Used by the `EGFX_DUMP_DIR` dump,
+    /// which must not assume the server picked surface 0 — FreeRDP's shadow
+    /// server allocates id 1, and a dump hard-coded to 0 silently produced
+    /// nothing at all (#496).
+    #[allow(dead_code)]
+    pub fn all_surfaces(&self) -> Vec<(u16, &Surface)> {
+        let mut v: Vec<(u16, &Surface)> = self.surfaces.iter().map(|(id, s)| (*id, s)).collect();
+        v.sort_by_key(|(id, _)| *id);
+        v
+    }
+
     #[allow(dead_code)]
     pub fn surface_mut(&mut self, id: u16) -> Option<&mut Surface> {
         self.surfaces.get_mut(&id)
