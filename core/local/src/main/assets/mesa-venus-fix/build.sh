@@ -30,9 +30,44 @@ mkdir -p "$PREFIX"
 # trigger redirecting to build.log) decides how to capture/persist it.
 echo "=== mesa-venus-fix build $(date 2>/dev/null) ==="
 
+# Which system Mesa this cache was built against (#441).
+#
+# A guest `apt upgrade` cannot delete this cache — /usr/local is not apt's
+# territory and we never touch the system Mesa. But it can leave it *stale*,
+# which is worse than deleted because it is invisible: these .so files
+# deliberately share the system soname and are LD_PRELOADed over whatever Mesa
+# is now installed, while having been built from the OLD source. So key the
+# short-circuit on the version, not on the file merely existing.
+# The trailing newline and `head -1` are load-bearing: on a multiarch guest
+# `dpkg-query -W` prints one record per architecture, and without a separator
+# they concatenate into a single nonsense version string that never compares
+# equal to itself twice.
+system_mesa_version() {
+  for p in libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers; do
+    v=$(dpkg-query -W -f='${Version}\n' "$p" 2>/dev/null | head -1 || true)
+    if [ -n "$v" ]; then echo "$v"; return 0; fi
+  done
+  echo unknown
+}
+
 if [ -s "$PREFIX/preload" ]; then
-  echo "already built: $(cat "$PREFIX/preload")"
-  exit 0
+  MESA_NOW=$(system_mesa_version)
+  BUILT_FOR=$(cat "$PREFIX/built-for" 2>/dev/null || true)
+  if [ -z "$BUILT_FOR" ]; then
+    # Built before this check existed. Adopt it rather than forcing an
+    # unexpected 20-40 minute rebuild on someone whose GL is working, and
+    # record the version so the *next* upgrade is caught.
+    echo "$MESA_NOW" > "$PREFIX/built-for"
+    echo "already built (adopting; now tracking mesa $MESA_NOW): $(cat "$PREFIX/preload")"
+    exit 0
+  fi
+  if [ "$BUILT_FOR" = "$MESA_NOW" ]; then
+    echo "already built for mesa $MESA_NOW: $(cat "$PREFIX/preload")"
+    exit 0
+  fi
+  echo "system mesa changed: this cache was built for $BUILT_FOR, installed is $MESA_NOW"
+  echo "rebuilding — a stale preload would shadow the new system Mesa with the old one"
+  rm -f "$PREFIX/preload"
 fi
 [ -f "$PATCH" ] || { echo "FAIL: patch not staged at $PATCH"; exit 2; }
 [ -f "$PATCH2" ] || { echo "FAIL: patch not staged at $PATCH2"; exit 2; }
@@ -143,4 +178,8 @@ fi
 # these preloaded copies. Space-separated (LD_PRELOAD accepts space or colon).
 # Written last so a populated `preload` is a reliable "fully built" sentinel.
 printf '%s %s' "$PREFIX/$(basename "$GAL")" "$PREFIX/$(basename "$EGL")" > "$PREFIX/preload"
-echo "=== done. preload=$(cat "$PREFIX/preload") ==="
+# Queried now rather than before the build: `apt-get build-dep mesa` can itself
+# pull a newer Mesa in, and what matters is the version this cache ends up
+# shadowing (#441).
+system_mesa_version > "$PREFIX/built-for"
+echo "=== done. preload=$(cat "$PREFIX/preload") (mesa $(cat "$PREFIX/built-for")) ==="
