@@ -5,6 +5,28 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.40
+
+🖥️ **Windows remote desktops look right at last — the haloing around text is gone** — with H.264 turned off, a Windows desktop sends each part of the picture roughly first and then sharpens it over the next few messages. Haven drew the rough version and threw every sharpening pass away, so text kept a dark halo around every letter and smooth areas came out blotchy. That is the "lots of artifacts" reported on #496.
+
+Haven now decodes the sharpening passes, and this is on by default.
+
+It was off because nobody had ever checked it against a real Windows desktop, and the fear was that decoding it wrongly would look worse than not decoding it at all. So it was checked: connected to a Windows 11 machine, an *idle* desktop turned out to send more than a thousand sharpening messages in thirty seconds, and dropping them is exactly what produced the haloing. Decoding them gives clean text, no errors, and a picture that matches what the desktop actually looks like.
+
+The cost was measured rather than hoped for: about twice the decoding work — from a small base — and roughly 12 MB more memory at this screen size. Along the way this also fixed a leak that would have arrived with it, where that memory was never released when a remote desktop changed resolution. (#496, #418)
+
+⌨️ **Haven no longer pretends to send characters a server won't take** — VirtualBox's remote desktop accepts only ordinary key presses, not the separate mechanism Haven used for characters with no key of their own, like accented letters and emoji. It was discarding them, and Haven had no idea: nothing failed, nothing was logged, the characters simply vanished.
+
+Normal typing was never affected — letters, digits and punctuation go the other way and always worked. But now the unusable ones are recognised and reported instead of disappearing silently. They still cannot be delivered to that kind of server; Haven just stops pretending otherwise. (#422)
+
+🔎 **Groundwork for the slow remote desktops** — a reporter's measurements finally showed where the time goes on a laggy 1080p connection: decoding each frame, not drawing it. Drawing takes under 3 milliseconds; decoding takes 120 to 240. So the drawing-speed work of the last few releases was never going to help them, which is worth saying plainly.
+
+This release adds the measurement that narrows it further — separating the video decoder's own time from the colour conversion afterwards — so the next fix can be the right one rather than a guess. No change you will notice yet. (#466, #477)
+
+🖥️ **A remote-desktop compatibility fix, corrected** — v5.86.38 taught Haven to accept a message whose stated length is smaller than the message itself, which is what VirtualBox sends. Review of the same change upstream found it was too permissive: it also accepted a message claiming *zero* length, which is malformed rather than merely miscounted. Narrowed. VirtualBox is unaffected. (#422)
+
+🖥️ **Linux desktop graphics keep working after a system update** — Haven builds a patched graphics driver inside the Linux guest for GPU acceleration. A guest system update cannot delete it, but it could leave it stale — silently paired with a newer driver it no longer matches — and nothing rebuilt it. Now the version is recorded and a mismatch rebuilds. Raised by @sugerpersion on #441, whose objection was half right and found a real bug. (#441)
+
 ## v5.86.39
 
 🔑 **Keys from OpenKeychain can be imported again** — a reporter with a YubiKey could not add one: "The key provider refused the request", a couple of seconds after the prompt opened, and nothing in the message to act on. Nothing was wrong with their key, their card, or their permissions — they had already checked all three, which is what made this findable.
