@@ -1117,42 +1117,72 @@ class ConnectionsViewModel @Inject constructor(
             // reconnect used to add a tab while the corpse lingered, so a few
             // cycles left a pile of DISCONNECTED entries for one profile.
             moshSessionManager.removeSession(sessionId)
-            if (reconnectingMoshProfiles.add(profileId)) {
-                viewModelScope.launch {
-                    try {
-                        val profile = repository.getById(profileId)
-                        if (profile == null || !profile.isMosh) return@launch
-                        val now = System.currentTimeMillis()
-                        val state = moshReconnectState[profileId]
-                        val decision = decideMoshReconnect(
-                            attempts = state?.attempts ?: 0,
-                            lastAttemptMs = state?.lastAttemptMs ?: 0L,
-                            nowMs = now,
-                        )
-                        if (!decision.reconnect) {
-                            Log.w(
-                                TAG,
-                                "Mosh session for ${profile.label} died again after ${decision.attempt} " +
-                                    "reconnects — giving up, reconnect manually (#421)",
-                            )
-                            moshReconnectState[profileId] = MoshReconnectState(decision.attempt, now)
-                            return@launch
-                        }
-                        if (decision.backoffMs > 0) {
-                            Log.d(TAG, "Mosh reconnect for ${profile.label} in ${decision.backoffMs}ms (attempt ${decision.attempt})")
-                            delay(decision.backoffMs)
-                        }
-                        moshReconnectState[profileId] =
-                            MoshReconnectState(decision.attempt, System.currentTimeMillis())
-                        Log.d(TAG, "Mosh session for ${profile.label} died — reconnecting (attempt ${decision.attempt}) (#421)")
-                        connectMoshSilent(profile)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Mosh auto-reconnect failed for $profileId: ${e.message}", e)
-                    } finally {
-                        reconnectingMoshProfiles.remove(profileId)
-                    }
+            scheduleMoshReconnect(profileId)
+        }
+    }
+
+    /**
+     * Run the #421 reconnect policy for [profileId], and keep running it if the
+     * reconnect itself fails.
+     *
+     * That last part is the fix for the second half of #421. The policy used to
+     * live inline in `onSessionDied`, so the only thing that could start an
+     * attempt was a session *dying*. When `connectMoshSilent` threw, the
+     * exception was logged and nothing rescheduled — and there was no session
+     * left to die a second time, so the chain ended there. A reporter's log
+     * caught exactly that: the transport escalated correctly, the reconnect
+     * fired 15s after the network came back, and
+     *
+     *     Mosh auto-reconnect failed for …: Could not resolve hostname: fire.walla
+     *
+     * was the last thing that ever happened. A name that had resolved fine when
+     * the session was established failed once during the network transition, and
+     * "no automatic reconnect" — the issue title — followed from that single
+     * transient DNS miss.
+     *
+     * Retrying is safe because the bound is in [decideMoshReconnect], not in the
+     * caller: the attempt counter is recorded *before* the connect is tried, so a
+     * failed attempt still counts against MOSH_RECONNECT_MAX_ATTEMPTS and the
+     * backoff still grows. Each retry is a fresh coroutine, not stack recursion.
+     */
+    private fun scheduleMoshReconnect(profileId: String) {
+        if (!reconnectingMoshProfiles.add(profileId)) return
+        viewModelScope.launch {
+            var retryAfterFailure = false
+            try {
+                val profile = repository.getById(profileId)
+                if (profile == null || !profile.isMosh) return@launch
+                val now = System.currentTimeMillis()
+                val state = moshReconnectState[profileId]
+                val decision = decideMoshReconnect(
+                    attempts = state?.attempts ?: 0,
+                    lastAttemptMs = state?.lastAttemptMs ?: 0L,
+                    nowMs = now,
+                )
+                if (!decision.reconnect) {
+                    Log.w(
+                        TAG,
+                        "Mosh session for ${profile.label} died again after ${decision.attempt} " +
+                            "reconnects — giving up, reconnect manually (#421)",
+                    )
+                    moshReconnectState[profileId] = MoshReconnectState(decision.attempt, now)
+                    return@launch
                 }
+                if (decision.backoffMs > 0) {
+                    Log.d(TAG, "Mosh reconnect for ${profile.label} in ${decision.backoffMs}ms (attempt ${decision.attempt})")
+                    delay(decision.backoffMs)
+                }
+                moshReconnectState[profileId] =
+                    MoshReconnectState(decision.attempt, System.currentTimeMillis())
+                Log.d(TAG, "Mosh session for ${profile.label} died — reconnecting (attempt ${decision.attempt}) (#421)")
+                connectMoshSilent(profile)
+            } catch (e: Exception) {
+                Log.e(TAG, "Mosh auto-reconnect failed for $profileId: ${e.message} — retrying (#421)", e)
+                retryAfterFailure = true
+            } finally {
+                reconnectingMoshProfiles.remove(profileId)
             }
+            if (retryAfterFailure) scheduleMoshReconnect(profileId)
         }
     }
 

@@ -69,6 +69,48 @@ class MoshReconnectPolicyTest {
         assertEquals(1, d.attempt)
     }
 
+    /**
+     * #421, second half: a reconnect whose *connect* fails now retries, where it
+     * used to log the exception and stop. A reporter lost their session to a
+     * single transient `Could not resolve hostname` 15s after the network came
+     * back, with nothing scheduled afterwards.
+     *
+     * Retrying is only safe because a failed attempt still counts. The ViewModel
+     * records the attempt *before* trying to connect, so the streak grows whether
+     * the connect succeeds or throws, and this loop terminates. Move that
+     * assignment after `connectMoshSilent` and a server that is simply gone
+     * becomes an infinite reconnect loop — which is what this asserts.
+     */
+    @Test
+    fun `a reconnect chain of pure failures still terminates`() {
+        var attempts = 0
+        var lastAttemptMs = 0L
+        var now = t0
+        var connects = 0
+
+        // Mirrors scheduleMoshReconnect: decide, record the attempt, try to
+        // connect, and on failure go round again.
+        while (true) {
+            val d = decideMoshReconnect(attempts, lastAttemptMs, now)
+            if (!d.reconnect) break
+            now += d.backoffMs
+            attempts = d.attempt
+            lastAttemptMs = now
+            connects++
+            // The connect throws every time — a host that will not resolve.
+            assertTrue(
+                "a failing reconnect chain must not exceed the attempt budget",
+                connects <= MOSH_RECONNECT_MAX_ATTEMPTS,
+            )
+        }
+
+        assertEquals(
+            "the chain should spend exactly the budget, then stop",
+            MOSH_RECONNECT_MAX_ATTEMPTS,
+            connects,
+        )
+    }
+
     /** Guard the ordering the policy depends on: give-up must outlast a real stall. */
     @Test
     fun `reset window is longer than the whole attempt sequence`() {
