@@ -524,8 +524,8 @@ impl ProgressiveDecoder {
                         if should_report(self.upgrades_skipped) {
                             warn!(
                                 "Progressive: dropped {} refinement tile(s) so far — those areas stay \
-                                 at coarse quality. Settings → RDP → 'Progressive upgrade tile \
-                                 decoding' decodes them (experimental, #418).",
+                                 at coarse quality. Settings → Diagnostics → 'RDP: Progressive \
+                                 upgrade tile decoding' decodes them (experimental, #418).",
                                 self.upgrades_skipped
                             );
                         }
