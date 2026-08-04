@@ -50,6 +50,34 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92  # v6.1.1 (Node 24)
 
+  # rdp-kotlin's Rust suite had no CI step at all, so it was gated by whoever
+  # last remembered to run it by hand. Not hypothetical: the #422 test
+  # asserting an under-declared totalLength must *not* decode kept asserting it
+  # after the IronRDP pin moved to make it decode, and stayed green-by-absence
+  # until someone ran it locally.
+  #
+  # Its own job rather than a step in `test`: that job already runs 14-30m
+  # against a 45m cap and has been stamped `cancelled` once for finishing two
+  # seconds late (see its comment), so it is the wrong place to add minutes.
+  # This needs no submodules, no NDK and no Gradle, so standalone it is cheap
+  # and runs in parallel.
+  rdp-rust-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          submodules: false
+      # No toolchain setup step: rdp-kotlin/rust/rust-toolchain.toml pins the
+      # channel and rustup installs it on first use. That file is also why this
+      # runs from the crate directory rather than with --manifest-path from the
+      # root — rustup resolves the toolchain from the working directory, so the
+      # root would silently get the runner's default rustc, which IronRDP's
+      # rust-version then rejects.
+      - name: Run RDP transport Rust tests
+        working-directory: rdp-kotlin/rust
+        run: cargo test
+
   # Three independent Gradle entry-points run as parallel jobs instead of
   # sequentially in one. Each restores the shared toolchain + caches from
   # the composite action; the second run of each job type reuses the cache

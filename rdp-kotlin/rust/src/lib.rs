@@ -1806,34 +1806,19 @@ fn run_rdp_session(
                                 debug!("Skipping unhandled PDU: {}", msg);
                             }
                         } else if msg.contains("NotEnoughBytes") && msg.contains("ShareControlHeader") {
-                            // #422: this is NOT a truncated PDU, despite the name.
+                            // #422: the under-declared-totalLength case that used
+                            // to land here no longer reaches it — our IronRDP fork
+                            // accepts those outright from haven-pin-20260804, since
+                            // the PDU was always complete and only the server's
+                            // number was wrong. It had to be fixed there rather
+                            // than here: VirtualBox mis-declares a PDU during
+                            // *connection finalization* too, which never reaches
+                            // this loop, so the connect failed before a session
+                            // existed to skip anything.
                             //
-                            // ShareControlHeader::decode ends with a cross-check
-                            // that the PDU it just decoded is the size the header
-                            // declared, and reports a mismatch as
-                            //     not_enough_bytes_err!(total_length, header_length)
-                            // — so `received` is the server's declared totalLength
-                            // and `expected` is the size IronRDP decoded. Neither
-                            // is a byte count off the wire.
-                            //
-                            // The reporter's `received: 24, expected: 8550` came on
-                            // an 8565-byte frame, and 8565 - 15 (TPKT 4 + X224 3 +
-                            // MCS SDI 8) = 8550 exactly: `expected` is the whole
-                            // MCS user_data, because a Pointer payload is decoded
-                            // greedily to the end of the cursor. The PDU was
-                            // entirely present; VirtualBox VRDP just under-declared
-                            // totalLength as 24. Reproduced by hand-building that
-                            // frame — see the test below.
-                            //
-                            // So there is nothing to wait for and nothing to
-                            // rejoin. Drop the frame (one pointer/bitmap update)
-                            // and keep the session, which is what the old
-                            // reassembly attempt was reaching for and could never
-                            // achieve: it glued two complete transport frames
-                            // together, each with its own TPKT/X224/MCS header, and
-                            // handed the pair to process() under the *second*
-                            // frame's action — turning this into a bogus
-                            // FastPathHeader error that killed the session anyway.
+                            // What still arrives here is genuine truncation — an
+                            // inner PDU shorter than its own fixed part. Skip the
+                            // frame and keep the session.
                             //
                             // Bounded, because "skip and carry on" and "the
                             // stream has desynchronised" look identical from
@@ -2934,26 +2919,27 @@ mod tests {
         );
     }
 
-    /// #422: pins what the reporter's NotEnoughBytes actually means, because
-    /// the name says the opposite and we already shipped a fix built on the
-    /// wrong reading.
+    /// #422: pins that an under-declared totalLength decodes, because the error
+    /// it used to raise says the opposite and we shipped two fixes built on the
+    /// wrong reading before settling what it meant.
     ///
-    /// `ShareControlHeader::decode` finishes with a cross-check that the PDU it
-    /// decoded is the size the header declared, and reports a mismatch as
-    /// `not_enough_bytes_err!(total_length, header_length)` — so `received` is
-    /// the server's *declared* totalLength and `expected` is the size IronRDP
-    /// decoded, neither of them a count of bytes off the wire.
+    /// `ShareControlHeader::decode` used to finish with a cross-check that the
+    /// PDU it decoded is the size the header declared, and report a mismatch as
+    /// `not_enough_bytes_err!(total_length, header_length)` — so `received` was
+    /// the server's *declared* totalLength and `expected` the size IronRDP
+    /// decoded, neither of them a count of bytes off the wire. Nothing was ever
+    /// missing, so our fork dropped the check (`haven-pin-20260804`) and the
+    /// frame is now simply accepted.
     ///
     /// Build the reporter's exact frame — 8565 bytes on the wire, so 8550 of
     /// MCS user_data after TPKT(4) + X224(3) + MCS SDI(8) — with a greedily
-    /// decoded Pointer payload and totalLength under-declared as 24, and
-    /// assert it lands on their error verbatim. If this ever reproduces
-    /// `expected` != the full user_data length, the "the PDU is all here"
-    /// conclusion is wrong and the skip in the session loop needs revisiting.
+    /// decoded Pointer payload and totalLength under-declared as 24, and assert
+    /// the whole payload survives. This is the gate on the pin: revert to a
+    /// stock IronRDP and it fails with the reporter's error verbatim.
     #[test]
     fn under_declared_share_control_length_is_not_a_truncated_pdu() {
         use ironrdp_core::decode;
-        use ironrdp_pdu::rdp::headers::ShareControlHeader;
+        use ironrdp_pdu::rdp::headers::{ShareControlHeader, ShareControlPdu, ShareDataPdu};
 
         const SHARE_CONTROL_HEADER_SIZE: usize = 2 * 3 + 4;
         const SHARE_DATA_HEADER_SIZE: usize = 1 + 1 + 2 + 1 + 1 + 2;
@@ -2979,25 +2965,44 @@ mod tests {
         b.resize(user_data, 0);
         assert_eq!(b.len(), 8550);
 
-        let err = decode::<ShareControlHeader>(&b)
-            .expect_err("an under-declared totalLength must not decode cleanly")
-            .to_string();
+        let hdr = decode::<ShareControlHeader>(&b)
+            .expect("an under-declared totalLength is complete, not truncated");
 
-        // The reporter's numbers, verbatim.
-        assert!(
-            err.contains("received 24 bytes, expected 8550 bytes"),
-            "should reproduce the #422 report exactly, got: {err}"
+        let ShareControlPdu::Data(data) = hdr.share_control_pdu else {
+            panic!("expected a Share Data PDU");
+        };
+        let ShareDataPdu::Pointer(payload) = data.share_data_pdu else {
+            panic!("expected a Pointer PDU");
+        };
+        // Every byte past the two headers, i.e. nothing was dropped as padding
+        // on the strength of the server's wrong number.
+        assert_eq!(
+            payload.len(),
+            user_data - SHARE_CONTROL_HEADER_SIZE - SHARE_DATA_HEADER_SIZE
         );
-        // `expected` is the whole user_data, not a shortfall: nothing is missing.
-        assert!(
-            err.contains(&format!("expected {user_data} bytes")),
-            "expected should be the full MCS user_data ({user_data}), got: {err}"
-        );
-        // And it must be the branch the session loop keys off.
-        assert!(
-            err.contains("ShareControlHeader"),
-            "the skip in the session loop matches on this context: {err}"
-        );
+    }
+
+    /// The other half of the same contract: a genuinely short buffer must still
+    /// be rejected. Dropping the totalLength cross-check would be the wrong fix
+    /// if it also blinded us to real truncation — it doesn't, because a short
+    /// buffer fails inside the inner PDU's own decode, before the check ran.
+    #[test]
+    fn a_genuinely_truncated_share_control_pdu_is_still_rejected() {
+        use ironrdp_core::decode;
+        use ironrdp_pdu::rdp::headers::ShareControlHeader;
+
+        const PROTOCOL_VERSION: u16 = 0x10;
+        const DATA_PDU: u16 = 0x7;
+
+        // Share control header claiming a Data PDU, then nothing at all — the
+        // 8-byte share data header the type demands is simply not there.
+        let mut b = Vec::new();
+        b.extend_from_slice(&18u16.to_le_bytes());
+        b.extend_from_slice(&(PROTOCOL_VERSION | DATA_PDU).to_le_bytes());
+        b.extend_from_slice(&1002u16.to_le_bytes());
+        b.extend_from_slice(&0x0001_0000u32.to_le_bytes());
+
+        decode::<ShareControlHeader>(&b).expect_err("a missing share data header must not decode");
     }
 
     /// AlertReceived(InternalError) → still maps to the "rejected
