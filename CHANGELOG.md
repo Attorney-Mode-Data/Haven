@@ -5,6 +5,31 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.44
+
+🎞️ **The slow remote desktops: the biggest cost is gone from where it was** — a reporter's logs finally showed where a frame's quarter-second actually went, on a 1920×1080 H.264 session:
+
+| | |
+|---|---|
+| the phone's video decoder | 9–25 ms — the real work |
+| converting its output to screen colours | 27–109 ms |
+| handing the finished frame from Java to the native side | 87–112 ms |
+| drawing it | 1–3 ms |
+
+About 25 ms of a ~250 ms frame was doing anything useful. The two biggest items sit on the same path and shrink for the same reason, so this is one change rather than two: the colour conversion now happens on the native side, and what crosses between the two is the video decoder's own output rather than the finished picture — **3.11 MB instead of 8.29 MB per frame**, so there is 2.67× less to allocate and copy every time.
+
+The drawing step is untouched. At 1–3 ms it was the other suspect, and measuring it is what ruled it out — worth saying, because it is the one that could have been "optimised" for no gain at all.
+
+The bar for the change was **identical pixels**, not similar ones, so the new conversion is checked against output captured from the old one — including a full-brightness-range frame compared by digest, because the first check turned out to be too small to notice a one-off rounding difference.
+
+**What is not established: whether this makes it faster on a phone.** It cannot be measured here — the only server that speaks this codec needs a desktop session this machine does not have. The per-frame report now breaks the conversion out separately, so the next log will say plainly whether the move paid off. If it did not, that will be visible immediately rather than assumed. (#466, #477)
+
+🔌 **A USB drive that fails instantly no longer claims it waited seven minutes** — a reporter on GrapheneOS got "the VM didn't reach a login prompt in 420s" **1.7 seconds** after plugging a flash drive in, which sent them looking for a slow boot instead of a crash.
+
+The wait behind that message ends for two unrelated reasons — the deadline passing, or the helper VM dying — and reported the deadline either way. Meanwhile the VM's own output, the one thing that would identify the crash, was being captured and shown to nobody.
+
+It now says which of the two happened, how long it actually took, and quotes the VM's last words. This does not fix the underlying failure; it makes the next report able to say what the failure is. (#506)
+
 ## v5.86.43
 
 🖥️ **A remote desktop stops throwing away part of the picture** — Haven refused any screen update whose image was *taller* than the area it was meant to fill, while happily accepting one that was wider. One VirtualBox session was discarding **53915 updates — 51% of everything the server sent**, which is enough for a window to sit there looking frozen while the clock beside it keeps ticking.
