@@ -1062,7 +1062,14 @@ class ProotManager @Inject constructor(
 
     sealed class DesktopSetupState {
         data object Idle : DesktopSetupState()
-        data class Installing(val step: String) : DesktopSetupState()
+        /**
+         * [de] is the desktop this work belongs to, or null when it belongs to
+         * none of them (add-on installs). Without it the Manage screen could
+         * only ask "is *something* installing", so starting one desktop
+         * replaced every other desktop's controls with a spinner — they all
+         * looked like they had been started too (#502).
+         */
+        data class Installing(val step: String, val de: DesktopEnvironment? = null) : DesktopSetupState()
         data object Complete : DesktopSetupState()
         /**
          * Failure attributed to a specific [DePhase]. [logTail] is
@@ -2468,6 +2475,7 @@ class ProotManager @Inject constructor(
     private suspend fun runInstallWithSelfRepair(
         ops: PackageOps,
         pkgs: List<String>,
+        de: DesktopEnvironment? = null,
     ): Pair<String, Int> {
         val installCmd = "${ops.updateCmd()} && ${ops.installCmd(pkgs)}"
         val (output, code) = runCommandInProot(installCmd)
@@ -2477,6 +2485,7 @@ class ProotManager @Inject constructor(
         Log.d(TAG, "Install hit stale-DB symptom; auto-upgrading and retrying")
         _desktopState.value = DesktopSetupState.Installing(
             "Refreshing package database (one-time upgrade)…",
+            de,
         )
         val (upgOut, upgCode) = runCommandInProot(ops.upgradeCmd())
         Log.d(TAG, "Auto-upgrade exit=$upgCode tail=${upgOut.takeLast(300)}")
@@ -2507,7 +2516,8 @@ class ProotManager @Inject constructor(
             val needsInstall = !isDesktopInstalled(de)
             if (needsInstall) {
                 _desktopState.value = DesktopSetupState.Installing(
-                    "Installing ${de.label} (${de.sizeEstimate} download)..."
+                    "Installing ${de.label} (${de.sizeEstimate} download)...",
+                    de,
                 )
 
             val distro = activeDistro
@@ -2520,7 +2530,7 @@ class ProotManager @Inject constructor(
                 deId = de.spec.id,
                 message = "Installing ${de.label}: ${pkgs.joinToString(" ")}",
             )
-            val (installOutput, installExit) = runInstallWithSelfRepair(ops, pkgs)
+            val (installOutput, installExit) = runInstallWithSelfRepair(ops, pkgs, de)
             Log.d(TAG, "[de-package ${de.spec.id}] family=${distro.family} exit=$installExit tail=${installOutput.takeLast(1500)}")
 
             // Check if key binaries were installed — package managers may
@@ -2610,7 +2620,7 @@ class ProotManager @Inject constructor(
             }
 
             if (de.spec.launch is LaunchSpec.X11Vnc) {
-                _desktopState.value = DesktopSetupState.Installing("Configuring VNC...")
+                _desktopState.value = DesktopSetupState.Installing("Configuring VNC...", de)
 
                 // Write VNC password — use a temp file to avoid leaking
                 // the password in process arguments (visible in /proc)
@@ -2695,7 +2705,7 @@ chmod +x /root/.vnc/xstartup""")
                 // would have had anyway. A desktop that mostly works beats
                 // an install marked failed.
                 stageWayvncBuildScript()
-                _desktopState.value = DesktopSetupState.Installing("Checking wayvnc version...")
+                _desktopState.value = DesktopSetupState.Installing("Checking wayvnc version...", de)
                 val (wayvncOut, wayvncExit) = runCommandInProot(wayvncBuildCommand)
                 if (wayvncExit != 0) {
                     Log.w(
@@ -2998,7 +3008,7 @@ chmod +x /root/.vnc/xstartup""")
 
     suspend fun uninstallDesktop(de: DesktopEnvironment) {
         try {
-            _desktopState.value = DesktopSetupState.Installing("Removing ${de.label}...")
+            _desktopState.value = DesktopSetupState.Installing("Removing ${de.label}...", de)
             val distro = activeDistro
             val ops = PackageOps.forFamily(distro.family)
             val pkgs = de.spec.packagesPerFamily[distro.family]

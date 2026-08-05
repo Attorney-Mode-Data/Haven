@@ -1512,7 +1512,12 @@ private fun DesktopManagerSection(
                     de = de,
                     isInstalled = isInstalled,
                     instance = instance,
-                    isSetupBusy = desktopSetupState is ProotManager.DesktopSetupState.Installing,
+                    // #502: only the desktop the install belongs to. This was
+                    // "is anything installing", so starting one replaced every
+                    // other row's controls with a spinner and they all read as
+                    // having been started.
+                    isSetupBusy = isInstallingThisDesktop(desktopSetupState, de),
+                    isAnySetupBusy = desktopSetupState is ProotManager.DesktopSetupState.Installing,
                     activeFamily = activeDistro?.family,
                     isRootfsReady = isRootfsReady,
                     storedVncPort = storedVncPortFor(de),
@@ -1852,12 +1857,33 @@ private fun CustomBindsDialog(
     )
 }
 
+/**
+ * Whether the desktop-setup work currently running belongs to [de].
+ *
+ * #502: the Manage screen used to ask only "is anything installing", and every
+ * row read the same answer — start one desktop and all of them swapped their
+ * controls for a spinner, which looks exactly like all of them having been
+ * started. Add-on installs belong to no desktop and answer false for every row.
+ */
+internal fun isInstallingThisDesktop(
+    state: ProotManager.DesktopSetupState?,
+    de: ProotManager.DesktopEnvironment,
+): Boolean = (state as? ProotManager.DesktopSetupState.Installing)?.de == de
+
 @Composable
 private fun DesktopRow(
     de: ProotManager.DesktopEnvironment,
     isInstalled: Boolean,
     instance: DesktopManager.DesktopInstance?,
+    /** An install is running *for this desktop* — show its progress here. */
     isSetupBusy: Boolean = false,
+    /**
+     * An install is running for some desktop, this one or another. Installs
+     * share one package database, so a second one started alongside would
+     * collide on its lock — every Install button stays disabled while any is
+     * running, even though only the row being installed shows a spinner (#502).
+     */
+    isAnySetupBusy: Boolean = false,
     activeFamily: PackageFamily? = null,
     isRootfsReady: Boolean = true,
     storedVncPort: Int? = null,
@@ -1980,7 +2006,7 @@ private fun DesktopRow(
             // installs the rootfs if missing; we'd rather make the
             // dependency obvious. The subtitle above carries the
             // "install distro first" hint.
-            TextButton(onClick = onInstall, enabled = !isSetupBusy && isRootfsReady) {
+            TextButton(onClick = onInstall, enabled = !isAnySetupBusy && isRootfsReady) {
                 Text(stringResource(R.string.common_install))
             }
         } else if (isSetupBusy) {
