@@ -196,6 +196,17 @@ class RdpSession(
                 avcEnabled = RdpDebugToggles.avcEnabled,
             )
 
+            // #477: record which settings this session actually ran with. Two
+            // reporter logs labelled "AVC420 enabled" negotiated different
+            // pipelines, and nothing in either log said which toggle was live —
+            // so whether the setting had failed to apply or the label was wrong
+            // could not be told apart without asking.
+            log(
+                "D",
+                "RDP settings: avc420=${config.avcEnabled} progressiveUpgrade=" +
+                    "${config.progressiveUpgrade} colorDepth=$colorDepth nla=$useNla",
+            )
+
             val c = RdpClient(config)
             client = c
 
