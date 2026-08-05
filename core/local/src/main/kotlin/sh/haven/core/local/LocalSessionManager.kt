@@ -40,10 +40,23 @@ private const val TAG = "LocalSessionManager"
  * [cmd] is run (not exec'd) so the `||` fallback can fire; on a clean exit the
  * wrapper simply ends and the PTY closes as before.
  */
+/**
+ * Exec a login shell in the guest, preferring `bash` when the distro ships one.
+ *
+ * `/bin/sh` was execed unconditionally, which on Debian is dash and on
+ * Alpine/Void is busybox — so a guest with bash installed still dropped the
+ * user into a minimal shell every time (#501). The test is made in the guest
+ * rather than by looking for a binary from the app, so it holds for any distro
+ * added under #162 without a per-distro table, and it falls back to exactly
+ * the previous behaviour when there is no bash.
+ */
+internal const val GUEST_LOGIN_SHELL: String =
+    "exec \"${'$'}(command -v bash 2>/dev/null || echo /bin/sh)\" -l"
+
 internal fun sessionManagerWrapper(bin: String, cmd: String): String =
     "if command -v $bin >/dev/null 2>&1; then " +
-        "$cmd || { echo \"[haven] $bin exited unexpectedly - falling back to a shell\" >&2; exec /bin/sh -l; }; " +
-        "else exec /bin/sh -l; fi"
+        "$cmd || { echo \"[haven] $bin exited unexpectedly - falling back to a shell\" >&2; $GUEST_LOGIN_SHELL; }; " +
+        "else $GUEST_LOGIN_SHELL; fi"
 
 /**
  * Merge [overlay] into [base] env entries with KEY-OVERRIDE semantics: an
@@ -220,11 +233,11 @@ class LocalSessionManager @Inject constructor(
         // symlink to busybox, Debian's is a symlink to dash, both
         // accept -l / -c with the same semantics. Hardcoding busybox
         // breaks any non-Alpine distro added under issue #162.
-        if (plain) return arrayOf("/bin/sh", "-l")
+        if (plain) return arrayOf("/bin/sh", "-c", GUEST_LOGIN_SHELL)
         val mgr = sessionManager
         val template = mgr.command
         if (template == null) {
-            return arrayOf("/bin/sh", "-l")
+            return arrayOf("/bin/sh", "-c", GUEST_LOGIN_SHELL)
         }
         // No '.' or ':' — tmux treats them as session:window.pane separators (#358).
         val sanitizedName = sessionName.replace(Regex("[^A-Za-z0-9_-]"), "-")
