@@ -5,6 +5,20 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.41
+
+🖥️ **Windows remote desktops get their modern graphics pipeline back** — with H.264 turned on, which has been the default since 22 July, Haven told a Windows server it could do H.264 and nothing else about how it wanted the screen sent. Windows responded by hanging up on the modern graphics pipeline half a second into every session, and the whole connection then fell back to the old bitmap method for as long as it lasted. No H.264, no progressive refinement, no ClearCodec — the very things the last several releases have been improving.
+
+Nothing announced this. The picture still arrived, just by the slowest route available, which is why it read as "Windows is noticeably slower than other clients" rather than as a fault.
+
+Found in a pair of logs from @skeezmoe on #477: same phone, same computer, two sessions minutes apart — one ran at 33 to 51 frames per second, the other sent twenty-four thousand old-style bitmap updates instead. Reproduced against a Windows 11 machine here and narrowed to a single bit in a single capability word: asking for H.264 *on its own* gets the channel closed, and asking for it alongside any other option is accepted. Why Windows refuses the one and not the other is genuinely unexplained — the message is byte-identical apart from that word — so this ships as a measured behaviour, not as a theory.
+
+This may also be the reason @ZGLinus saw an entirely black screen with H.264 on back in July (#418). Unconfirmed on their Windows version. KDE and other Linux servers were never affected — they always accepted it. (#477, #418, #425)
+
+🔎 **A remote desktop that discards half the picture now says so** — a VirtualBox session on #422 threw away 53915 screen updates, 51% of everything the server sent, and the log recorded only "invalid declared destination" over and over. It named neither the region nor which of three rules rejected it, and over half of that reporter's 24 MB log was that one line repeated, burying everything else in it.
+
+It now reports the region, the sizes involved and the rule that failed, once and then every five hundredth. No visible change — this is what makes the next report solvable. Haven also now records which graphics settings a session actually ran with, after two logs turned out to be labelled one way and negotiated another. (#422, #477)
+
 ## v5.86.40
 
 🖥️ **Windows remote desktops look right at last — the haloing around text is gone** — with H.264 turned off, a Windows desktop sends each part of the picture roughly first and then sharpens it over the next few messages. Haven drew the rough version and threw every sharpening pass away, so text kept a dark halo around every letter and smooth areas came out blotchy. That is the "lots of artifacts" reported on #496.
