@@ -6707,6 +6707,12 @@ internal class McpTools(
             is sh.haven.core.local.ProotManager.DesktopSetupState.Installing -> {
                 put("phase", "Installing")
                 put("step", state.step)
+                // Which desktop this work belongs to, absent for an add-on
+                // install that belongs to none (#502). The state gained this so
+                // the Manage screen could stop putting a spinner on every row;
+                // reporting only "something is installing" left an agent
+                // polling here with the same blind spot the UI had.
+                state.de?.let { put("deId", it.spec.id) }
             }
             is sh.haven.core.local.ProotManager.DesktopSetupState.Complete ->
                 put("phase", "Complete")
