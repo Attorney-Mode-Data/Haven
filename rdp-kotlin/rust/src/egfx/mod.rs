@@ -199,9 +199,32 @@ impl DvcProcessor for EgfxProcessor {
             // V10 makes it pick V10 (which it reads as "YUV420 false") and it then
             // has nothing to send. V8.1-only forces the YUV420 path. AVC444 (V10)
             // is a later slice once we decode it. #425.
-            info!("EGFX: sending CapabilitiesAdvertise(V8_1 AVC420_ENABLED)");
+            //
+            // SMALL_CACHE is not optional here (#477). A Windows 11 24H2 server
+            // *closes the graphics channel* when V8.1 arrives with
+            // AVC420_ENABLED as its only flag, and the session then falls back
+            // to legacy fast-path bitmaps for its whole life. Measured against
+            // win11-rdptest, same binary, one bit apart, twice each:
+            //
+            //   flags                          | Windows
+            //   0x10 AVC420_ENABLED alone      | channel closed, 0 EGFX frames
+            //   0x12 + SMALL_CACHE             | confirms V8.1
+            //   0x11 + THIN_CLIENT             | confirms V8.1
+            //   0x02 SMALL_CACHE alone         | confirms V8.1
+            //   0x00 no flags                  | confirms V8.1
+            //
+            // Why the lone AVC bit is the one Windows refuses is unexplained —
+            // the encoding is byte-identical apart from that word. SMALL_CACHE
+            // is the flag to add regardless of that: it asks for the 16MB cache
+            // profile rather than 100MB, which is what a phone should want, and
+            // `SurfaceManager`'s cache is an unbounded-by-bytes HashMap.
+            // FreeRDP is unaffected — it selects purely on capset *version* and
+            // gates AVC420 on the AVC420_ENABLED bit alone (shadow_client.c
+            // `shadow_client_rdpgfx_caps_advertise` / `shadow_avc420_enabled`),
+            // confirmed on the wire against freerdp-shadow-cli.
+            info!("EGFX: sending CapabilitiesAdvertise(V8_1 AVC420_ENABLED|SMALL_CACHE)");
             CapabilitiesAdvertisePdu::from_typed(&[CapabilitySet::V8_1 {
-                flags: CapabilitiesV81Flags::AVC420_ENABLED,
+                flags: CapabilitiesV81Flags::AVC420_ENABLED | CapabilitiesV81Flags::SMALL_CACHE,
             }])
         } else {
             info!("EGFX: sending CapabilitiesAdvertise(V10, AVC_DISABLED)");
@@ -941,6 +964,56 @@ mod tests {
         assert_eq!(stream.rectangles.len(), 1, "one region rect");
         assert_eq!(stream.quant_qual_vals.len(), 1, "one quant/quality pair");
         assert_eq!(stream.data, &annex_b, "data is the trailing Annex-B AU");
+    }
+
+    /// Encode what `start()` puts on the wire, and pull the single capability
+    /// set out of it: `(version, flags)`.
+    ///
+    /// Reading the *encoded bytes* rather than the typed value is deliberate —
+    /// the Windows behaviour this guards keys off one 32-bit word in the PDU,
+    /// so the assertion should be on the word the server actually receives.
+    fn advertised_capset(avc_enabled: bool) -> (u32, u32) {
+        let mut proc = EgfxProcessor::new(test_state(64, 64), false, avc_enabled);
+        let msgs = proc.start(0).expect("start() builds an advertise");
+        assert_eq!(msgs.len(), 1, "one CapabilitiesAdvertise");
+        let mut buf = vec![0u8; msgs[0].size()];
+        msgs[0]
+            .encode(&mut WriteCursor::new(&mut buf))
+            .expect("advertise encodes");
+        // RDPGFX_HEADER (8) + capsSetCount (2), then version (4) + capsDataLength (4) + capsData (4).
+        assert_eq!(u16::from_le_bytes([buf[8], buf[9]]), 1, "exactly one capset advertised");
+        let word = |o: usize| u32::from_le_bytes([buf[o], buf[o + 1], buf[o + 2], buf[o + 3]]);
+        assert_eq!(word(14), 4, "capsDataLength is the 4-byte flags field");
+        (word(10), word(18))
+    }
+
+    /// #477: with AVC on we must advertise V8.1 carrying **both**
+    /// AVC420_ENABLED and SMALL_CACHE.
+    ///
+    /// Dropping SMALL_CACHE is not cosmetic: a Windows 11 24H2 server responds
+    /// to a lone AVC420_ENABLED by closing the graphics channel, and the
+    /// session spends the rest of its life on legacy fast-path bitmaps.
+    /// Verified on the wire against win11-rdptest — 2/2 closed without the
+    /// flag, 2/2 confirmed with it — and this pins the bit so it cannot be
+    /// tidied away again.
+    #[test]
+    fn avc_advertise_is_v81_with_small_cache() {
+        let (version, flags) = advertised_capset(true);
+        assert_eq!(version, 0x0008_0105, "V8.1 — FreeRDP gates AVC420 on this version");
+        assert_eq!(
+            flags,
+            (CapabilitiesV81Flags::AVC420_ENABLED | CapabilitiesV81Flags::SMALL_CACHE).bits(),
+            "AVC420_ENABLED alone makes Windows close the graphics channel",
+        );
+    }
+
+    /// The non-AVC arm still advertises V10 with AVC_DISABLED, so a server that
+    /// can do H.264 doesn't send us tiles we have no decoder for.
+    #[test]
+    fn non_avc_advertise_is_v10_avc_disabled() {
+        let (version, flags) = advertised_capset(false);
+        assert_eq!(version, 0x000a_0002, "V10");
+        assert_eq!(flags, CapabilitiesV10Flags::AVC_DISABLED.bits());
     }
 
     /// A session with a framebuffer of the given size, as connect() leaves it.
