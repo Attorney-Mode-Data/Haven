@@ -1790,23 +1790,7 @@ class DesktopManager @Inject constructor(
 
     /** Kill orphaned Xvnc process for a specific display number. */
     private fun killOrphanedXvnc(display: Int) {
-        try {
-            val proc = ProcessBuilder("sh", "-c",
-                "ps -A 2>/dev/null | grep 'Xvnc' | grep ':$display' | grep -v grep | awk '{print \$2}'"
-            ).redirectErrorStream(true).start()
-            val pids = proc.inputStream.bufferedReader().readText().trim()
-            proc.waitFor()
-            if (pids.isNotEmpty()) {
-                Log.d(TAG, "Killing orphaned Xvnc[:$display] PIDs: $pids")
-                for (pid in pids.lines()) {
-                    try {
-                        ProcessBuilder("kill", "-9", pid.trim()).start().waitFor()
-                    } catch (_: Exception) {}
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "killOrphanedXvnc($display) failed: ${e.message}")
-        }
+        killPids("Xvnc[:$display]", scanCmdlines().filter { xvncMatches(it.cmdline, display) }.map { it.pid })
     }
 
     /**
@@ -1861,22 +1845,49 @@ class DesktopManager @Inject constructor(
 
     /** Kill all orphaned Xvnc processes. */
     fun killAllOrphanedXvnc() {
-        try {
-            val proc = ProcessBuilder("sh", "-c",
-                "ps -A 2>/dev/null | grep 'Xvnc' | grep -v grep | awk '{print \$2}'"
-            ).redirectErrorStream(true).start()
-            val pids = proc.inputStream.bufferedReader().readText().trim()
-            proc.waitFor()
-            if (pids.isNotEmpty()) {
-                Log.d(TAG, "Killing all orphaned Xvnc PIDs: $pids")
-                for (pid in pids.lines()) {
-                    try {
-                        ProcessBuilder("kill", "-9", pid.trim()).start().waitFor()
-                    } catch (_: Exception) {}
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "killAllOrphanedXvnc failed: ${e.message}")
+        killPids("Xvnc", scanCmdlines().filter { xvncMatches(it.cmdline, display = null) }.map { it.pid })
+    }
+
+    /**
+     * Every readable process as (pid, full command line), argv separated by
+     * spaces.
+     *
+     * `ps -A` cannot be used for this. It prints the command *name* and no
+     * arguments, so a filter on an Xvnc display (`:1`) matched nothing, ever
+     * — which is why the desktop's stop button appeared to do nothing and
+     * left Xvnc running (#501). `/proc/<pid>/cmdline` is also what
+     * [killOrphanedNestedWayland] already had to switch to, because Android
+     * shows proot-launched binaries under a bracketed COMM.
+     */
+    private fun scanCmdlines(): List<ProcessCmdline> = try {
+        val script = """
+            for p in /proc/[0-9]*; do
+                [ -r ${'$'}p/cmdline ] || continue
+                echo "${'$'}{p##*/}	${'$'}(tr '\0' ' ' < ${'$'}p/cmdline 2>/dev/null)"
+            done
+        """.trimIndent()
+        val proc = ProcessBuilder("sh", "-c", script).redirectErrorStream(true).start()
+        val text = proc.inputStream.bufferedReader().readText()
+        proc.waitFor()
+        text.lineSequence().mapNotNull { line ->
+            val tab = line.indexOf('\t')
+            if (tab <= 0) null else ProcessCmdline(line.substring(0, tab), line.substring(tab + 1).trim())
+        }.filter { it.cmdline.isNotEmpty() }.toList()
+    } catch (e: Exception) {
+        Log.w(TAG, "scanCmdlines failed: ${e.message}")
+        emptyList()
+    }
+
+    private fun killPids(label: String, pids: List<String>) {
+        if (pids.isEmpty()) {
+            Log.d(TAG, "No $label processes to kill")
+            return
+        }
+        Log.d(TAG, "Killing $label PIDs: ${pids.joinToString(" ")}")
+        for (pid in pids) {
+            try {
+                ProcessBuilder("kill", "-9", pid).start().waitFor()
+            } catch (_: Exception) {}
         }
     }
 
@@ -1958,4 +1969,25 @@ internal fun parseWxH(token: String): Pair<Int, Int>? {
 internal fun formatCageScale(scale: Float): String {
     val c = scale.coerceIn(0.5f, 3f)
     return if (c == c.toInt().toFloat()) c.toInt().toString() else c.toString()
+}
+
+/** A process id paired with its full command line, argv separated by spaces. */
+internal data class ProcessCmdline(val pid: String, val cmdline: String)
+
+/**
+ * Whether [cmdline] is an Xvnc serving [display] (any display when null).
+ *
+ * Matching on argv rather than on the process name is the point (#501): the
+ * display only ever appears as an argument, so the previous `ps -A` filter —
+ * which prints names and no arguments — could not match one and silently
+ * killed nothing, leaving Xvnc running after the user pressed stop.
+ *
+ * The display is compared as a whole argument, not a substring, or stopping
+ * `:1` would take `:10` and `:11` down with it.
+ */
+internal fun xvncMatches(cmdline: String, display: Int?): Boolean {
+    val argv = cmdline.trim().split(' ').filter { it.isNotEmpty() }
+    val program = argv.firstOrNull()?.substringAfterLast('/') ?: return false
+    if (!program.startsWith("Xvnc")) return false
+    return display == null || argv.drop(1).any { it == ":$display" }
 }
