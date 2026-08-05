@@ -46,7 +46,7 @@ use std::io;
 
 use ironrdp_graphics::rlgr;
 use ironrdp_pdu::codecs::rfx::EntropyAlgorithm;
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 // Block type constants (MS-RDPRFX 2.2.4.1).
 const WBT_SYNC: u16 = 0xCCC0;
@@ -260,6 +260,9 @@ pub struct ProgressiveDecoder {
     upgrades_skipped: u64,
     /// Tiles dropped for carrying delta coefficients we cannot apply (#462).
     diff_tiles_skipped: u64,
+    /// Delta-coded tiles successfully decoded (#477). Counted so a report can
+    /// tell "decoded them" from "never saw one".
+    diff_tiles_decoded: u64,
 }
 
 /// Whether this occurrence should be logged.
@@ -287,6 +290,7 @@ impl ProgressiveDecoder {
             tile_states: std::collections::HashMap::new(),
             upgrades_skipped: 0,
             diff_tiles_skipped: 0,
+            diff_tiles_decoded: 0,
         }
     }
 
@@ -654,21 +658,30 @@ impl ProgressiveDecoder {
             }
         };
 
+        // RFX_TILE_DIFFERENCE: the coefficients below are a delta against this
+        // tile's previous ones, not a replacement (#477). Decoding it needs
+        // that tile's retained state, which only exists when coefficient state
+        // is being kept at all — so a difference arriving without it is still
+        // undecodable and still counted, rather than painted as if it were
+        // absolute, which would be wrong pixels instead of stale ones.
         let coeff_diff = (tile_flags & RFX_TILE_DIFFERENCE) != 0;
-        if coeff_diff {
-            // RFX_TILE_DIFFERENCE means the encoded coefficients are a
-            // delta against the previously-decoded same tile (UPGRADE
-            // path, or a multi-pass FIRST). Without a saved per-tile
-            // sign+current buffer this would produce wrong output, so
-            // skip rather than paint garbage. UPGRADE support → future.
-            // Warn for the same reason as the refinement drop above: this
-            // leaves an unpainted rectangle wherever the tile sits, and a
-            // report cannot say so if we only whisper it at debug (#462).
+        if coeff_diff && self.upgrade_enabled {
+            // Say so once. Without this, "0 dropped delta-coded tiles" in a
+            // report is ambiguous between "they decoded" and "none arrived" —
+            // which is exactly the question that could not be answered while
+            // verifying this against a real Windows server (#477).
+            self.diff_tiles_decoded += 1;
+            if self.diff_tiles_decoded == 1 {
+                info!("Progressive: decoding delta-coded tiles (RFX_TILE_DIFFERENCE)");
+            }
+        }
+        if coeff_diff && !self.upgrade_enabled {
             self.diff_tiles_skipped += 1;
             if should_report(self.diff_tiles_skipped) {
                 warn!(
                     "Progressive: dropped {} delta-coded tile(s) so far — those rectangles keep \
-                     stale pixels. Most recent at xIdx={x_idx} yIdx={y_idx} flags=0x{tile_flags:02x}.",
+                     stale pixels. Most recent at xIdx={x_idx} yIdx={y_idx} flags=0x{tile_flags:02x}. \
+                     Decoding them needs per-tile coefficient state, which is off.",
                     self.diff_tiles_skipped
                 );
             }
@@ -686,27 +699,37 @@ impl ProgressiveDecoder {
         // coefficient + sign state so a later WBT_TILE_UPGRADE can refine it.
         // When disabled, decode with no capture — the pixel path is untouched,
         // so FIRST/SIMPLE output is byte-for-byte unchanged.
+        // A difference tile accumulates into the state this grid position
+        // already has; anything else starts fresh. Taking the existing state
+        // out of the map (rather than cloning) keeps the 48 KB per tile from
+        // being duplicated mid-decode.
         let mut tile = if self.upgrade_enabled {
-            Some(Box::new(TileState::new()))
+            Some(if coeff_diff {
+                self.tile_states
+                    .remove(&(surface_id, x_idx, y_idx))
+                    .unwrap_or_else(|| Box::new(TileState::new()))
+            } else {
+                Box::new(TileState::new())
+            })
         } else {
             None
         };
 
         if let Some(t) = tile.as_deref_mut() {
             decode_component(&mut *self.work_y, &mut *self.work_tmp, y_data, &shift_y,
-                extrapolate, Some(&mut *t.sign[0]), Some(&mut *t.current[0]))?;
+                extrapolate, Some(&mut *t.sign[0]), Some(&mut *t.current[0]), coeff_diff)?;
             decode_component(&mut *self.work_cb, &mut *self.work_tmp, cb_data, &shift_cb,
-                extrapolate, Some(&mut *t.sign[1]), Some(&mut *t.current[1]))?;
+                extrapolate, Some(&mut *t.sign[1]), Some(&mut *t.current[1]), coeff_diff)?;
             decode_component(&mut *self.work_cr, &mut *self.work_tmp, cr_data, &shift_cr,
-                extrapolate, Some(&mut *t.sign[2]), Some(&mut *t.current[2]))?;
+                extrapolate, Some(&mut *t.sign[2]), Some(&mut *t.current[2]), coeff_diff)?;
             t.bitpos = [shift_y, shift_cb, shift_cr];
         } else {
             decode_component(&mut *self.work_y, &mut *self.work_tmp, y_data, &shift_y,
-                extrapolate, None, None)?;
+                extrapolate, None, None, false)?;
             decode_component(&mut *self.work_cb, &mut *self.work_tmp, cb_data, &shift_cb,
-                extrapolate, None, None)?;
+                extrapolate, None, None, false)?;
             decode_component(&mut *self.work_cr, &mut *self.work_tmp, cr_data, &shift_cr,
-                extrapolate, None, None)?;
+                extrapolate, None, None, false)?;
         }
 
         // Convert i16 YCbCr -> RGBA8888. The values out of IDWT are in
@@ -899,6 +922,10 @@ fn decode_component(
     // in `buffer` is byte-for-byte what it was before, so FIRST is unchanged.
     sign_out: Option<&mut [i16; SUBBAND_LEN]>,
     current_out: Option<&mut [i16; SUBBAND_LEN]>,
+    // RFX_TILE_DIFFERENCE: the coefficients just decoded are a delta against
+    // this tile's previous ones rather than a replacement. Only meaningful
+    // with `current_out`, which is the previous ones.
+    coeff_diff: bool,
 ) -> Result<(), ProgressiveError> {
     // Step 1: RLGR1-decode 4096 i16 coefficients.
     rlgr::decode(EntropyAlgorithm::Rlgr1, encoded, &mut buffer[..])?;
@@ -957,12 +984,19 @@ fn decode_component(
         lshift_block(&mut buffer[4032..4096], shift.ll3);
     }
 
-    // Capture the shifted coefficients as `current` BEFORE the IDWT —
-    // FreeRDP's dwt_2d_decode does `memcpy(current, buffer)` (reverse=FALSE,
-    // coeffDiff=FALSE) at this point. This is the state an upgrade accumulates
-    // into.
+    // Combine with the tile's retained coefficients BEFORE the IDWT — the
+    // point at which FreeRDP's dwt_2d_decode does one of two things
+    // (reverse=FALSE):
+    //
+    //     coeffDiff = FALSE  memcpy(current, buffer)
+    //     coeffDiff = TRUE   add_16s_inplace(buffer, current, 4096)
+    //
+    // and `add_16s_inplace` writes the saturating sum to BOTH arrays, so a
+    // difference tile both paints the accumulated coefficients and leaves them
+    // as the base for the next difference. Getting only `buffer` right would
+    // look correct for one frame and drift from the second onwards.
     if let Some(current) = current_out {
-        current.copy_from_slice(&buffer[..]);
+        combine_with_current(buffer, current, coeff_diff);
     }
 
     // Step 3: inverse DWT.
@@ -972,6 +1006,35 @@ fn decode_component(
         idwt_classic(buffer, temp);
     }
     Ok(())
+}
+
+/// Combine freshly-decoded coefficients with the tile's retained ones, at the
+/// point FreeRDP's `progressive_rfx_dwt_2d_decode` does it — after
+/// dequantisation, before the IDWT.
+///
+/// ```text
+/// coeffDiff = false   memcpy(current, buffer)
+/// coeffDiff = true    add_16s_inplace(buffer, current, 4096)
+/// ```
+///
+/// `add_16s_inplace` writes the saturating sum to **both** arrays, which is
+/// why this does too: a difference tile has to paint the accumulated
+/// coefficients *and* leave them behind as the base for the next difference.
+fn combine_with_current(
+    buffer: &mut [i16; SUBBAND_LEN],
+    current: &mut [i16; SUBBAND_LEN],
+    coeff_diff: bool,
+) {
+    if !coeff_diff {
+        current.copy_from_slice(&buffer[..]);
+        return;
+    }
+    for (b, c) in buffer.iter_mut().zip(current.iter_mut()) {
+        let v = i32::from(*b) + i32::from(*c);
+        let v = v.clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16;
+        *b = v;
+        *c = v;
+    }
 }
 
 /// `lShiftC` from FreeRDP primitives: each i16 in `block` shifted left
@@ -1629,6 +1692,62 @@ mod tests {
         assert_eq!(st.nz, 1);
         assert_eq!(st.srl_read(1), 0); // drains the run
         assert_eq!(st.nz, 0);
+    }
+
+    /// #477: a difference tile adds to the tile's retained coefficients, and
+    /// leaves the sum behind as the base for the next one.
+    ///
+    /// Both halves matter and only one is visible on screen. Writing just the
+    /// painted buffer looks right for a single frame and drifts from the
+    /// second difference onwards, because each later delta would then be added
+    /// to a stale base — the kind of wrong that shows up as a slowly degrading
+    /// picture rather than an obvious fault. FreeRDP's `add_16s_inplace`
+    /// writes the saturating sum to both arrays; this pins that.
+    #[test]
+    fn a_difference_tile_accumulates_into_the_retained_coefficients() {
+        let mut buffer = [0i16; SUBBAND_LEN];
+        let mut current = [0i16; SUBBAND_LEN];
+        buffer[0] = 100;
+        buffer[1] = -50;
+        buffer[2] = i16::MAX;
+        current[0] = 25;
+        current[1] = -25;
+        current[2] = 10; // would overflow i16 without saturation
+
+        combine_with_current(&mut buffer, &mut current, true);
+
+        assert_eq!(buffer[0], 125, "painted coefficients are the sum");
+        assert_eq!(current[0], 125, "retained coefficients are the sum too");
+        assert_eq!(buffer[1], -75);
+        assert_eq!(current[1], -75);
+        assert_eq!(buffer[2], i16::MAX, "addition saturates rather than wrapping");
+        assert_eq!(current[2], i16::MAX);
+    }
+
+    /// A non-difference tile replaces the retained coefficients outright.
+    #[test]
+    fn a_normal_tile_replaces_the_retained_coefficients() {
+        let mut buffer = [0i16; SUBBAND_LEN];
+        let mut current = [0i16; SUBBAND_LEN];
+        buffer[0] = 7;
+        current[0] = 999;
+
+        combine_with_current(&mut buffer, &mut current, false);
+
+        assert_eq!(buffer[0], 7, "the painted coefficients are untouched");
+        assert_eq!(current[0], 7, "the retained ones are overwritten, not added to");
+    }
+
+    /// Saturation is signed in both directions, matching FreeRDP's `add`.
+    #[test]
+    fn difference_saturation_clamps_at_both_ends() {
+        let mut buffer = [0i16; SUBBAND_LEN];
+        let mut current = [0i16; SUBBAND_LEN];
+        buffer[0] = i16::MIN;
+        current[0] = -1;
+        combine_with_current(&mut buffer, &mut current, true);
+        assert_eq!(buffer[0], i16::MIN);
+        assert_eq!(current[0], i16::MIN);
     }
 
     #[test]
