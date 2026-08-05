@@ -246,8 +246,18 @@ class AudioBridge @Inject constructor(
     /**
      * Kill any leftover PulseAudio in the rootfs. proot's `--kill-on-exit`
      * is unreliable when the launcher is force-destroyed (the ptrace tracee
-     * outlives it), so sweep by command name — same approach as
-     * DesktopManager.killOrphanedXvnc.
+     * outlives it), so sweep for it by name.
+     *
+     * This used to say it took the same approach as
+     * `DesktopManager.killOrphanedXvnc`. It no longer does: that one filtered
+     * on a command-line *argument*, which `ps` does not print, so it matched
+     * nothing on every run and has moved to `/proc/<pid>/cmdline` (#501).
+     * Matching a process *name* — which is all this does — is not affected by
+     * that, so the behaviour here is left alone rather than changed on
+     * suspicion. If orphaned PulseAudio is ever observed surviving a stop,
+     * `/proc/<pid>/cmdline` is where to look next; it is the more reliable
+     * source on Android, where proot-launched binaries can appear under a
+     * bracketed name.
      */
     private fun reapOrphanPulse() {
         try {

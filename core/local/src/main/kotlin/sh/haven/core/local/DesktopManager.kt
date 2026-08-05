@@ -1503,14 +1503,7 @@ class DesktopManager @Inject constructor(
         val xdg = "/tmp/xdg-runtime-$display"
         // environ is NUL-separated; tr → newlines, then exact-line match on the
         // full var so display 1 doesn't also match display 11.
-        val scanScript = """
-            for p in /proc/[0-9]*; do
-                [ -r ${'$'}p/environ ] || continue
-                if tr '\0' '\n' < ${'$'}p/environ 2>/dev/null | grep -qx "XDG_RUNTIME_DIR=$xdg"; then
-                    echo "${'$'}{p##*/}"
-                fi
-            done
-        """.trimIndent()
+        val scanScript = appWindowSessionScanScript(xdg)
         try {
             val proc = ProcessBuilder("sh", "-c", scanScript)
                 .redirectErrorStream(true).start()
@@ -1815,14 +1808,7 @@ class DesktopManager @Inject constructor(
         // PREFIX match (`token*`) so wrapper binaries are caught too — e.g.
         // the `imv` launcher execs `imv-wayland`, which an exact match misses.
         val targets = listOf(compositorCmd, "wayvnc", "foot", "swaynag")
-        val caseArm = targets.joinToString("|") { "\"$it\"*" }
-        val scanScript = """
-            for p in /proc/[0-9]*; do
-                [ -r ${'$'}p/cmdline ] || continue
-                first=${'$'}(tr '\0' ' ' < ${'$'}p/cmdline 2>/dev/null | awk '{print ${'$'}1}')
-                case "${'$'}{first##*/}" in $caseArm) echo "${'$'}{p##*/}";; esac
-            done
-        """.trimIndent()
+        val scanScript = nestedWaylandScanScript(targets)
         try {
             val proc = ProcessBuilder("sh", "-c", scanScript)
                 .redirectErrorStream(true).start()
@@ -1860,13 +1846,7 @@ class DesktopManager @Inject constructor(
      * shows proot-launched binaries under a bracketed COMM.
      */
     private fun scanCmdlines(): List<ProcessCmdline> = try {
-        val script = """
-            for p in /proc/[0-9]*; do
-                [ -r ${'$'}p/cmdline ] || continue
-                echo "${'$'}{p##*/}	${'$'}(tr '\0' ' ' < ${'$'}p/cmdline 2>/dev/null)"
-            done
-        """.trimIndent()
-        val proc = ProcessBuilder("sh", "-c", script).redirectErrorStream(true).start()
+        val proc = ProcessBuilder("sh", "-c", CMDLINE_SCAN_SCRIPT).redirectErrorStream(true).start()
         val text = proc.inputStream.bufferedReader().readText()
         proc.waitFor()
         text.lineSequence().mapNotNull { line ->
@@ -1970,6 +1950,49 @@ internal fun formatCageScale(scale: Float): String {
     val c = scale.coerceIn(0.5f, 3f)
     return if (c == c.toInt().toFloat()) c.toInt().toString() else c.toString()
 }
+
+/**
+ * The /proc scanners are shell source assembled by interpolation, and shell
+ * that reads correctly is not necessarily shell that parses — a splice that
+ * looked fine turned out to be invalid while fixing #501. Kept as pure
+ * functions of their inputs so a test can hand each one to `sh -n`, which is
+ * the only check that covers generated shell.
+ */
+
+/** PIDs whose environment names [xdg] as XDG_RUNTIME_DIR — one app-window session. */
+internal fun appWindowSessionScanScript(xdg: String): String = """
+    for p in /proc/[0-9]*; do
+        [ -r ${'$'}p/environ ] || continue
+        if tr '\0' '\n' < ${'$'}p/environ 2>/dev/null | grep -qx "XDG_RUNTIME_DIR=$xdg"; then
+            echo "${'$'}{p##*/}"
+        fi
+    done
+""".trimIndent()
+
+/**
+ * PIDs whose argv[0] basename starts with any of [targets].
+ *
+ * Prefix match, so a wrapper binary is caught too — the `imv` launcher execs
+ * `imv-wayland`, which an exact match misses.
+ */
+internal fun nestedWaylandScanScript(targets: List<String>): String {
+    val caseArm = targets.joinToString("|") { "\"$it\"*" }
+    return """
+        for p in /proc/[0-9]*; do
+            [ -r ${'$'}p/cmdline ] || continue
+            first=${'$'}(tr '\0' ' ' < ${'$'}p/cmdline 2>/dev/null | awk '{print ${'$'}1}')
+            case "${'$'}{first##*/}" in $caseArm) echo "${'$'}{p##*/}";; esac
+        done
+    """.trimIndent()
+}
+
+/** Every readable process as `pid<TAB>argv`, argv separated by spaces. */
+internal val CMDLINE_SCAN_SCRIPT: String = """
+    for p in /proc/[0-9]*; do
+        [ -r ${'$'}p/cmdline ] || continue
+        echo "${'$'}{p##*/}\t${'$'}(tr '\0' ' ' < ${'$'}p/cmdline 2>/dev/null)"
+    done
+""".trimIndent()
 
 /** A process id paired with its full command line, argv separated by spaces. */
 internal data class ProcessCmdline(val pid: String, val cmdline: String)
