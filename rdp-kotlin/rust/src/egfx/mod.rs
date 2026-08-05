@@ -77,6 +77,11 @@ pub(crate) struct EgfxPerf {
     avc_call_us: u64,
     /// `blit_rgba` of the decoded frame into the surface.
     blit_us: u64,
+    /// I420 → RGBA, which the host used to do before returning (#466).
+    /// Reported separately so moving it here can be judged rather than
+    /// assumed: it should be a fraction of the 27-109ms it cost in Kotlin,
+    /// and if it is not, that is worth knowing immediately.
+    yuv_us: u64,
     since_report: Option<std::time::Instant>,
 }
 
@@ -100,11 +105,12 @@ impl EgfxPerf {
         let decode_only = self.decode_us.saturating_sub(self.flush_us);
         let line = format!(
             "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us \
-             (avc round trip {}us, blit {}us), publish {}us, total {}us",
+             (avc round trip {}us, yuv {}us, blit {}us), publish {}us, total {}us",
             n as f64 / secs,
             self.zgfx_us / n,
             decode_only / n,
             self.avc_call_us / n,
+            self.yuv_us / n,
             self.blit_us / n,
             self.flush_us / n,
             (self.zgfx_us + self.decode_us) / n,
@@ -144,6 +150,10 @@ pub struct EgfxProcessor {
     /// the host-registered [`crate::Avc420Decoder`] (MediaCodec on Android),
     /// reached through `state.avc_decoder`.
     avc_enabled: bool,
+    /// Reused RGBA target for [`crate::yuv::i420_to_rgba`]. Held across frames
+    /// because allocating 8.29MB per frame at 1080p is the churn this whole
+    /// change exists to remove.
+    avc_rgba: Vec<u8>,
 }
 
 impl EgfxProcessor {
@@ -165,6 +175,7 @@ impl EgfxProcessor {
             progressive_decoder,
             planar_decoder: ironrdp_graphics::rdp6::BitmapStreamDecoder::default(),
             avc_enabled,
+            avc_rgba: Vec::new(),
         }
     }
 }
@@ -771,11 +782,22 @@ impl EgfxProcessor {
                 // (Windows/AVC444) collapse to a full-dest repaint here — still
                 // correct pixels, just not minimal; refine in slice 3.
                 let t_avc = std::time::Instant::now();
-                let rgba = decoder.decode(stream.data.to_vec(), w as u16, h as u16);
+                let i420 = decoder.decode_to_i420(stream.data.to_vec(), w as u16, h as u16);
                 self.perf.avc_call_us += t_avc.elapsed().as_micros() as u64;
-                let want = (w * h * 4) as usize;
-                if rgba.len() < want {
-                    warn!("EGFX[{n}]: AVC420 decoder returned {} bytes, need {} ({w}x{h}) — dropping", rgba.len(), want);
+                // Colour conversion is ours now (#466). The host used to do it
+                // and hand back RGBA, which cost 27-109ms in a Kotlin loop and
+                // sent 2.67x as many bytes across the boundary as I420 does.
+                let t_yuv = std::time::Instant::now();
+                let mut rgba = std::mem::take(&mut self.avc_rgba);
+                let converted = crate::yuv::i420_to_rgba(&i420, w as usize, h as usize, &mut rgba);
+                self.perf.yuv_us += t_yuv.elapsed().as_micros() as u64;
+                if !converted {
+                    warn!(
+                        "EGFX[{n}]: AVC420 decoder returned {} bytes, need {:?} for {w}x{h} I420 — dropping",
+                        i420.len(),
+                        crate::yuv::i420_len(w as usize, h as usize),
+                    );
+                    self.avc_rgba = rgba;
                     return;
                 }
                 let Some(surface) = self.surfaces.surface_mut(p.surface_id) else {
@@ -786,6 +808,9 @@ impl EgfxProcessor {
                 surface.blit_rgba(u32::from(r.left), u32::from(r.top), w, h, &rgba);
                 self.perf.blit_us += t_blit.elapsed().as_micros() as u64;
                 self.surfaces.dirty.push((p.surface_id, r.clone()));
+                // Keep the buffer for the next frame: a fresh 8.29MB Vec per
+                // frame is exactly the allocation churn this change is about.
+                self.avc_rgba = rgba;
             }
             Codec1Type::Avc444 | Codec1Type::Avc444v2 => {
                 // #425 slice 3: AVC444 dual-stream (4:2:0 luma + chroma aux)
@@ -1161,22 +1186,20 @@ mod tests {
     fn avc420_round_trip_and_blit_are_measured() {
         struct SlowDecoder {
             delay: std::time::Duration,
-            pixels: usize,
         }
         impl crate::Avc420Decoder for SlowDecoder {
-            fn decode(&self, _annex_b: Vec<u8>, _w: u16, _h: u16) -> Vec<u8> {
+            fn decode_to_i420(&self, _annex_b: Vec<u8>, w: u16, h: u16) -> Vec<u8> {
                 std::thread::sleep(self.delay);
-                vec![0xAB; self.pixels * 4]
+                // A mid-grey I420 frame: luma 128, chroma neutral.
+                let len = crate::yuv::i420_len(usize::from(w), usize::from(h)).unwrap();
+                vec![128u8; len]
             }
         }
 
         let (w, h) = (64u16, 64u16);
         let state = test_state(w, h);
         let delay = std::time::Duration::from_millis(20);
-        state.write().unwrap().avc_decoder = Some(Arc::new(SlowDecoder {
-            delay,
-            pixels: w as usize * h as usize,
-        }));
+        state.write().unwrap().avc_decoder = Some(Arc::new(SlowDecoder { delay }));
 
         let mut proc = EgfxProcessor::new(state.clone(), false, false);
         proc.capabilities_received = true;
@@ -1208,12 +1231,23 @@ mod tests {
             delay.as_micros(),
         );
         assert!(proc.perf.blit_us > 0, "the blit must be timed, got 0us");
+        assert!(proc.perf.yuv_us > 0, "the I420 conversion must be timed, got 0us");
         // And the frame really was painted — otherwise the timers could be
         // measuring a path that bails out before doing the work.
+        //
+        // The value checked for is the *converted* one: neutral I420
+        // (Y=128, U=V=128) is R=G=B=130 through BT.601 limited range. Asserting
+        // 130 rather than 128 is what distinguishes "the conversion ran" from
+        // "the decoder's bytes were blitted raw", which is the mistake this
+        // whole change could most easily make (#466).
         let surface = proc.surfaces.surface(0).expect("surface");
         assert!(
-            surface.pixels.iter().any(|&b| b == 0xAB),
-            "the decoded frame must reach the surface",
+            surface.pixels.iter().any(|&b| b == 130),
+            "the converted frame must reach the surface",
+        );
+        assert!(
+            !surface.pixels.iter().any(|&b| b == 128),
+            "raw I420 luma must not appear in the surface — that would mean no conversion",
         );
     }
 

@@ -55,10 +55,10 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
     private var ptsUs = 0L
     @Volatile private var failed = false
     private val bufferInfo = MediaCodec.BufferInfo()
-    // Reused RGBA scratch, grown as needed to avoid a per-frame allocation.
-    private var rgba = ByteArray(0)
+    // Reused I420 scratch, grown as needed to avoid a per-frame allocation.
+    private var i420 = ByteArray(0)
 
-    override fun decode(annexB: ByteArray, width: UShort, height: UShort): ByteArray {
+    override fun decodeToI420(annexB: ByteArray, width: UShort, height: UShort): ByteArray {
         val w = width.toInt()
         val h = height.toInt()
         if (failed || w <= 0 || h <= 0 || annexB.isEmpty()) return ByteArray(0)
@@ -74,14 +74,14 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
         return try {
             val t0 = System.nanoTime()
             queueInput(mc, annexB)
-            val out = drainToRgba(mc, w, h) ?: ByteArray(0)
+            val out = drainToI420(mc, w, h) ?: ByteArray(0)
             pFrames++
             pCodecNs += System.nanoTime() - t0 - lastConvertNs
             pConvertNs += lastConvertNs
             lastConvertNs = 0L
             if (pFrames >= PERF_REPORT_FRAMES) {
                 val line = "AVC420 decode split over $pFrames frames — mediacodec ${pCodecNs / pFrames / 1000}us, " +
-                    "yuv->rgba ${pConvertNs / pFrames / 1000}us, polls/frame ${"%.1f".format(pPolls.toDouble() / pFrames)}"
+                    "i420 pack ${pConvertNs / pFrames / 1000}us, polls/frame ${"%.1f".format(pPolls.toDouble() / pFrames)}"
                 Log.i(TAG, line)
                 perfSink?.invoke(line)
                 pFrames = 0; pCodecNs = 0; pConvertNs = 0; pPolls = 0
@@ -141,7 +141,7 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
     }
 
     /** Poll for the single output frame for the AU just queued. */
-    private fun drainToRgba(mc: MediaCodec, w: Int, h: Int): ByteArray? {
+    private fun drainToI420(mc: MediaCodec, w: Int, h: Int): ByteArray? {
         var polls = 0
         while (polls++ < MAX_OUTPUT_POLLS) {
             pPolls++
@@ -152,7 +152,7 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
                         val image = mc.getOutputImage(outIx)
                         if (image != null) {
                             val c0 = System.nanoTime()
-                            val r = yuvImageToRgba(image, w, h)
+                            val r = yuvImageToI420(image, w, h)
                             lastConvertNs += System.nanoTime() - c0
                             r
                         } else {
@@ -178,26 +178,43 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
     }
 
     /**
-     * Convert a YUV_420_888 [android.media.Image] to tightly-packed RGBA8888
-     * cropped to [w]x[h], BT.601 limited range. Handles both planar (I420) and
-     * semi-planar (NV12/NV21) chroma via each plane's row/pixel stride.
+     * Repack a YUV_420_888 [android.media.Image] into tightly-packed I420 at
+     * [w]x[h], edge-replicating where the requested size exceeds the decoded
+     * one. Handles planar (I420) and semi-planar (NV12/NV21) chroma via each
+     * plane's row and pixel stride.
+     *
+     * This replaces a full BT.601 conversion to RGBA, which cost 27-109 ms per
+     * frame on a reporter's 1080p session against 9-25 ms for the hardware
+     * decode itself (#466). Colour conversion now happens in Rust; what leaves
+     * here is 1.5 bytes per pixel instead of 4, which also cuts what the
+     * Kotlin/Rust boundary has to allocate and copy — separately measured at
+     * 87-112 ms per frame.
+     *
+     * The work left is byte movement with no arithmetic, and the common case
+     * (a plane whose rowStride equals its width) is a bulk copy rather than a
+     * loop.
      */
-    private fun yuvImageToRgba(image: android.media.Image, w: Int, h: Int, ): ByteArray {
-        val need = w * h * 4
-        if (rgba.size < need) rgba = ByteArray(need)
-        val out = rgba
+    private fun yuvImageToI420(image: android.media.Image, w: Int, h: Int): ByteArray {
+        val cw = (w + 1) / 2
+        val ch = (h + 1) / 2
+        val need = w * h + 2 * cw * ch
+        if (i420.size < need) i420 = ByteArray(need)
+        val out = i420
 
-        val yPlane = image.planes[0]
-        val uPlane = image.planes[1]
-        val vPlane = image.planes[2]
-        yuvToRgba(
-            out = out,
-            yBuf = yPlane.buffer, uBuf = uPlane.buffer, vBuf = vPlane.buffer,
-            yRow = yPlane.rowStride, uRow = uPlane.rowStride, vRow = vPlane.rowStride,
-            uPix = uPlane.pixelStride, vPix = vPlane.pixelStride,
-            w = w, h = h,
-            cw = minOf(w, image.width), ch = minOf(h, image.height),
-        )
+        val srcW = minOf(w, image.width)
+        val srcH = minOf(h, image.height)
+        val yP = image.planes[0]
+        val uP = image.planes[1]
+        val vP = image.planes[2]
+
+        packPlane(out, 0, yP.buffer, yP.rowStride, 1, w, h, srcW, srcH)
+        // Chroma is half resolution in both axes; the source's own chroma
+        // extent follows from its luma extent the same way.
+        val sCw = (srcW + 1) / 2
+        val sCh = (srcH + 1) / 2
+        packPlane(out, w * h, uP.buffer, uP.rowStride, uP.pixelStride, cw, ch, sCw, sCh)
+        packPlane(out, w * h + cw * ch, vP.buffer, vP.rowStride, vP.pixelStride, cw, ch, sCw, sCh)
+
         return exactly(out, need)
     }
 
@@ -205,97 +222,56 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
      * The exactly-[need]-byte array UniFFI's `Vec<u8>` wants, without copying
      * when the scratch buffer is already that size (#477).
      *
-     * This used to be `if (out.size == need) out.copyOf() else out.copyOf(need)`
-     * — a defensive copy of the whole frame on every single frame, because
-     * [rgba] is reused. It is not needed. The generated binding marshals the
-     * return value inside the callback body:
+     * The generated binding marshals the return value inside the callback
+     * body — `uniffiOutReturn.setValue(FfiConverterByteArray.lower(value))` —
+     * and `lower` copies into native memory synchronously, before control
+     * returns to the loop that would overwrite the scratch. Nothing retains
+     * the Kotlin array, so handing over the scratch buffer is safe.
      *
-     *     uniffiOutReturn.setValue(FfiConverterByteArray.lower(value))
-     *
-     * `lower` allocates a RustBuffer and copies the bytes into native memory
-     * synchronously, before control returns to the decode loop that would
-     * overwrite [rgba]. Nothing retains the Kotlin array, so handing over the
-     * scratch buffer is safe and the copy bought nothing.
-     *
-     * What it cost: a full-frame heap allocation per frame — 8.29 MB at 1080p,
-     * 33.2 MB at 4K — so roughly 250 MB/s of garbage at 30 fps, on the path
-     * whose symptom is periodic stutter.
-     *
-     * ★ The safety argument is the synchronous marshalling. If the decoder
-     * callback ever becomes asynchronous, or a caller starts holding the
-     * returned array across frames, restore the copy.
+     * ★ That safety argument rests on the marshalling being synchronous. If
+     * the decoder callback ever becomes asynchronous, or a caller starts
+     * holding the returned array across frames, restore a defensive copy.
      */
     internal fun exactly(out: ByteArray, need: Int): ByteArray =
         if (out.size == need) out else out.copyOf(need)
 
-    private fun clamp(v: Int): Byte = (if (v < 0) 0 else if (v > 255) 255 else v).toByte()
-
     /**
-     * BT.601 limited-range YUV420 → tightly-packed RGBA8888, edge-replicating
-     * where [w]/[h] exceed the decoded [cw]/[ch]. Pure over its arguments so
-     * it can be tested off-device against a reference (see Avc420YuvToRgbaTest).
+     * Copy one plane into [out] at [offset] as [dstW]x[dstH] tightly packed,
+     * reading [srcW]x[srcH] from [buf] and replicating the last row/column
+     * beyond it.
      *
-     * #466: this is the dominant per-frame cost on the AVC path — at 3840x2160
-     * it runs 8.3M times per frame, and the client was managing 1.78 fps
-     * against a server producing ~12. Each chroma sample serves the two
-     * horizontal pixels that share it, so its three scaled terms are computed
-     * once per pair rather than twice, and the branchy clamp is a table lookup.
-     * Bit-identical to the per-pixel form; 90ms → 35ms per 4K frame measured on
-     * a desktop JVM (a proxy for the ratio, not for device timings).
+     * Pure over its arguments so it can be tested off-device (see
+     * Avc420I420PackTest).
      */
-    internal fun yuvToRgba(
+    internal fun packPlane(
         out: ByteArray,
-        yBuf: java.nio.ByteBuffer, uBuf: java.nio.ByteBuffer, vBuf: java.nio.ByteBuffer,
-        yRow: Int, uRow: Int, vRow: Int,
-        uPix: Int, vPix: Int,
-        w: Int, h: Int, cw: Int, ch: Int,
+        offset: Int,
+        buf: java.nio.ByteBuffer,
+        rowStride: Int,
+        pixelStride: Int,
+        dstW: Int,
+        dstH: Int,
+        srcW: Int,
+        srcH: Int,
     ) {
-        val cl = CLAMP
-        var o = 0
-        for (y in 0 until h) {
-            val sy = if (y < ch) y else ch - 1
-            val yLine = sy * yRow
-            val cLine = (sy shr 1)
-            val uLine = cLine * uRow
-            val vLine = cLine * vRow
-            var x = 0
-            // Pairs inside the decoded area: one chroma fetch + scale for two pixels.
-            while (x + 1 < cw && x + 1 < w) {
-                val cx = x shr 1
-                val uv = (uBuf.get(uLine + cx * uPix).toInt() and 0xFF) - 128
-                val vv = (vBuf.get(vLine + cx * vPix).toInt() and 0xFF) - 128
-                val rC = 409 * vv + 128
-                val gC = -100 * uv - 208 * vv + 128
-                val bC = 516 * uv + 128
-                val y0 = (yBuf.get(yLine + x).toInt() and 0xFF) - 16
-                val c0 = if (y0 < 0) 0 else y0 * 298
-                out[o] = cl[CLAMP_BIAS + ((c0 + rC) shr 8)]
-                out[o + 1] = cl[CLAMP_BIAS + ((c0 + gC) shr 8)]
-                out[o + 2] = cl[CLAMP_BIAS + ((c0 + bC) shr 8)]
-                out[o + 3] = 0xFF.toByte()
-                val y1 = (yBuf.get(yLine + x + 1).toInt() and 0xFF) - 16
-                val c1 = if (y1 < 0) 0 else y1 * 298
-                out[o + 4] = cl[CLAMP_BIAS + ((c1 + rC) shr 8)]
-                out[o + 5] = cl[CLAMP_BIAS + ((c1 + gC) shr 8)]
-                out[o + 6] = cl[CLAMP_BIAS + ((c1 + bC) shr 8)]
-                out[o + 7] = 0xFF.toByte()
-                o += 8
-                x += 2
-            }
-            // Tail: an odd final column, plus any replicated edge columns.
-            while (x < w) {
-                val sx = if (x < cw) x else cw - 1
-                val yv = (yBuf.get(yLine + sx).toInt() and 0xFF) - 16
-                val cx = sx shr 1
-                val uv = (uBuf.get(uLine + cx * uPix).toInt() and 0xFF) - 128
-                val vv = (vBuf.get(vLine + cx * vPix).toInt() and 0xFF) - 128
-                val c = if (yv < 0) 0 else yv * 298
-                out[o] = clamp((c + 409 * vv + 128) shr 8)
-                out[o + 1] = clamp((c - 100 * uv - 208 * vv + 128) shr 8)
-                out[o + 2] = clamp((c + 516 * uv + 128) shr 8)
-                out[o + 3] = 0xFF.toByte()
-                o += 4
-                x++
+        var o = offset
+        for (y in 0 until dstH) {
+            val sy = if (y < srcH) y else srcH - 1
+            val row = sy * rowStride
+            if (pixelStride == 1 && dstW <= srcW) {
+                // Planar and no replication needed — one bulk copy per row.
+                val dup = buf.duplicate()
+                dup.position(row)
+                dup.get(out, o, dstW)
+                o += dstW
+            } else {
+                var x = 0
+                while (x < dstW) {
+                    val sx = if (x < srcW) x else srcW - 1
+                    out[o] = buf.get(row + sx * pixelStride)
+                    o++
+                    x++
+                }
             }
         }
     }
@@ -322,14 +298,6 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
         const val MAX_OUTPUT_POLLS = 8
         const val PERF_REPORT_FRAMES = 30L
 
-        /** Index offset into [CLAMP]; the BT.601 terms reach about -258..534. */
-        const val CLAMP_BIAS = 512
-
-        /** Saturating 0..255 lookup, replacing two branches per component. */
-        private val CLAMP = ByteArray(CLAMP_BIAS + 1024) { i ->
-            val v = i - CLAMP_BIAS
-            (if (v < 0) 0 else if (v > 255) 255 else v).toByte()
-        }
         // Nominal 60 fps spacing; PTS ordering only, value is otherwise unused
         // for a no-reorder Baseline stream.
         const val FRAME_INTERVAL_US = 16_666L

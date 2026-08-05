@@ -5,6 +5,7 @@ use log::{debug, error, info, warn};
 mod bitmap_bridge;
 mod egfx;
 mod redirection;
+mod yuv;
 
 uniffi::setup_scaffolding!();
 
@@ -134,7 +135,21 @@ pub trait ClipboardCallback: Send + Sync {
 /// `video/avc` instance.
 #[uniffi::export(with_foreign)]
 pub trait Avc420Decoder: Send + Sync {
-    fn decode(&self, annex_b: Vec<u8>, width: u16, height: u16) -> Vec<u8>;
+    /// Decode one access unit and return the frame as **tightly-packed I420**
+    /// — `width*height` luma, then two `((width+1)/2)*((height+1)/2)` chroma
+    /// planes — or an empty vector if the frame could not be produced.
+    ///
+    /// I420 rather than the finished RGBA, which is what this used to return.
+    /// Colour conversion moved to [`crate::yuv`] for two reasons that both
+    /// showed up in one reporter's measurements (#466): the conversion itself
+    /// cost 27-109 ms per frame in Kotlin against 9-25 ms for the hardware
+    /// decode, and the crossing back into Rust cost a further 87-112 ms
+    /// carrying 8.29 MB of RGBA. I420 is 3.11 MB for the same 1080p frame.
+    ///
+    /// The host is expected to edge-replicate to `width`/`height` if the
+    /// decoder's own output is smaller, so the buffer size is a pure function
+    /// of the arguments and a short one is a bug rather than a crop.
+    fn decode_to_i420(&self, annex_b: Vec<u8>, width: u16, height: u16) -> Vec<u8>;
 }
 
 /// Server-side pointer (cursor) updates. RDP servers send the cursor shape and

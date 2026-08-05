@@ -686,22 +686,22 @@ internal interface UniffiCallbackInterfaceSessionCallbackMethod2 : com.sun.jna.C
 internal interface UniffiCallbackInterfaceSessionCallbackMethod3 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`sha256`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
-@Structure.FieldOrder("uniffiFree", "uniffiClone", "decode")
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "decodeToI420")
 internal open class UniffiVTableCallbackInterfaceAvc420Decoder(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
     @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
-    @JvmField internal var `decode`: UniffiCallbackInterfaceAvc420DecoderMethod0? = null,
+    @JvmField internal var `decodeToI420`: UniffiCallbackInterfaceAvc420DecoderMethod0? = null,
 ) : Structure() {
     class UniffiByValue(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
-        `decode`: UniffiCallbackInterfaceAvc420DecoderMethod0? = null,
-    ): UniffiVTableCallbackInterfaceAvc420Decoder(`uniffiFree`,`uniffiClone`,`decode`,), Structure.ByValue
+        `decodeToI420`: UniffiCallbackInterfaceAvc420DecoderMethod0? = null,
+    ): UniffiVTableCallbackInterfaceAvc420Decoder(`uniffiFree`,`uniffiClone`,`decodeToI420`,), Structure.ByValue
 
    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceAvc420Decoder) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
-        `decode` = other.`decode`
+        `decodeToI420` = other.`decodeToI420`
     }
 
 }
@@ -825,7 +825,7 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
-    external fun uniffi_rdp_transport_checksum_method_avc420decoder_decode(
+    external fun uniffi_rdp_transport_checksum_method_avc420decoder_decode_to_i420(
     ): Int
     external fun uniffi_rdp_transport_checksum_method_clipboardcallback_on_remote_clipboard(
     ): Int
@@ -918,7 +918,7 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_rdp_transport_fn_init_callback_vtable_avc420decoder(`vtable`: UniffiVTableCallbackInterfaceAvc420Decoder,
     ): Unit
-    external fun uniffi_rdp_transport_fn_method_avc420decoder_decode(`ptr`: Long,`annexB`: RustBuffer.ByValue,`width`: Short,`height`: Short,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_rdp_transport_fn_method_avc420decoder_decode_to_i420(`ptr`: Long,`annexB`: RustBuffer.ByValue,`width`: Short,`height`: Short,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_rdp_transport_fn_clone_clipboardcallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
@@ -1129,7 +1129,7 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_rdp_transport_checksum_method_avc420decoder_decode() != 16062) {
+    if (lib.uniffi_rdp_transport_checksum_method_avc420decoder_decode_to_i420() != 23715) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rdp_transport_checksum_method_clipboardcallback_on_remote_clipboard() != 26900) {
@@ -1746,7 +1746,23 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
  */
 public interface Avc420Decoder {
     
-    fun `decode`(`annexB`: kotlin.ByteArray, `width`: kotlin.UShort, `height`: kotlin.UShort): kotlin.ByteArray
+    /**
+     * Decode one access unit and return the frame as **tightly-packed I420**
+     * — `width*height` luma, then two `((width+1)/2)*((height+1)/2)` chroma
+     * planes — or an empty vector if the frame could not be produced.
+     *
+     * I420 rather than the finished RGBA, which is what this used to return.
+     * Colour conversion moved to [`crate::yuv`] for two reasons that both
+     * showed up in one reporter's measurements (#466): the conversion itself
+     * cost 27-109 ms per frame in Kotlin against 9-25 ms for the hardware
+     * decode, and the crossing back into Rust cost a further 87-112 ms
+     * carrying 8.29 MB of RGBA. I420 is 3.11 MB for the same 1080p frame.
+     *
+     * The host is expected to edge-replicate to `width`/`height` if the
+     * decoder's own output is smaller, so the buffer size is a pure function
+     * of the arguments and a short one is a bug rather than a crop.
+     */
+    fun `decodeToI420`(`annexB`: kotlin.ByteArray, `width`: kotlin.UShort, `height`: kotlin.UShort): kotlin.ByteArray
     
     companion object
 }
@@ -1865,11 +1881,27 @@ open class Avc420DecoderImpl: Disposable, AutoCloseable, Avc420Decoder
         }
     }
 
-    override fun `decode`(`annexB`: kotlin.ByteArray, `width`: kotlin.UShort, `height`: kotlin.UShort): kotlin.ByteArray {
+    
+    /**
+     * Decode one access unit and return the frame as **tightly-packed I420**
+     * — `width*height` luma, then two `((width+1)/2)*((height+1)/2)` chroma
+     * planes — or an empty vector if the frame could not be produced.
+     *
+     * I420 rather than the finished RGBA, which is what this used to return.
+     * Colour conversion moved to [`crate::yuv`] for two reasons that both
+     * showed up in one reporter's measurements (#466): the conversion itself
+     * cost 27-109 ms per frame in Kotlin against 9-25 ms for the hardware
+     * decode, and the crossing back into Rust cost a further 87-112 ms
+     * carrying 8.29 MB of RGBA. I420 is 3.11 MB for the same 1080p frame.
+     *
+     * The host is expected to edge-replicate to `width`/`height` if the
+     * decoder's own output is smaller, so the buffer size is a pure function
+     * of the arguments and a short one is a bug rather than a crop.
+     */override fun `decodeToI420`(`annexB`: kotlin.ByteArray, `width`: kotlin.UShort, `height`: kotlin.UShort): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_rdp_transport_fn_method_avc420decoder_decode(
+    UniffiLib.uniffi_rdp_transport_fn_method_avc420decoder_decode_to_i420(
         it,
         
         FfiConverterByteArray.lower(`annexB`),
@@ -1899,11 +1931,11 @@ open class Avc420DecoderImpl: Disposable, AutoCloseable, Avc420Decoder
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfaceAvc420Decoder {
-    internal object `decode`: UniffiCallbackInterfaceAvc420DecoderMethod0 {
+    internal object `decodeToI420`: UniffiCallbackInterfaceAvc420DecoderMethod0 {
         override fun callback(`uniffiHandle`: Long,`annexB`: RustBuffer.ByValue,`width`: Short,`height`: Short,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,) {
             val uniffiObj = FfiConverterTypeAvc420Decoder.handleMap.get(uniffiHandle)
             val makeCall = { ->
-                uniffiObj.`decode`(
+                uniffiObj.`decodeToI420`(
                     FfiConverterByteArray.lift(`annexB`),
                     FfiConverterUShort.lift(`width`),
                     FfiConverterUShort.lift(`height`),
@@ -1929,7 +1961,7 @@ internal object uniffiCallbackInterfaceAvc420Decoder {
     internal var vtable = UniffiVTableCallbackInterfaceAvc420Decoder.UniffiByValue(
         uniffiFree,
         uniffiClone,
-        `decode`,
+        `decodeToI420`,
     )
 
     // Registers the foreign callback with the Rust side.
