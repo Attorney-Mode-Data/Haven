@@ -5,6 +5,22 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.42
+
+🖥️ **The stop button on a VNC desktop actually stops it now** — stopping a desktop kills the launcher and then sweeps up the VNC server, which survives on its own. That sweep looked for the server by asking the system for a process list and filtering on the display number — but that listing prints process *names* and no arguments, and the display number is only ever an argument. So it matched nothing, on every device, on every run, since the day it was written. It found nothing to kill and killed nothing, which is exactly the "I press terminate and nothing happens" reported.
+
+The equivalent sweep for the other desktop type had already been moved off process names for a related reason; the same reasoning had simply never been carried across. Both now look in the same place. Stopping display 1 also no longer risks taking 10 and 11 with it. Raised by @sugerpersion on #501. (#501)
+
+🐧 **A shell in the Linux guest is bash, if the guest has bash** — it was always the minimal shell, which on Debian is dash and on Alpine is busybox, even on a guest with bash sitting right there. Haven now asks the guest which it has. Distros without bash are unaffected and behave exactly as before. Raised by @sugerpersion on #501. (#501)
+
+🖥️ **Starting one Linux desktop no longer makes all the others look like they started too** — the install progress said which *step* was running but not which desktop it belonged to, so every row in the list showed the same spinner and it read as all of them having been launched at once. Each row now answers for itself. Install buttons still go inactive across the board while any install runs, because there is only one package database and a second install would collide with the first — but that is now a separate thing from the spinner rather than the same flag doing both jobs. Raised by @sugerpersion on #502. (#502)
+
+⏱️ **A desktop install can no longer wedge forever** — one step compiles a VNC server from source in the guest, and it waited for that with no limit of any kind. Worse, it waited for the *output pipe* to close rather than for the command to finish, so a stray background process still holding that pipe kept Haven waiting long after the work itself was over — which matches the report exactly: the install sat there while nothing at all was running inside the guest.
+
+It now waits on the command, with a 20-minute limit. Long, deliberately: on a phone this genuinely is a multi-minute compile and cutting a working build short would be worse than the bug. Every other step is untouched and still waits as long as it takes — putting a limit on a package install would turn a slow connection into a failure. This step was always best-effort, so a limit costs nothing. Raised by @sugerpersion on #503. (#503)
+
+🔑 **A key held in OpenKeychain is no longer offered where it cannot be used** — its stored bytes point at a key inside OpenKeychain rather than being key material, so handing them to the SSH library could only ever fail, and did, once per connection. The rule that should have caught it existed and was right; a second copy of it elsewhere had lost half its meaning. Found by @onatio22 on #487, whose log showed the rejection sitting between two connection attempts. The reconnect problem reported alongside it is not fixed. (#487)
+
 ## v5.86.41
 
 🖥️ **Windows remote desktops get their modern graphics pipeline back** — with H.264 turned on, which has been the default since 22 July, Haven told a Windows server it could do H.264 and nothing else about how it wanted the screen sent. Windows responded by hanging up on the modern graphics pipeline half a second into every session, and the whole connection then fell back to the old bitmap method for as long as it lasted. No H.264, no progressive refinement, no ClearCodec — the very things the last several releases have been improving.
