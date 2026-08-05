@@ -2199,12 +2199,24 @@ class ProotManager @Inject constructor(
      * Run a command inside the PRoot rootfs (non-interactive).
      * Returns (stdout+stderr, exitCode).
      */
-    suspend fun runCommandInProot(command: String): Pair<String, Int> = withContext(Dispatchers.IO) {
-        val process = startCommandInProot(command)
-        val output = process.inputStream.bufferedReader().readText()
-        val exitCode = process.waitFor()
-        Pair(output, exitCode)
-    }
+    suspend fun runCommandInProot(command: String, timeoutMs: Long? = null): Pair<String, Int> =
+        withContext(Dispatchers.IO) {
+            val process = startCommandInProot(command)
+            if (timeoutMs == null) {
+                // Unbounded, as every caller but one still is. Bounding a
+                // package install would turn a slow network into a failure,
+                // which is a worse trade than waiting; #503 is only fixed for
+                // the step that is already best-effort.
+                val output = process.inputStream.bufferedReader().readText()
+                Pair(output, process.waitFor())
+            } else {
+                val run = readProcessBounded(process, timeoutMs)
+                if (run.timedOut) {
+                    Log.w(TAG, "Guest command exceeded ${timeoutMs}ms and was killed: ${command.take(120)}")
+                }
+                Pair(run.output, run.exitCode)
+            }
+        }
 
     /**
      * Ensure a writable host dir to overlay at the guest's `/dev/shm`. Android's
@@ -2706,7 +2718,14 @@ chmod +x /root/.vnc/xstartup""")
                 // an install marked failed.
                 stageWayvncBuildScript()
                 _desktopState.value = DesktopSetupState.Installing("Checking wayvnc version...", de)
-                val (wayvncOut, wayvncExit) = runCommandInProot(wayvncBuildCommand)
+                // Bounded, unlike the rest: this compiles wayvnc from source
+                // and is the one step a reporter watched sit at "Checking
+                // wayvnc version..." with nothing running in the guest behind
+                // it (#503). It is already best-effort — a failure leaves the
+                // distro's own wayvnc in place — so a bound costs nothing that
+                // waiting forever was buying.
+                val (wayvncOut, wayvncExit) =
+                    runCommandInProot(wayvncBuildCommand, timeoutMs = WAYVNC_BUILD_TIMEOUT_MS)
                 if (wayvncExit != 0) {
                     Log.w(
                         TAG,
@@ -2719,7 +2738,12 @@ chmod +x /root/.vnc/xstartup""")
                         deId = de.spec.id,
                         exit = wayvncExit,
                         ok = false,
-                        message = "wayvnc source build failed; using the distro's wayvnc",
+                        message = if (wayvncExit == -1) {
+                            "wayvnc source build exceeded ${WAYVNC_BUILD_TIMEOUT_MS / 60_000} " +
+                                "minutes and was stopped; using the distro's wayvnc"
+                        } else {
+                            "wayvnc source build failed; using the distro's wayvnc"
+                        },
                     )
                 } else {
                     Log.d(TAG, "[wayvnc-build] ${wayvncOut.trim().takeLast(300)}")
@@ -3442,4 +3466,56 @@ chmod +x /root/.vnc/xstartup""")
         _state.value = if (isReady) SetupState.Ready else SetupState.NotInstalled
         Log.d(TAG, "Deleted distro: $distroId")
     }
+}
+
+/**
+ * How long the from-source wayvnc build may run before it is stopped (#503).
+ *
+ * Generous, because on a phone this really is a multi-minute compile and
+ * cutting a working build short would be worse than the bug. The point is only
+ * that "still going" and "never going to finish" stop looking identical.
+ */
+internal const val WAYVNC_BUILD_TIMEOUT_MS: Long = 20 * 60 * 1000
+
+/** Outcome of [readProcessBounded]. [timedOut] means the bound was hit, not that the command failed. */
+internal data class BoundedRun(val output: String, val exitCode: Int, val timedOut: Boolean)
+
+/**
+ * Read [process] to completion, giving up after [timeoutMs].
+ *
+ * The unbounded version of this — `readText()` then `waitFor()` — can wait
+ * forever in two separate ways, and a guest step that used it left the desktop
+ * install wedged with no way out (#503). `waitFor()` never returns if the
+ * command genuinely hangs; and `readText()` waits for the *pipe* to close, not
+ * for the command to exit, so a background grandchild still holding the write
+ * end keeps it blocked long after its parent is gone.
+ *
+ * So the wait is on the process, not on the pipe: a reader thread accumulates
+ * output, the bound applies to the process, and after it exits the reader is
+ * given [drainGraceMs] to finish rather than however long a stray grandchild
+ * feels like holding the pipe.
+ */
+internal fun readProcessBounded(
+    process: Process,
+    timeoutMs: Long,
+    drainGraceMs: Long = 2_000,
+): BoundedRun {
+    val out = StringBuilder()
+    val reader = Thread {
+        try {
+            process.inputStream.bufferedReader().forEachLine { out.appendLine(it) }
+        } catch (_: Exception) {
+            // Pipe torn down by destroyForcibly — whatever arrived is still worth keeping.
+        }
+    }
+    reader.isDaemon = true
+    reader.start()
+    val finished = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+    if (!finished) {
+        process.destroyForcibly()
+        process.waitFor(drainGraceMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+    }
+    reader.join(drainGraceMs)
+    val exit = if (finished) runCatching { process.exitValue() }.getOrDefault(-1) else -1
+    return BoundedRun(out.toString(), exit, timedOut = !finished)
 }
