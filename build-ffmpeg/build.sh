@@ -206,7 +206,18 @@ fetch_tarball() {
         # on the v5.24.99 bot MR (!37726, 2026-05-05) — single tarball
         # blip aborted the whole build. Retries absorb DNS/TCP flakes
         # without changing behaviour on the happy path.
-        curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused \
+        #
+        # --retry-all-errors is doing the real work here and is not optional.
+        # curl's --retry alone covers only "a timeout, an FTP 4xx response
+        # code or an HTTP 408, 429, 500, 502, 503, 504, 522 or 524" — a TLS
+        # handshake failure is not on that list. The v5.86.44 release build
+        # died on exactly that:
+        #     curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL
+        #         in connection to downloads.xiph.org:443
+        # with --retry 3 already set, having retried zero times. Measured:
+        # without the flag an SSL error returns in 0s, with it two retries
+        # take 4s.
+        curl -fsSL --retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors \
             --connect-timeout 15 --max-time 600 \
             -o "$DL_DIR/$tarball" "$url"
     }

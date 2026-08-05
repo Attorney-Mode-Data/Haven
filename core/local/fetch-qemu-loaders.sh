@@ -50,7 +50,9 @@ for spec in "${LOADERS[@]}"; do
     deb="qemu-user_${VERSION}_${debarch}.deb"
     url="$MIRROR/pool/main/q/qemu/$deb"
     echo "fetch-qemu-loaders: $url"
-    curl -fsSL --retry 3 -o "$TMP/$deb" "$url" || {
+    # --retry-all-errors: plain --retry ignores TLS handshake failures, which
+    # is how a release build died fetching a pinned tarball (see build-ffmpeg).
+    curl -fsSL --retry 3 --retry-all-errors -o "$TMP/$deb" "$url" || {
         echo "fetch-qemu-loaders: FAILED to fetch $url" >&2
         echo "  If Debian retired this version, bump VERSION + sha256s here." >&2
         echo "  To build without foreign-arch support: SKIP_QEMU_LOADERS=1 or -PskipQemuLoaders." >&2

@@ -48,7 +48,7 @@ trap 'rm -f "$meta"' EXIT
 # Soft-skip on a fetch failure. This gate's job is to catch OUR drift; an
 # unreachable gitlab.com is not a reason to block a release, and a check that
 # invents new ways to fail is worse than the problem it solves.
-if ! curl -fsSL --retry 2 --retry-delay 3 --retry-connrefused \
+if ! curl -fsSL --retry 2 --retry-delay 3 --retry-connrefused --retry-all-errors \
         --connect-timeout 15 --max-time 60 "$METADATA_URL" -o "$meta"; then
     echo "· F-Droid scandelete check skipped — could not fetch $METADATA_URL"
     exit 0
