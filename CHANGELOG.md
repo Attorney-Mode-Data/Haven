@@ -5,6 +5,20 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.43
+
+🖥️ **A remote desktop stops throwing away part of the picture** — Haven refused any screen update whose image was *taller* than the area it was meant to fill, while happily accepting one that was wider. One VirtualBox session was discarding **53915 updates — 51% of everything the server sent**, which is enough for a window to sit there looking frozen while the clock beside it keeps ticking.
+
+Nothing justified the difference. The code behind that check already handled a taller image correctly: it takes only as many rows as the destination needs, and for a bottom-up image it reverses first, so the rows it keeps are the top of the picture. It was ready to do the right thing and was being stopped at the door. The reference client, FreeRDP, does not check either dimension — it decodes at the image's own size and copies out just the part it wants.
+
+Verified against the path it touches rather than only in tests: the same VirtualBox desktop paints the same 941551 pixels before and after with zero discards, and two consecutive captures differ only in the 124×72 box holding the clock.
+
+Whether this is what that reporter was hitting is **not** established — their exact geometry has never been captured, and it could still be one of the other two rules. What is fixed is a rejection that was wrong on its own terms. The reporting added in v5.86.41 will say which. (#422)
+
+🤖 **Two things an AI agent could not see about Haven, it now can** — the desktop-install progress it polls now says *which* desktop is installing rather than only that something is, and it can switch on the per-session transport tracing that fills the connection log.
+
+The second one mattered more than it sounds: the decode breakdown, the negotiated graphics capabilities and the discarded-update detail behind the three open remote-desktop investigations exist *only* in that log, and an agent could read the log but had no way to turn on the thing that writes it. Every one of those diagnostics had to be run by hand. (#502, #466, #477, #422)
+
 ## v5.86.42
 
 🖥️ **The stop button on a VNC desktop actually stops it now** — stopping a desktop kills the launcher and then sweeps up the VNC server, which survives on its own. That sweep looked for the server by asking the system for a process list and filtering on the display number — but that listing prints process *names* and no arguments, and the display number is only ever an argument. So it matched nothing, on every device, on every run, since the day it was written. It found nothing to kill and killed nothing, which is exactly the "I press terminate and nothing happens" reported.
