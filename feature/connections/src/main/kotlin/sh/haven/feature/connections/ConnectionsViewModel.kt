@@ -1896,8 +1896,11 @@ class ConnectionsViewModel @Inject constructor(
             keys.any { it.keyType.startsWith("sk-") }
         ) return null
         // A usable unencrypted software key also suppresses the prompt; FIDO/sk
-        // keys are handled above (they aren't loadable as auto-offered keys).
-        if (keys.any { !it.isEncrypted && !it.keyType.startsWith("sk-") }) return null
+        // keys are handled above (they aren't loadable as auto-offered keys), and
+        // neither is a provider-held one — `resolveAnyUsableKeys` never offers
+        // either, so counting one here suppressed the prompt and then had nothing
+        // to connect with.
+        if (keys.any { !it.isEncrypted && holdsLoadablePrivateKey(it.keyType) }) return null
         return jp
     }
 
@@ -4795,14 +4798,7 @@ class ConnectionsViewModel @Inject constructor(
      */
     private suspend fun resolveAnyUsableKeys(): ConnectionConfig.AuthMethod? {
         val entries = sshKeyRepository.getAllDecrypted()
-            // Provider-held keys (#487) are excluded for the same reason as
-            // SK keys: their bytes are a reference to a key in another app,
-            // not loadable material, and signing with one prompts the user.
-            .filter {
-                !it.keyType.startsWith("sk-") &&
-                    it.keyType != OpenKeychainKeyData.KEY_TYPE &&
-                    it.enabledForAuth
-            }
+            .filter { holdsLoadablePrivateKey(it.keyType) && it.enabledForAuth }
             .mapNotNull { key ->
                 if (key.isEncrypted) {
                     // Only usable unattended if its passphrase is stored (#290).
@@ -4905,10 +4901,7 @@ class ConnectionsViewModel @Inject constructor(
             )
         }
         val allKeys = sshKeyRepository.getAllDecrypted()
-        // Exclude SK/FIDO keys: their bytes are a credential handle (rawKeyToPem
-        // would throw "Invalid Key"), and a hardware key can't be forwarded as a
-        // software agent identity anyway.
-        val candidates = allKeys.filter { !it.keyType.startsWith("sk-") && it.enabledForAuth }
+        val candidates = allKeys.filter { holdsLoadablePrivateKey(it.keyType) && it.enabledForAuth }
         val keys = mutableListOf<ConnectionConfig.AgentIdentity>()
         var skippedLocked = 0
         for (key in candidates) {
@@ -5732,3 +5725,22 @@ internal fun moshLocaleWorkaroundHint(hasCustomCommand: Boolean, stderr: String)
         "locale: LC_ALL=C.UTF-8 mosh-server new -s -c 256"
 }
 
+
+/**
+ * Whether a stored key's `privateKeyBytes` are private-key material Haven can
+ * load, rather than a reference to a key held somewhere else.
+ *
+ * Two kinds fail that: FIDO2/SK keys (`sk-ssh-ed25519@openssh.com` and
+ * friends), whose bytes are a credential handle, and provider-held keys
+ * (#487), whose bytes name a key inside OpenKeychain. PEM-encoding either
+ * throws "Invalid Key", neither can be forwarded as a software agent
+ * identity, and signing with one puts a prompt in front of the user.
+ *
+ * Shared because the two callers had written the same rule out separately and
+ * one of them had lost the provider half, so an OpenKeychain key was being
+ * offered to JSch's agent repository on every connect and rejected with
+ * `JSchException: invalid privatekey` (#487). Keeping it in one place is what
+ * stops that happening again — a second copy is what caused it.
+ */
+internal fun holdsLoadablePrivateKey(keyType: String): Boolean =
+    !keyType.startsWith("sk-") && keyType != OpenKeychainKeyData.KEY_TYPE
