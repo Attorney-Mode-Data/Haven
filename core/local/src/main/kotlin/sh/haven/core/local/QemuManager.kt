@@ -162,7 +162,6 @@ class QemuManager @Inject constructor(
         }
         updateSession(busid) { DriveSession(busid, 0, emptyList(), State.STARTING, readOnly = readOnly) }
         return try {
-            ensureQemu(onStage)
             val disk = ensureProvisionedAppliance(onStage)
 
             var vm = sharedVm
@@ -471,6 +470,18 @@ class QemuManager @Inject constructor(
      * openDrive() calls this again, but it's a no-op once provisioned.
      */
     suspend fun ensureProvisionedAppliance(onStage: (String) -> Unit): String = provisioningMutex.withLock {
+        // The engine check belongs here, not in the caller (#506). It used to
+        // live only in openDriveLocked, and UsbDriveVmManager calls this one
+        // directly as its documented pre-step — so on a guest without QEMU the
+        // provisioning VM was launched anyway and died in a second with
+        // `/bin/sh: 1: exec: qemu-system-x86_64: not found`, reported as a
+        // 420-second boot timeout. A reporter chased three different flash
+        // drives before the message said what actually happened.
+        //
+        // Before the early returns below, deliberately: an appliance can be
+        // provisioned while the guest that provisioned it has since been
+        // reinstalled, and the caller boots the VM on that path too.
+        ensureQemu(onStage)
         val dir = File(context.cacheDir, "haven-vm").apply { mkdirs() }
         val disk = File(dir, APPLIANCE_DISK)
         val marker = File(dir, "$APPLIANCE_DISK.ok")
@@ -628,13 +639,13 @@ class QemuManager @Inject constructor(
         // One-time: apk download + setup-disk install over TCG can take a while.
         private const val PROVISION_TIMEOUT_MS = 720_000L
         // Persistent installed appliance (raw sparse image; usbip+ssh baked in).
-        private const val APPLIANCE_DISK = "usb_vm_appliance.img"
+        internal const val APPLIANCE_DISK = "usb_vm_appliance.img"
         private const val APPLIANCE_DISK_SIZE = "2G"
         // Bump when APPLIANCE_EXTRA_PACKAGES changes — an already-provisioned
         // appliance with an older/missing version runs a cheap in-place
         // `apk add` upgrade boot instead of a full ISO re-provision. Markers
         // from before this scheme existed ("ok\n") parse as version 0.
-        private const val APPLIANCE_PROVISION_VERSION = 3
+        internal const val APPLIANCE_PROVISION_VERSION = 3
         // cryptsetup = LUKS (unlockPartition). testdisk = partition-table +
         // deleted-file recovery (bundles photorec). gptfdisk = gdisk/sgdisk
         // (GPT repair). parted = MBR/GPT editing. smartmontools = smartctl

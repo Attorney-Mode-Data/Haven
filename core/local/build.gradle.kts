@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.xz)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
 }
 
 val buildProot by tasks.registering(Exec::class) {
