@@ -215,17 +215,45 @@ class AudioBridge @Inject constructor(
             }
             val input = sock?.getInputStream() ?: return
             _status.value = Status(State.RUNNING, pcmPort, 0)
-            Log.d(TAG, "[audio] streaming PCM -> AudioTrack")
+            // #442: a reporter asked for shared-memory passthrough to cut audio
+            // latency, and the honest answer was that nobody had measured where
+            // the latency is. These two numbers are most of the answer on their
+            // own: the render buffer is a latency floor that no change of
+            // transport can get under.
+            Log.i(
+                TAG,
+                "[audio] AudioTrack buffer ${trackBuf}B = ${pcmBufferMillis(trackBuf, sampleRate)}ms " +
+                    "(min ${minBuf}B = ${pcmBufferMillis(minBuf, sampleRate)}ms) at ${sampleRate}Hz stereo s16le",
+            )
             val buf = ByteArray(16 * 1024)
+            // Which of the two calls the loop actually sits in decides what to
+            // fix. Blocked in write → we are render-bound, and the AudioTrack
+            // buffer above is the thing to attack. Blocked in read → the guest
+            // is not producing fast enough and the transport is worth looking at.
+            var readUs = 0L
+            var writeUs = 0L
+            var windowBytes = 0L
             while (running) {
+                val t0 = System.nanoTime()
                 val n = input.read(buf)
+                val t1 = System.nanoTime()
                 if (n < 0) break
                 if (n > 0) {
                     track.write(buf, 0, n)
+                    readUs += (t1 - t0) / 1000
+                    writeUs += (System.nanoTime() - t1) / 1000
+                    windowBytes += n
                     bytesStreamed += n
                     // Cheap throttle on status churn — refresh the count ~1×/sec worth.
                     if ((bytesStreamed and 0x3FFFF) < n) {
                         _status.value = Status(State.RUNNING, pcmPort, bytesStreamed)
+                        val secs = windowBytes.toDouble() / (sampleRate * 2 * 2)
+                        Log.i(
+                            TAG,
+                            "[audio] over ${"%.1f".format(secs)}s of audio: " +
+                                "socket read ${readUs / 1000}ms, AudioTrack write ${writeUs / 1000}ms",
+                        )
+                        readUs = 0; writeUs = 0; windowBytes = 0
                     }
                 }
             }
@@ -279,4 +307,23 @@ class AudioBridge @Inject constructor(
     companion object {
         private const val TAG = "AudioBridge"
     }
+}
+
+/**
+ * Milliseconds of audio that [bytes] of PCM represents.
+ *
+ * Split out and given a test because it is the number the whole #442 question
+ * turns on: an AudioTrack buffer is a latency floor, and a floor measured in
+ * bytes says nothing until it is expressed in time. Defaults are the format
+ * the bridge negotiates with PulseAudio — 16-bit stereo.
+ */
+internal fun pcmBufferMillis(
+    bytes: Int,
+    sampleRate: Int,
+    channels: Int = 2,
+    bytesPerSample: Int = 2,
+): Long {
+    val bytesPerSecond = sampleRate.toLong() * channels * bytesPerSample
+    if (bytesPerSecond <= 0L) return 0L
+    return bytes.toLong() * 1000L / bytesPerSecond
 }
