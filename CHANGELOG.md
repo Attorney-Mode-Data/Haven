@@ -5,6 +5,16 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.47
+
+⌨️ **Two keyboard and mouse bugs in remote desktop, both found by one reporter's measurements rather than his symptoms.**
+
+**Keys repeating forever, and buttons needing twenty presses.** Every discrete input — key down, key up, button press, button release — was dispatched on its own background task from a *pool* of threads. Nothing guaranteed the order they ran in, so a key release could reach the guest ahead of its own press. A guest that receives release-then-press is left holding the key down: it auto-repeats until some other key arrives, which is why pressing Tab appeared to "fix" it. The same inversion on a mouse button gives a click the guest never sees. Pointer *movement* was unaffected — it is a stream of positions where a swapped pair is invisible — which is exactly what the reporter observed and what identified the cause. Input now goes out in the order it was made.
+
+**AltGr typed nothing on non-English layouts.** All four right-hand modifiers — Alt, Ctrl, Shift and Win — were being sent as their left-hand twins. A reporter ran `showkey` on his guest's console and read back scancode 56 for AltGr; 56 is 0x38, which is *left* Alt. On a Polish layout that meant AltGr+o produced nothing instead of ó, because the guest had been told he pressed a modifier that composes nothing. Right Ctrl, Alt and Win are now sent E0-prefixed as the separate keys they are, and right Shift as its own code.
+
+This fixes what Haven sends. Whether an accented character then appears still depends on the guest having that keyboard layout loaded.
+
 ## v5.86.46
 
 🔒 **Haven's logs no longer contain your account name** — and if you have ever attached one to a bug report, it did.
