@@ -162,7 +162,7 @@ class RdpSession(
      */
     fun start() {
         if (closed) return
-        log("D", "Starting RDP session $sessionId: $host:$port user=${redactUsername(username)}")
+        log("D", "Starting RDP session $sessionId: ${redactHost(host, port)} user=${redactUsername(username)}")
 
         try {
             // Trust-on-first-use pin: the fingerprint remembered from a prior
@@ -334,7 +334,7 @@ class RdpSession(
                 }
             })
 
-            log("D", "Connecting to $host:$port (worker thread will handle handshake, socks=${socksProxy != null})")
+            log("D", "Connecting to ${redactHost(host, port)} (worker thread will handle handshake, socks=${socksProxy != null})")
             c.connect(host, port.toUShort(), socksProxy)
         } catch (e: UnsatisfiedLinkError) {
             val msg = "RDP native library failed to load: ${e.message}"

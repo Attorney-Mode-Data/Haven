@@ -74,3 +74,29 @@ fun redactUsername(username: String): String = when {
     username.contains('\\') -> "<${username.length} chars, domain\\user>"
     else -> "<${username.length} chars>"
 }
+
+/** The RDP port every client and server assumes, so naming it identifies nobody. */
+private const val DEFAULT_RDP_PORT = 3389
+
+/**
+ * A target's *shape* for logs, never the address itself (#477).
+ *
+ * The same reporter who found his account name in the logs found his server's
+ * address and port there too. An internal address is still his network's
+ * topology, and a public one names the machine outright.
+ *
+ * What is kept is what has actually been used to read these logs: whether the
+ * profile holds a name that had to resolve or an address that did not, and
+ * whether the port is the one everything defaults to. `<ipv4>` versus
+ * `<hostname>` is the difference between a DNS failure and a routing one.
+ */
+fun redactHost(host: String, port: Int): String {
+    val kind = when {
+        host.isEmpty() -> "<no host>"
+        // Bracketed or bare, a colon in a host is IPv6 — no hostname has one.
+        host.contains(':') -> "<ipv6>"
+        host.all { it.isDigit() || it == '.' } -> "<ipv4>"
+        else -> "<hostname>"
+    }
+    return if (port == DEFAULT_RDP_PORT) kind else "$kind:<non-default port>"
+}

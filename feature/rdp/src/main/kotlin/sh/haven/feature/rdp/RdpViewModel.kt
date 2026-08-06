@@ -17,6 +17,7 @@ import sh.haven.core.data.preferences.UserPreferencesRepository
 import sh.haven.core.data.repository.ConnectionLogRepository
 import sh.haven.core.rdp.RdpSession
 import sh.haven.core.rdp.RdpSessionManager
+import sh.haven.core.rdp.redactHost
 import sh.haven.core.rdp.redactUsername
 import sh.haven.core.ssh.SshClient
 import sh.haven.core.ssh.SshConnection
@@ -87,7 +88,7 @@ class RdpViewModel @Inject constructor(
                 )
                 tunnelPort = localPort
                 tunnelSessionId = sessionId
-                Log.d(TAG, "SSH tunnel: localhost:$localPort -> $remoteHost:$remotePort")
+                Log.d(TAG, "SSH tunnel: localhost:$localPort -> ${redactHost(remoteHost, remotePort)}")
                 doConnect(
                     "127.0.0.1", localPort, username, password, domain,
                     certHost = remoteHost, certPort = remotePort,
@@ -141,7 +142,7 @@ class RdpViewModel @Inject constructor(
         certHost: String = host,
         certPort: Int = port,
     ) {
-        Log.d(TAG, "doConnect: $host:$port user=${redactUsername(username)} domain=${redactUsername(domain)}")
+        Log.d(TAG, "doConnect: ${redactHost(host, port)} user=${redactUsername(username)} domain=${redactUsername(domain)}")
         val verboseEnabled = kotlinx.coroutines.runBlocking { preferencesRepository.verboseLoggingEnabled.first() }
         val verboseBuffer = if (verboseEnabled) ConcurrentLinkedQueue<String>() else null
         rdpVerboseBuffer = verboseBuffer

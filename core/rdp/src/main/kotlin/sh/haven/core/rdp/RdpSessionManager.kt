@@ -97,7 +97,7 @@ class RdpSessionManager @Inject constructor(
         _sessions.value[sessionId]
             ?: throw IllegalStateException("Session $sessionId not found")
 
-        Log.d(TAG, "Connecting RDP session: $host:$port user=${redactUsername(username)} (ssh tunnel: ${sshClient != null})")
+        Log.d(TAG, "Connecting RDP session: ${redactHost(host, port)} user=${redactUsername(username)} (ssh tunnel: ${sshClient != null})")
 
         _sessions.update { map ->
             val existing = map[sessionId] ?: return@update map

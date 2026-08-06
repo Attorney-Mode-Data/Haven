@@ -75,4 +75,39 @@ class RedactUsernameTest {
         assertEquals("<3 chars>", redactUsername("abc"))
         assertEquals("<30 chars>", redactUsername("a".repeat(30)))
     }
+
+    /**
+     * The follow-up on the same issue: the address and port went out in the
+     * clear next to the (redacted) name. Same rule, same reason.
+     */
+    @Test
+    fun `the host is never quoted back`() {
+        listOf(
+            "192.168.1.100" to 3389,
+            "10.0.0.7" to 13389,
+            "desktop.lan" to 3389,
+            "rdp.example.com" to 3391,
+            "fe80::1" to 3389,
+        ).forEach { (host, port) ->
+            val out = redactHost(host, port)
+            assertFalse("redaction of '$host' quoted it back", out.contains(host))
+            assertFalse("redaction of '$host:$port' quoted the port back", out.contains("$port"))
+        }
+    }
+
+    @Test
+    fun `the host kind is kept, because DNS and routing fail differently`() {
+        assertEquals("<ipv4>", redactHost("192.168.1.100", 3389))
+        assertEquals("<hostname>", redactHost("desktop.lan", 3389))
+        assertEquals("<ipv6>", redactHost("fe80::1", 3389))
+        assertEquals("<no host>", redactHost("", 3389))
+    }
+
+    /** A non-default port is a real clue; the number itself is not needed. */
+    @Test
+    fun `only the fact of a non-default port survives`() {
+        assertEquals("<ipv4>", redactHost("10.0.0.7", 3389))
+        assertEquals("<ipv4>:<non-default port>", redactHost("10.0.0.7", 13389))
+        assertEquals(redactHost("10.0.0.7", 3390), redactHost("10.0.0.7", 33890))
+    }
 }

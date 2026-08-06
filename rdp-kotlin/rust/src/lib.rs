@@ -9,6 +9,44 @@ mod yuv;
 
 uniffi::setup_scaffolding!();
 
+/// Values that must never reach logcat (#477).
+///
+/// Haven's RDP logs exist to be attached to public issues, and ironrdp's own
+/// `tracing` output dumps whole PDUs at debug level: `ConnectionRequest`
+/// carries the logon name as the RDP Cookie, and `ClientInfoPdu` carries
+/// `username` plus the server `address`, both in the clear. We cannot reformat
+/// somebody else's `Debug` impl, and dropping those lines would cost the
+/// connect-phase trace that #422 and #461 were both diagnosed from — so scrub
+/// the formatted line instead. Exact-match replacement of values we already
+/// hold cannot false-positive the way a pattern over arbitrary PDU text would,
+/// and cannot miss a field we forgot to think about.
+static SECRETS: RwLock<Vec<String>> = RwLock::new(Vec::new());
+
+/// Add one value to the scrub list. Idempotent; safe to call per connect.
+fn remember_secret(value: &str) {
+    // Under 3 chars there is nothing worth hiding and a real risk of chewing
+    // fragments out of unrelated text (an empty domain would match everywhere).
+    if value.len() < 3 {
+        return;
+    }
+    let mut secrets = SECRETS.write().unwrap_or_else(|e| e.into_inner());
+    if !secrets.iter().any(|s| s == value) {
+        secrets.push(value.to_owned());
+    }
+}
+
+fn scrub(line: &str, secrets: &[String]) -> String {
+    let mut out = line.to_owned();
+    for secret in secrets {
+        // The `contains` guard keeps the common (nothing to redact) case down
+        // to a substring search instead of a fresh allocation per secret.
+        if out.contains(secret.as_str()) {
+            out = out.replace(secret.as_str(), "<redacted>");
+        }
+    }
+    out
+}
+
 fn init_logging() {
     use std::sync::Once;
     static INIT: Once = Once::new();
@@ -16,9 +54,75 @@ fn init_logging() {
         android_logger::init_once(
             android_logger::Config::default()
                 .with_max_level(log::LevelFilter::Debug)
-                .with_tag("RdpNative"),
+                .with_tag("RdpNative")
+                // Reproduces android_logger's own `{module_path}: {args}`
+                // layout for a custom tag — supplying a format replaces it.
+                .format(|f, record| {
+                    let line = format!(
+                        "{}: {}",
+                        record.module_path().unwrap_or_default(),
+                        record.args()
+                    );
+                    let secrets = SECRETS.read().unwrap_or_else(|e| e.into_inner());
+                    f.write_str(&scrub(&line, &secrets))
+                }),
         );
     });
+}
+
+#[cfg(test)]
+mod log_scrub_tests {
+    use super::scrub;
+
+    fn secrets() -> Vec<String> {
+        ["skeezmo", "192.168.1.100", "desktop.lan"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+    }
+
+    /// Verbatim from the #477 logcat (v5.86.48), with the reporter's manual
+    /// `--redacted--` put back to the account name he had to delete by hand.
+    #[test]
+    fn connection_request_cookie_is_scrubbed() {
+        let line = concat!(
+            "ironrdp_connector::connection: Send message=ConnectionRequest { ",
+            "nego_data: Some(Cookie(Cookie(\"skeezmo\"))), flags: RequestFlags(0x0), ",
+            "protocol: SecurityProtocol(SSL) }"
+        );
+        let out = scrub(line, &secrets());
+        assert!(!out.contains("skeezmo"), "{out}");
+        assert!(out.contains("Cookie(Cookie(\"<redacted>\"))"), "{out}");
+    }
+
+    #[test]
+    fn client_info_username_and_address_are_scrubbed() {
+        let line = concat!(
+            "ironrdp_connector::connection: Send message=ClientInfoPdu { client_info: ",
+            "ClientInfo { credentials: Credentials { username: \"skeezmo\", domain: None, .. }, ",
+            "extra_info: ExtendedClientInfo { address_family: AddressFamily(2), ",
+            "address: \"192.168.1.100\", dir: \"\" } } }"
+        );
+        let out = scrub(line, &secrets());
+        assert!(!out.contains("skeezmo"), "{out}");
+        assert!(!out.contains("192.168.1.100"), "{out}");
+        // The PDU shape survives — this is still a usable connect-phase trace.
+        assert!(out.contains("address_family: AddressFamily(2)"), "{out}");
+    }
+
+    #[test]
+    fn unrelated_lines_are_untouched() {
+        let line = "rdp_transport: EGFX caps advertised: V8_1, V10_7";
+        assert_eq!(scrub(line, &secrets()), line);
+    }
+
+    #[test]
+    fn empty_secret_list_is_a_passthrough() {
+        // A session that never connected registers nothing; logging must not
+        // start mangling text just because the list is empty.
+        let line = "ironrdp_connector: Send message=ConnectionRequest { .. }";
+        assert_eq!(scrub(line, &[]), line);
+    }
 }
 
 #[derive(Debug, uniffi::Error)]
@@ -313,12 +417,19 @@ impl RdpClient {
         port: u16,
         socks_proxy: Option<SocksProxyConfig>,
     ) -> Result<(), RdpError> {
+        // Before the first PDU is logged (#477). The Kotlin side already logs
+        // the target's shape, so nothing here needs to name it.
+        remember_secret(&self.config.username);
+        remember_secret(&self.config.domain);
+        remember_secret(&self.config.password);
+        remember_secret(&host);
+        if let Some(ref proxy) = socks_proxy {
+            remember_secret(&proxy.host);
+        }
+
         let stream = match socks_proxy {
             Some(ref proxy) => socks5_connect(&proxy.host, proxy.port, &host, port).map_err(|e| {
-                error!(
-                    "SOCKS5 connect via {}:{} -> {}:{} failed: {}",
-                    proxy.host, proxy.port, host, port, e
-                );
+                error!("SOCKS5 connect failed: {}", e);
                 RdpError::ConnectionFailed
             })?,
             None => {
@@ -326,7 +437,7 @@ impl RdpClient {
                 TcpStream::connect(&addr).map_err(|e| {
                     // TCP-level failure surfaces synchronously — no thread yet,
                     // no callback to fire.
-                    error!("TCP connect to {} failed: {}", addr, e);
+                    error!("TCP connect failed: {}", e);
                     RdpError::ConnectionFailed
                 })?
             }
@@ -345,6 +456,9 @@ impl RdpClient {
             .map_err(|_| RdpError::IoError)?;
 
         let server_addr: SocketAddr = stream.peer_addr().map_err(|_| RdpError::IoError)?;
+        // ClientInfoPdu's ExtendedClientInfo prints this one as a bare IP, so
+        // the hostname registered above would not have caught it (#477).
+        remember_secret(&server_addr.ip().to_string());
 
         let config = self.config.clone();
         let state = Arc::clone(&self.state);
