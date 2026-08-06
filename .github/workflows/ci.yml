@@ -193,7 +193,15 @@ jobs:
       - uses: ./.github/actions/init-submodules-with-retry
       - uses: ./.github/actions/setup-toolchain
       - name: Run lint
-        run: ./gradlew lintDebug
+        # Skip the from-source native builds. Android lint analyses sources,
+        # resources and the manifest — it never opens a .so. Since #493 wired
+        # those builds into preBuild they were costing this job ~20 minutes it
+        # had no use for, and lint died on its own 30-minute timeout three
+        # nights running without ever reaching the lint step (the log ends
+        # inside clang++). A job killed by a timeout reports `cancelled`, which
+        # reads as "superseded" — so the nightly lint gate stopped producing a
+        # verdict and nothing said so.
+        run: ./gradlew lintDebug -PskipWaylandNatives=true -PskipFfmpegNatives=true
       - name: Upload lint results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -284,6 +292,11 @@ jobs:
       - uses: ./.github/actions/init-submodules-with-retry
       - uses: ./.github/actions/setup-toolchain
       - name: R8 the release variant
-        run: ./gradlew :app:minifyArm64ReleaseWithR8
+        # Same skip as lint, same reason: R8 shrinks bytecode and never reads
+        # jniLibs, but it sits downstream of preBuild and was paying for the
+        # native builds anyway. This job hit its 30-minute timeout on the same
+        # three nights, so the R8-keep assertion below has not actually run
+        # since the from-source work landed.
+        run: ./gradlew :app:minifyArm64ReleaseWithR8 -PskipWaylandNatives=true -PskipFfmpegNatives=true
       - name: Assert reflectively-loaded classes survived R8
         run: ./scripts/check-r8-kept-classes.sh
