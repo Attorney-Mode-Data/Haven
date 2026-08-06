@@ -113,8 +113,7 @@ impl EgfxPerf {
         let decode_only = self.decode_us.saturating_sub(self.flush_us);
         let line = format!(
             "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us \
-             (avc round trip {}us, yuv {}us, blit {}us), publish {}us, total {}us\
-             , yardstick: alloc+copy of {}KB took {}us",
+             (avc round trip {}us, yuv {}us, blit {}us), publish {}us, total {}us{}",
             n as f64 / secs,
             self.zgfx_us / n,
             decode_only / n,
@@ -123,8 +122,20 @@ impl EgfxPerf {
             self.blit_us / n,
             self.flush_us / n,
             (self.zgfx_us + self.decode_us) / n,
-            self.memcpy_kb,
-            self.memcpy_us,
+            // Only when the probe actually ran. A session the server never
+            // sends H.264 to — Windows uses progressive for ordinary desktop
+            // updates even with AVC420 negotiated — leaves it at zero, and
+            // "alloc+copy of 0KB took 0us" reads like a measurement saying
+            // copying is free rather than a probe that never fired. Caught by
+            // running it against a real Windows 11 server (#466/#477).
+            if self.memcpy_us > 0 {
+                format!(
+                    ", yardstick: alloc+copy of {}KB took {}us",
+                    self.memcpy_kb, self.memcpy_us,
+                )
+            } else {
+                String::new()
+            },
         );
         info!("{line}");
         if let Ok(mut s) = state.write() {
@@ -1203,6 +1214,39 @@ mod tests {
     /// session, so "the numbers appear in the line" is not enough: this drives
     /// a real dispatch through a decoder that sleeps a known time, and fails if
     /// either counter stays at zero.
+    /// A session the server never sends H.264 to still reports a perf line,
+    /// and that line must not carry a yardstick that never ran. "alloc+copy of
+    /// 0KB took 0us" reads like a result saying copying is free.
+    ///
+    /// Found by running the instrument against a real Windows 11 server, which
+    /// used progressive for ordinary desktop updates even with AVC420
+    /// negotiated — so the AVC counters, and the probe, stayed at zero.
+    #[test]
+    fn a_perf_line_omits_the_yardstick_when_no_avc_frame_ran() {
+        let state = test_state(64, 64);
+        let mut perf = EgfxPerf { frames: EGFX_PERF_REPORT_FRAMES, decode_us: 1_000, ..Default::default() };
+        perf.maybe_report(&state);
+        let lines = state.read().unwrap().perf_log.clone();
+        assert_eq!(1, lines.len(), "the perf line must still be reported");
+        assert!(
+            !lines[0].contains("yardstick"),
+            "a probe that never ran must not appear as a measurement: {}",
+            lines[0],
+        );
+
+        let state2 = test_state(64, 64);
+        let mut ran = EgfxPerf {
+            frames: EGFX_PERF_REPORT_FRAMES,
+            decode_us: 1_000,
+            memcpy_us: 42,
+            memcpy_kb: 5_400,
+            ..Default::default()
+        };
+        ran.maybe_report(&state2);
+        let with = state2.read().unwrap().perf_log[0].clone();
+        assert!(with.contains("yardstick: alloc+copy of 5400KB took 42us"), "got {with}");
+    }
+
     #[test]
     fn avc420_round_trip_and_blit_are_measured() {
         struct SlowDecoder {
