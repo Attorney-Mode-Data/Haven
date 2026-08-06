@@ -1,12 +1,16 @@
 package sh.haven.core.ssh.openkeychain
 
+import android.util.Log
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -93,4 +97,33 @@ class OpenKeychainIdentityTest {
         assertEquals("haven-openkeychain-1234567890123456", identity.name)
         assertEquals("haven-openkeychain-9999999999999999", other.name)
     }
+    /**
+     * #487: a reporter's reconnect logged "signing 148 bytes" and then nothing
+     * whatsoever, followed by JSch's generic "Auth fail". JSch catches what an
+     * Identity throws and moves silently to the next auth method, so the
+     * provider's own reason never reached the log — and too many prompt rounds,
+     * a cancelled prompt and a provider error are three different bugs that
+     * look identical from outside.
+     *
+     * The failure still propagates; it just stops being invisible on the way.
+     */
+    @Test
+    fun `a provider that refuses to sign says so in the log`() {
+        mockkStatic(Log::class)
+        val logged = slot<String>()
+        every { Log.d(any(), any<String>()) } returns 0
+        every { Log.w(any(), capture(logged)) } returns 0
+        every { client.sign(any(), any(), any()) } throws
+            OpenKeychainException("asked for user interaction 4 times without completing the request")
+
+        val thrown = runCatching { identity.getSignature(byteArrayOf(1, 2, 3), "ssh-rsa") }.exceptionOrNull()
+
+        assertTrue("the failure must still reach JSch, got $thrown", thrown is OpenKeychainException)
+        assertTrue(
+            "the log must carry the provider's reason, got '${logged.captured}'",
+            logged.isCaptured && logged.captured.contains("user interaction 4 times"),
+        )
+        unmockkStatic(Log::class)
+    }
+
 }

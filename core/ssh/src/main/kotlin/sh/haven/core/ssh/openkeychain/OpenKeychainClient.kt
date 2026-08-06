@@ -204,7 +204,16 @@ class OpenKeychainClient(
                     }
                     val pending = pendingIntentOf(result)
                         ?: throw OpenKeychainException("Provider asked for user interaction but sent no prompt")
-                    val answered = runPrompt(pending) ?: throw OpenKeychainException("Cancelled")
+                    // Each round is a distinct prompt (permission, chooser, PIN
+                    // and tap), and which one a stuck handshake died on is the
+                    // difference between three unrelated causes — so say which
+                    // round this is, and whether the user answered it (#487).
+                    Log.d(TAG, "prompt round $rounds of $MAX_USER_INTERACTION_ROUNDS")
+                    val answered = runPrompt(pending)
+                    if (answered == null) {
+                        Log.w(TAG, "prompt round $rounds returned no result — treating as cancelled")
+                        throw OpenKeychainException("Cancelled")
+                    }
                     // Fall back to what we sent only if the prompt returned
                     // nothing at all — better a repeat than an empty request.
                     if (answered.extras?.isEmpty == false) current = answered

@@ -53,7 +53,21 @@ class OpenKeychainIdentity(
      */
     override fun getSignature(data: ByteArray, alg: String): ByteArray {
         Log.d(TAG, "signing ${data.size} bytes as $alg via ${keyData.providerPackage}")
-        val signature = client.sign(keyData.keyId, data, alg)
+        val signature = try {
+            client.sign(keyData.keyId, data, alg)
+        } catch (e: Exception) {
+            // JSch catches whatever an Identity throws and quietly moves to the
+            // next auth method, so without this the provider's own reason never
+            // reaches the log — a reporter's failing reconnect showed "signing
+            // 148 bytes" and then nothing at all, followed by JSch's generic
+            // "Auth fail", which says nothing about why (#487).
+            //
+            // The reason is the whole diagnosis here: too many interaction
+            // rounds, a cancelled prompt and a provider error are three
+            // different bugs that look identical from outside.
+            Log.w(TAG, "provider ${keyData.providerPackage} did not sign: ${e.javaClass.simpleName}: ${e.message}")
+            throw e
+        }
         Log.d(TAG, "provider returned a ${signature.size} byte signature")
         return signature
     }
