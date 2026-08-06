@@ -1448,7 +1448,7 @@ private enum class OrientationMode(
 fun cycleRdpOrientation(current: Int): Int =
     OrientationMode.fromActivityValue(current).next().activityValue
 
-private fun androidKeyToScancode(key: Key): Int? = when (key) {
+internal fun androidKeyToScancode(key: Key): Int? = when (key) {
     Key.Enter -> SC_RETURN
     Key.Tab -> SC_TAB
     Key.Escape -> SC_ESCAPE
@@ -1463,10 +1463,20 @@ private fun androidKeyToScancode(key: Key): Int? = when (key) {
     Key.MoveEnd -> SC_END
     Key.PageUp -> SC_PGUP
     Key.PageDown -> SC_PGDN
-    Key.ShiftLeft, Key.ShiftRight -> SC_SHIFT_L
-    Key.CtrlLeft, Key.CtrlRight -> SC_CTRL_L
-    Key.AltLeft, Key.AltRight -> SC_ALT_L
-    Key.MetaLeft, Key.MetaRight -> SC_WIN_L
+    // Right-hand modifiers are their own keys, not aliases for the left ones
+    // (#504). A reporter ran `showkey` on the guest console and saw AltGr
+    // arrive as scancode 56 — left Alt — which is why AltGr+o gave him nothing
+    // instead of the Polish ó: the guest was told he pressed a modifier that
+    // does not compose anything. Right Ctrl, Alt and Win are E0-prefixed;
+    // right Shift is NOT extended, it is a separate base code (0x36).
+    Key.ShiftLeft -> SC_SHIFT_L
+    Key.ShiftRight -> SC_SHIFT_R
+    Key.CtrlLeft -> SC_CTRL_L
+    Key.CtrlRight -> SC_CTRL_R
+    Key.AltLeft -> SC_ALT_L
+    Key.AltRight -> SC_ALT_R
+    Key.MetaLeft -> SC_WIN_L
+    Key.MetaRight -> SC_WIN_R
     Key.F1 -> SC_F1
     Key.F2 -> SC_F2
     Key.F3 -> SC_F3
@@ -1515,6 +1525,13 @@ internal const val SC_DOWN = EXT or 0x50
 internal const val SC_LEFT = EXT or 0x4B
 internal const val SC_RIGHT = EXT or 0x4D
 internal const val SC_WIN_L = EXT or 0x5B
+// Right-hand modifiers (#504). AltGr is right Alt: a layout that puts
+// characters on it — Polish, German, most of Europe — produces nothing at all
+// when the guest is told left Alt instead.
+internal const val SC_SHIFT_R = 0x36
+internal const val SC_CTRL_R = EXT or 0x1D
+internal const val SC_ALT_R = EXT or 0x38
+internal const val SC_WIN_R = EXT or 0x5C
 internal const val SC_F1 = 0x3B
 private const val SC_F2 = 0x3C
 private const val SC_F3 = 0x3D
