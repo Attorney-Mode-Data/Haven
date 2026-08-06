@@ -5,6 +5,28 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.45
+
+🖥️ **Windows remote desktops stop looking pixelated** — and the honest version of this is that v5.86.43 caused it.
+
+That release stopped Windows hanging up on the modern graphics pipeline. It worked — a reporter's session went from 24201 old-style updates to none. But the modern pipeline had two defects sitting in it that nothing could reach while every Windows session was falling back to the old one. Both are now fixed, and both were found in his logs rather than here.
+
+**Part of the picture was being thrown away.** Windows sends some regions as a *difference* against the previous version of that same region — 137500 of them in one session. Haven did not implement that and skipped them, leaving the older, coarser version of each region on screen. That is what "pixelated" was. They are now decoded.
+
+**Cached tiles were being discarded.** When Windows reconfigures the display mid-session, Haven was throwing away its cache of tiles the server still believed it had. The server then said "redraw that cached tile here" 221 times and nothing was drawn, leaving each of those rectangles holding whatever was underneath.
+
+The second one is worth a note on how it was found: I suspected it a day earlier and **could not confirm it** — my own Windows machine only ever reconfigures the display at the start of a session, before the cache holds anything, and a fifty-second test showed zero misses in over a thousand cache operations. It needed a *second* reconfiguration arriving mid-session with a full cache, which his log had and mine never did.
+
+Difference decoding is checked against real Windows output, which is the only place it exists — the open-source server everything else here is tested against never produces it. The decoded frame matches a fresh full repaint to within rounding: of 7068 differing pixels, 72% differ by 8 or less, and every larger difference falls in five tiles out of 527, all in the taskbar — the clock and weather widget, which genuinely changed between the two captures. It has **not** been compared pixel-for-pixel against another decoder. (#477)
+
+🔁 **A single network blip no longer kills a release build** — the last release failed fetching one pinned source archive:
+
+```
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL
+```
+
+with a retry already configured on that download, having retried zero times. `curl`'s retry option covers a narrower set of failures than it reads like — timeouts and certain HTTP codes — and a TLS handshake failure is not among them. So the retry that existed specifically to absorb network flakes could not absorb this one. Measured rather than assumed: against a deliberately failing endpoint the old flags give up in 0 seconds, the new ones take 4. Applied to all three places Haven downloads pinned sources.
+
 ## v5.86.44
 
 🎞️ **The slow remote desktops: the biggest cost is gone from where it was** — a reporter's logs finally showed where a frame's quarter-second actually went, on a 1920×1080 H.264 session:
