@@ -162,7 +162,7 @@ class RdpSession(
      */
     fun start() {
         if (closed) return
-        log("D", "Starting RDP session $sessionId: $host:$port user=$username")
+        log("D", "Starting RDP session $sessionId: $host:$port user=${redactUsername(username)}")
 
         try {
             // Trust-on-first-use pin: the fingerprint remembered from a prior

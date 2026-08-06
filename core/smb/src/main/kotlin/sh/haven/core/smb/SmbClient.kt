@@ -88,7 +88,7 @@ class SmbClient : Closeable {
         connection = conn
         session = sess
         share = diskShare
-        Log.d(TAG, "Connected to \\\\${p.host}\\${p.shareName} as ${p.username}")
+        Log.d(TAG, "Connected to \\\\${p.host}\\${p.shareName}")
     }
 
     /**

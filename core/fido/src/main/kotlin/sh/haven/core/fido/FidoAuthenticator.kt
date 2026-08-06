@@ -608,7 +608,11 @@ class FidoAuthenticator @Inject constructor(
     ): SkKeyData = withContext(Dispatchers.IO) {
         lastAssertionError = null
         currentKeyLabel = keyLabel
-        Log.d(TAG, "FIDO2 makeCredential requested: app=$application, user=$userName, " +
+        // The account name is deliberately absent: these logs get attached to
+        // bug reports, and a reporter on #477 deleted three of his after
+        // noticing his account name in them. `application` is the relying
+        // party, which is what identifies the request.
+        Log.d(TAG, "FIDO2 makeCredential requested: app=$application, " +
             "verifyRequired=$verifyRequired")
         try {
             withDiscoveredFidoDevice { device ->

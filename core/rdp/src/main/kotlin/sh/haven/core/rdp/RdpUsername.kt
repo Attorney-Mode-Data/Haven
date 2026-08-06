@@ -54,3 +54,23 @@ fun qualifyRdpLogon(rawUsername: String, rawDomain: String): RdpLogonName {
     // and what Windows accepts — dropping the stray separator is the point.
     return RdpLogonName(account, prefix)
 }
+
+/**
+ * A username's *shape* for logs, never the username itself.
+ *
+ * Haven's logs are meant to be attached to bug reports, and a reporter on #477
+ * deleted three of them after noticing his Windows account name was in every
+ * one. Anything written here can end up in a public issue, so it has to be
+ * useful to whoever reads it and worthless to anyone else.
+ *
+ * The shape is kept because it has already mattered: #461 was sspi truncating
+ * `me@example.com` at the `@` under NLA, and "does this name contain an @"
+ * was the question that identified it. Length and qualification style answer
+ * that without naming anybody.
+ */
+fun redactUsername(username: String): String = when {
+    username.isEmpty() -> "<none>"
+    username.contains('@') -> "<${username.length} chars, upn>"
+    username.contains('\\') -> "<${username.length} chars, domain\\user>"
+    else -> "<${username.length} chars>"
+}

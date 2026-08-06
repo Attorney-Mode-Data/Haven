@@ -77,7 +77,7 @@ class SmbSessionManager @Inject constructor() {
         _sessions.value[sessionId]
             ?: throw IllegalStateException("Session $sessionId not found")
 
-        Log.d(TAG, "Connecting SMB session: \\\\$host\\$shareName as $username (ssh tunnel: ${sshClient != null}, wg/ts tunnel: ${socketFactory != null})")
+        Log.d(TAG, "Connecting SMB session: \\\\$host\\$shareName (ssh tunnel: ${sshClient != null}, wg/ts tunnel: ${socketFactory != null})")
 
         val client = SmbClient()
         try {
