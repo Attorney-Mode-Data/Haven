@@ -5,6 +5,18 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.46
+
+🔒 **Haven's logs no longer contain your account name** — and if you have ever attached one to a bug report, it did.
+
+A reporter on #477 deleted three log attachments mid-investigation after noticing his Windows account name was in every one. He was right, and it was in more places than he found: **six**, across remote desktop, file sharing and hardware-key authentication. Haven asks people to attach these logs to public issues, so anything written into one is published.
+
+Remote-desktop logs now record the name's *shape* instead of the name — its length, and whether it is an email-style or domain-style login. That much is kept on purpose rather than blanked: a bug earlier this year turned out to be the authentication library cutting `me@example.com` short at the `@`, and "does this name contain an @" was the question that identified it. Two different names of the same shape now produce identical text. File-sharing and hardware-key logs drop the name entirely.
+
+**Passwords were never in there.** They are not logged, and the underlying protocol library deliberately leaves them out of its own diagnostic output. The account name was the exposure — and it was enough to stop someone sharing the evidence needed to fix their problem, which is the part that actually cost something.
+
+This is not a setting. An option would leave the unsafe behaviour one tap away, and someone would post a log from it. If redacting ever costs a diagnosis, the fix is to add the specific detail that case needs, the way the email-style hint above was added. (#477)
+
 ## v5.86.45
 
 🖥️ **Windows remote desktops stop looking pixelated** — and the honest version of this is that v5.86.43 caused it.
