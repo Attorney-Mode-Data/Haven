@@ -49,20 +49,34 @@ pub fn i420_to_rgba(src: &[u8], width: usize, height: usize, out: &mut Vec<u8>) 
     let (y_plane, rest) = src.split_at(width * height);
     let (u_plane, v_plane) = rest.split_at(cw * ch);
 
-    out.clear();
-    out.reserve(width * height * 4);
+    // Written through a slice rather than pushed byte by byte. `push` costs a
+    // capacity check and a length bump per byte — 14.7 M of them per frame at
+    // 2560x1440, which measured 24.5 ms against 7.9 ms for this loop on an
+    // x86 desktop at the `opt-level = "z"` the shipped library is built with
+    // (#466/#477). Same arithmetic, same bytes out.
+    //
+    // The buffer is reused across frames, so the resize is a no-op except on
+    // the first frame and after a resolution change; every byte below is
+    // written, so the zeroes it fills with are never read.
+    let out_len = width * height * 4;
+    if out.len() != out_len {
+        out.clear();
+        out.resize(out_len, 0);
+    }
 
     for y in 0..height {
-        let y_row = &y_plane[y * width..y * width + width];
+        let y_row = &y_plane[y * width..][..width];
         let c_row = (y / 2) * cw;
-        let u_row = &u_plane[c_row..c_row + cw];
-        let v_row = &v_plane[c_row..c_row + cw];
+        let u_row = &u_plane[c_row..][..cw];
+        let v_row = &v_plane[c_row..][..cw];
+        let dst = &mut out[y * width * 4..][..width * 4];
 
-        let mut x = 0;
         // Each chroma sample serves the two horizontal pixels that share it,
         // so its three scaled terms are computed once per pair rather than
         // twice — the same shape the Kotlin loop had.
-        while x + 1 < width {
+        let mut chunks = dst.chunks_exact_mut(8);
+        let mut x = 0;
+        for px in &mut chunks {
             let cx = x >> 1;
             let uv = i32::from(u_row[cx]) - 128;
             let vv = i32::from(v_row[cx]) - 128;
@@ -70,27 +84,31 @@ pub fn i420_to_rgba(src: &[u8], width: usize, height: usize, out: &mut Vec<u8>) 
             let g_c = -100 * uv - 208 * vv + 128;
             let b_c = 516 * uv + 128;
 
-            for &luma in &y_row[x..x + 2] {
-                let yv = i32::from(luma) - 16;
+            for i in 0..2 {
+                let yv = i32::from(y_row[x + i]) - 16;
                 let c = if yv < 0 { 0 } else { yv * 298 };
-                out.push(clamp8((c + r_c) >> 8));
-                out.push(clamp8((c + g_c) >> 8));
-                out.push(clamp8((c + b_c) >> 8));
-                out.push(0xFF);
+                px[i * 4] = clamp8((c + r_c) >> 8);
+                px[i * 4 + 1] = clamp8((c + g_c) >> 8);
+                px[i * 4 + 2] = clamp8((c + b_c) >> 8);
+                px[i * 4 + 3] = 0xFF;
             }
             x += 2;
         }
-        // An odd final column shares the last chroma pair's sample.
+
+        // An odd final column shares the last chroma pair's sample. An odd
+        // width leaves exactly one pixel in the remainder; an even width
+        // leaves none and this is skipped.
+        let rem = chunks.into_remainder();
         if x < width {
             let cx = x >> 1;
             let uv = i32::from(u_row[cx]) - 128;
             let vv = i32::from(v_row[cx]) - 128;
             let yv = i32::from(y_row[x]) - 16;
             let c = if yv < 0 { 0 } else { yv * 298 };
-            out.push(clamp8((c + 409 * vv + 128) >> 8));
-            out.push(clamp8((c - 100 * uv - 208 * vv + 128) >> 8));
-            out.push(clamp8((c + 516 * uv + 128) >> 8));
-            out.push(0xFF);
+            rem[0] = clamp8((c + 409 * vv + 128) >> 8);
+            rem[1] = clamp8((c - 100 * uv - 208 * vv + 128) >> 8);
+            rem[2] = clamp8((c + 516 * uv + 128) >> 8);
+            rem[3] = 0xFF;
         }
     }
     true
@@ -104,6 +122,32 @@ fn clamp8(v: i32) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The output buffer is reused across frames, and the resize is now
+    /// conditional — so a second frame of a *different* size through the same
+    /// buffer is the case that can leave a stale tail behind. Both directions,
+    /// because shrinking and growing fail differently.
+    #[test]
+    fn a_reused_buffer_gives_the_same_bytes_as_a_fresh_one() {
+        let big = flat(64, 32, 200, 90, 140);
+        let small = flat(16, 8, 60, 200, 30);
+
+        let mut fresh_big = Vec::new();
+        let mut fresh_small = Vec::new();
+        assert!(i420_to_rgba(&big, 64, 32, &mut fresh_big));
+        assert!(i420_to_rgba(&small, 16, 8, &mut fresh_small));
+
+        let mut reused = Vec::new();
+        assert!(i420_to_rgba(&big, 64, 32, &mut reused));
+        assert!(i420_to_rgba(&small, 16, 8, &mut reused));
+        assert_eq!(fresh_small, reused, "shrinking left a stale tail");
+
+        assert!(i420_to_rgba(&big, 64, 32, &mut reused));
+        assert_eq!(fresh_big, reused, "growing did not rewrite every byte");
+
+        assert!(i420_to_rgba(&big, 64, 32, &mut reused));
+        assert_eq!(fresh_big, reused, "same size twice diverged");
+    }
 
     /// Build an I420 buffer with uniform Y/U/V.
     fn flat(w: usize, h: usize, y: u8, u: u8, v: u8) -> Vec<u8> {
