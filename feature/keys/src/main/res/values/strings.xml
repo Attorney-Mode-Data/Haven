@@ -199,6 +199,7 @@
     <string name="keys_generate_age_title">New age identity</string>
     <string name="keys_age_label_hint">Label</string>
     <string name="keys_age_recipient_copied">Recipient copied</string>
+    <string name="keys_totp_code_copied">Code copied</string>
 
     <!-- Reusable SSH identities (#360) -->
     <string name="keys_identity_section_header">Identities · %1$d</string>

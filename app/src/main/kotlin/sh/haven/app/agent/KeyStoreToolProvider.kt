@@ -18,6 +18,10 @@ import sh.haven.core.data.repository.TotpSecretRepository
  * first slice extracted from the God file into a [ToolProvider]. The private
  * key material (base32 TOTP secret, AGE-SECRET-KEY) never crosses the wire;
  * only public recipients and metadata are returned.
+ *
+ * One deliberate exception: `generate_totp_code` returns a *derived* code —
+ * never the secret it came from — for the 2FA prompts the `TOTP:<id>` auth
+ * path cannot reach, and asks the user every single time it does.
  */
 internal class KeyStoreToolProvider(
     private val totpSecretRepository: TotpSecretRepository,
@@ -44,6 +48,22 @@ internal class KeyStoreToolProvider(
                 "Store a TOTP authenticator secret \"$l\" in the Haven key store?"
             },
         ) { args -> createTotpSecret(args) },
+
+        "generate_totp_code" to ToolHandler(
+            description = "Return the code a saved TOTP secret is showing right now (#178). This is the only verb that hands a live credential to the caller, so it asks every time. " +
+                "For SSH, prefer a `TOTP:<id>` token in create_connection's authMethods — Haven fills the prompt itself and the code never leaves the device. " +
+                "Use this for the prompts that path cannot reach: a 2FA field in a guest desktop, a web login, an app. " +
+                "Check `secondsRemaining` before using the code — a code with two seconds left will be rejected by the time it is typed; call again after it rolls over.",
+            inputSchema = objectSchema {
+                string("totpSecretId", "TOTP secret id from list_totp_secrets.", required = true)
+            },
+            consentLevel = ConsentLevel.EVERY_CALL,
+            summarise = { args ->
+                val id = args.optString("totpSecretId")
+                val label = runBlocking { totpSecretRepository.getById(id)?.label } ?: id.take(8) + "…"
+                "Reveal the current TOTP code for \"$label\"? It will be sent to the connected MCP client."
+            },
+        ) { args -> generateTotpCode(args) },
 
         "delete_totp_secret" to ToolHandler(
             description = "Delete a saved TOTP secret by id. Profiles referencing it via a TOTP auth element fall through to a manual OTP prompt on next connect. Irreversible.",
@@ -212,6 +232,41 @@ internal class KeyStoreToolProvider(
             put("digits", entity.digits)
             put("periodSeconds", entity.periodSeconds)
             put("authMethodToken", "TOTP:${entity.id}")
+        }
+    }
+
+    /**
+     * The stored algorithm/digits/period are honoured rather than assumed. A
+     * SHA256 or 8-digit authenticator is uncommon but not rare, and defaulting
+     * would hand back six plausible-looking wrong digits — a failure that reads
+     * as "the server rejected it" rather than as a bug here.
+     */
+    private suspend fun generateTotpCode(args: JSONObject): JSONObject = withContext(Dispatchers.IO) {
+        val id = args.optString("totpSecretId").ifBlank {
+            throw IllegalArgumentException("totpSecretId required")
+        }
+        val entity = totpSecretRepository.getById(id)
+            ?: throw IllegalArgumentException("No TOTP secret with id $id")
+        val secret = totpSecretRepository.getDecryptedSecret(id)
+            ?: throw IllegalArgumentException("TOTP secret $id is stored but could not be decrypted")
+        val algorithm = runCatching { sh.haven.core.security.Totp.Algorithm.valueOf(entity.algorithm) }
+            .getOrDefault(sh.haven.core.security.Totp.Algorithm.SHA1)
+        val now = System.currentTimeMillis()
+        val period = entity.periodSeconds
+        val code = sh.haven.core.security.Totp.generate(
+            secretBase32 = secret,
+            atMillis = now,
+            algorithm = algorithm,
+            digits = entity.digits,
+            periodSeconds = period,
+        )
+        JSONObject().apply {
+            put("id", entity.id)
+            put("label", entity.label)
+            put("code", code)
+            put("digits", entity.digits)
+            put("periodSeconds", period)
+            put("secondsRemaining", period - ((now / 1000L) % period).toInt())
         }
     }
 

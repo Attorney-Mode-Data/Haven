@@ -20206,6 +20206,13 @@
      }
     },
     {
+     "name": "keys_totp_code_copied",
+     "en": "Code copied",
+     "comment": "age file-encryption identities (VISION §2)",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "keys_identity_section_header",
      "en": "Identities · %1$d",
      "comment": "Reusable SSH identities (#360)",

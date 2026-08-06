@@ -794,7 +794,17 @@ private fun TotpSecretRow(
         }
     }
     val subtitle = listOfNotNull(secret.issuer, secret.accountName).joinToString(" · ")
+    // Tap the row to copy the code, the same as the age recipient row below.
+    // A code you have to retype by hand from a screen you are already holding
+    // is the one thing an authenticator should not make you do.
+    val clipboard = LocalClipboardManager.current
+    val copiedMsg = stringResource(R.string.keys_totp_code_copied)
+    val context = LocalContext.current
     ListItem(
+        modifier = Modifier.clickable {
+            clipboard.setText(AnnotatedString(code))
+            android.widget.Toast.makeText(context, copiedMsg, android.widget.Toast.LENGTH_SHORT).show()
+        },
         headlineContent = { Text(secret.label) },
         supportingContent = {
             Column {

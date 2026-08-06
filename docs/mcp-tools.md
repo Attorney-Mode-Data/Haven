@@ -41,7 +41,7 @@ Tools are grouped into sections by what they touch, and each tool is collapsed �
 expand one for its description and arguments. The tag after each name is its
 consent level:
 
-- **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (68 tools).
+- **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (69 tools).
 - **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (50 tools).
 - **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (84 tools).
 
@@ -55,7 +55,7 @@ consent level:
 - [**Linux guest (proot) & desktops**](#sec-linux) — 46 tools
 - [**Networking — tunnels & port forwarding**](#sec-networking) — 14 tools
 - [**USB & host-device brokers**](#sec-usb) — 17 tools
-- [**Security — SSH keys, host keys, TOTP & age**](#sec-security) — 14 tools
+- [**Security — SSH keys, host keys, TOTP & age**](#sec-security) — 15 tools
 - [**Agent ↔ you (attention & self-drive)**](#sec-agent-you) — 12 tools
 - [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 14 tools
 
@@ -1806,7 +1806,7 @@ Perform a USB endpoint-0 control transfer on an opened device. Args: deviceName,
 
 <a id="sec-security"></a>
 
-## Security — SSH keys, host keys, TOTP & age (14)
+## Security — SSH keys, host keys, TOTP & age (15)
 
 The SSH key store, pinned host keys (TOFU), trusted host CAs, TOTP secrets, and age encryption identities.
 
@@ -1874,6 +1874,15 @@ Forget a pinned SSH host key by hostname + port, so the next connect re-pins on 
 
 - `hostname` (string, required) — Host of the pinned key (from list_known_hosts).
 - `port` (integer, required) — Port of the pinned key (SSH default 22).
+
+</details>
+
+<details markdown="1">
+<summary><code>generate_totp_code</code> · asks every call</summary>
+
+Return the code a saved TOTP secret is showing right now (#178). This is the only verb that hands a live credential to the caller, so it asks every time. For SSH, prefer a `TOTP:<id>` token in create_connection's authMethods — Haven fills the prompt itself and the code never leaves the device. Use this for the prompts that path cannot reach: a 2FA field in a guest desktop, a web login, an app. Check `secondsRemaining` before using the code — a code with two seconds left will be rejected by the time it is typed; call again after it rolls over.
+
+- `totpSecretId` (string, required) — TOTP secret id from list_totp_secrets.
 
 </details>
 

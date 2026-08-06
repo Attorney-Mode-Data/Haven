@@ -720,7 +720,7 @@ class McpToolsConsentTest {
         val definitionNames = tools.definitions().map { it.getString("name") }.toSet()
         val readOnly = listOf("list_totp_secrets", "list_age_identities")
         val everyCall = listOf(
-            "create_totp_secret", "delete_totp_secret",
+            "create_totp_secret", "delete_totp_secret", "generate_totp_code",
             "create_age_identity", "encrypt_file", "decrypt_file",
         )
         for (name in readOnly) {
