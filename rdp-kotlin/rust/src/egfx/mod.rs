@@ -75,6 +75,14 @@ pub(crate) struct EgfxPerf {
     /// Splitting the round trip from the blit is what says which of the two
     /// carries that ~200ms, instead of it being attributed by guesswork.
     avc_call_us: u64,
+    /// A yardstick for the line above: what it costs *this device* to allocate
+    /// and copy the same number of bytes the round trip carries back. The
+    /// round trip has consistently measured far more than the work the host
+    /// reports doing inside it, and the two candidate explanations — copying
+    /// the frame across the boundary, or fixed dispatch overhead — predict
+    /// very different values here. Measured once per report window.
+    memcpy_us: u64,
+    memcpy_kb: u64,
     /// `blit_rgba` of the decoded frame into the surface.
     blit_us: u64,
     /// I420 → RGBA, which the host used to do before returning (#466).
@@ -105,7 +113,8 @@ impl EgfxPerf {
         let decode_only = self.decode_us.saturating_sub(self.flush_us);
         let line = format!(
             "EGFX perf: {:.1} fps over {n} frames — per frame: zgfx {}us, decode {}us \
-             (avc round trip {}us, yuv {}us, blit {}us), publish {}us, total {}us",
+             (avc round trip {}us, yuv {}us, blit {}us), publish {}us, total {}us\
+             , yardstick: alloc+copy of {}KB took {}us",
             n as f64 / secs,
             self.zgfx_us / n,
             decode_only / n,
@@ -114,6 +123,8 @@ impl EgfxPerf {
             self.blit_us / n,
             self.flush_us / n,
             (self.zgfx_us + self.decode_us) / n,
+            self.memcpy_kb,
+            self.memcpy_us,
         );
         info!("{line}");
         if let Ok(mut s) = state.write() {
@@ -784,6 +795,16 @@ impl EgfxProcessor {
                 let t_avc = std::time::Instant::now();
                 let i420 = decoder.decode_to_i420(stream.data.to_vec(), w as u16, h as u16);
                 self.perf.avc_call_us += t_avc.elapsed().as_micros() as u64;
+                if self.perf.memcpy_us == 0 && !i420.is_empty() {
+                    let t = std::time::Instant::now();
+                    let mut probe = vec![0u8; i420.len()];
+                    probe.copy_from_slice(&i420);
+                    std::hint::black_box(&probe);
+                    // max(1) so a sub-microsecond result does not re-arm the
+                    // probe on every frame of the window.
+                    self.perf.memcpy_us = (t.elapsed().as_micros() as u64).max(1);
+                    self.perf.memcpy_kb = (i420.len() / 1024) as u64;
+                }
                 // Colour conversion is ours now (#466). The host used to do it
                 // and hand back RGBA, which cost 27-109ms in a Kotlin loop and
                 // sent 2.67x as many bytes across the boundary as I420 does.
@@ -1231,6 +1252,16 @@ mod tests {
             delay.as_micros(),
         );
         assert!(proc.perf.blit_us > 0, "the blit must be timed, got 0us");
+        // The yardstick has to have actually run. A probe that stays at zero
+        // reports "0us to copy 0KB", which reads like a result rather than
+        // like a probe that never fired — the exact failure this test's
+        // predecessor was written for.
+        assert!(proc.perf.memcpy_us > 0, "the alloc+copy yardstick must run, got 0us");
+        assert_eq!(
+            proc.perf.memcpy_kb,
+            (crate::yuv::i420_len(usize::from(w), usize::from(h)).unwrap() / 1024) as u64,
+            "the yardstick must size itself from the frame it is a yardstick for",
+        );
         assert!(proc.perf.yuv_us > 0, "the I420 conversion must be timed, got 0us");
         // And the frame really was painted — otherwise the timers could be
         // measuring a path that bails out before doing the work.
