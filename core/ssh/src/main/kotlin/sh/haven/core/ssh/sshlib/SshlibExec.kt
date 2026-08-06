@@ -1,7 +1,6 @@
 package sh.haven.core.ssh.sshlib
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
@@ -48,21 +47,21 @@ internal object SshlibExec {
         try {
             val timedOut = AtomicBoolean(false)
             val (outBytes, errBytes) = coroutineScope {
-                // Park both drains BEFORE the exec request goes out (#448).
-                // sshlib hands output over a RENDEZVOUS channel fed by a pump
-                // coroutine, and cancels that pump on CHANNEL_CLOSE — so output
-                // the pump is still holding when the server closes is dropped
-                // silently. A short-lived command can finish before a drain
-                // dispatched *after* requestExec ever parks, which is exactly
-                // how CI lost "oops" from the stderr contract case. UNDISPATCHED
-                // runs each drain inline up to its first receive(), so both
-                // receivers are waiting before the command can produce anything.
-                // Narrows the window rather than closing it; the residual race
-                // is upstream's (see the GAP probe in SshlibCapabilitySpikeTest).
-                // Mitigated on the build layer via org.gradle.test-retry (maxRetries=2)
-                // in core/ssh/build.gradle.kts to absorb flaky CI runs.
-                val outDeferred = async(start = CoroutineStart.UNDISPATCHED) { drain(session.stdout) }
-                val errDeferred = async(start = CoroutineStart.UNDISPATCHED) { drain(session.stderr) }
+                // These used to start UNDISPATCHED, to park both receivers
+                // before the command could produce anything (#448): sshlib
+                // cancelled its delivery pump on CHANNEL_CLOSE and dropped
+                // whatever the pump still held. That narrowed the window
+                // without closing it — 1000 execs still lost 11 stdouts and 12
+                // stderrs with the pre-parking in place.
+                //
+                // sshlib 0.4.2 drains accepted data after remote closure
+                // instead (connectbot/cbssh#245), so the workaround has nothing
+                // left to do. Measured before removing it, same machine and
+                // load: 1000 execs, zero losses either way. Kept honest by the
+                // two probes in SshlibCapabilitySpikeTest, which now assert
+                // that late-parking consumers still get their output.
+                val outDeferred = async { drain(session.stdout) }
+                val errDeferred = async { drain(session.stderr) }
                 if (!session.requestExec(command)) {
                     // Propagating here cancels both drains via the scope.
                     throw SshIoException("sshlib: server rejected exec request: ${command.take(64)}")

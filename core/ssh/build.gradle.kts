@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.gradle.test.retry)
 }
 
 android {
@@ -89,21 +88,5 @@ dependencies {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
-}
-
-// Mitigate flaky test SshlibExecContractTest due to upstream sshlib CHANNEL_CLOSE race (#448).
-// failOnPassedAfterRetry=false (the plugin's own default) is required, not incidental: `true`
-// still fails the build on a test that passes on retry, which defeats the point of retrying a
-// known flake — GlassOnTin caught this in review with a standalone repro (PR #475) after our
-// first attempt shipped the plugin's example snippet (which sets it true) instead of reasoning
-// about what the flag does. Scoped to the one known-flaky class only, not the whole module —
-// #448 is real output loss, not test noise, so a genuinely new flake elsewhere in core:ssh must
-// still fail the build.
-tasks.withType<Test> {
-    retry {
-        maxRetries.set(2)
-        failOnPassedAfterRetry.set(false)
-        filter { includeClasses.add("sh.haven.core.ssh.sshlib.SshlibExecContractTest") }
     }
 }

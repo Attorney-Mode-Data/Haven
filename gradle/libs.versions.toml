@@ -10,7 +10,7 @@ biometric = "1.4.0-alpha07"
 jsch = "2.28.5"
 # ssh-proto (ConnectBot sshlib) — the second SSH engine (#58). Kotlin
 # coroutines SSH client; Haven contributed exec/subsystem/SFTP/SK upstream.
-sshlib = "0.4.1"
+sshlib = "0.4.2"
 smbj = "0.14.0"
 termlib = "0.0.22"
 sora-editor = "0.23.6"
@@ -23,7 +23,6 @@ core-ktx = "1.17.0"
 activity-compose = "1.13.0"
 shizuku-api = "13.1.5"
 ksp = "2.3.10"
-gradle-test-retry = "1.6.5"
 androidx-browser = "1.10.0"
 androidx-work = "2.9.0"
 androidx-hilt-work = "1.4.0"
@@ -152,4 +151,3 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-gradle-test-retry = { id = "org.gradle.test-retry", version.ref = "gradle-test-retry" }

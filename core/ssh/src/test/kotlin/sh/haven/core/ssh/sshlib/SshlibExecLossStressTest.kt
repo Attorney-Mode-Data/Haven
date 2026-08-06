@@ -58,11 +58,13 @@ class SshlibExecLossStressTest {
 
     @Ignore(
         "Measures a rate, so it has no pass/fail answer to assert and would be " +
-            "either slow or meaningless as a gate — at the observed ~4% it needs " +
-            "hundreds of runs before the shape is clear. Run it by hand when " +
-            "checking a candidate sshlib: STRESS_RUNS=1000 ./gradlew " +
-            ":core:ssh:testDebugUnitTest --tests '*SshlibExecLossStressTest*' " +
-            "--rerun, with the machine kept busy.",
+            "either slow or meaningless as a gate. Kept for the next candidate " +
+            "sshlib: STRESS_RUNS=1000 ./gradlew :core:ssh:testDebugUnitTest " +
+            "--tests '*SshlibExecLossStressTest*' --rerun, with the machine kept " +
+            "busy — an idle box measures zero even when the loss is there. " +
+            "Readings: sshlib 0.4.1 lost 11 stdouts, 12 stderrs and truncated 3 " +
+            "of 200 large transfers in 1000 execs; 0.4.2 lost none, with or " +
+            "without the caller-side pre-parking (#448, cbssh#245).",
     )
     @Test
     fun `measure the loss rate`() = runBlocking {

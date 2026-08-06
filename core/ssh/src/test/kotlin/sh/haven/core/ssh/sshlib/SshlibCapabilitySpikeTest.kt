@@ -505,19 +505,23 @@ class SshlibCapabilitySpikeTest {
     }
 
     @Test
-    fun `GAP CHANNEL_CLOSE discards output the consumer has not received yet — flips when upstream fixes`() {
-        // Root cause of the #448 CI flake. SessionChannel buffers arriving
-        // stderr in an UNLIMITED `stderrIngress`, then a `stderrDeliveryJob`
-        // pump forwards it to the RENDEZVOUS `_stderr` the caller reads — so
-        // the pump sits suspended in `send()` until the caller parks in
-        // `receive()`. closeResources() (on CHANNEL_CLOSE) cancels that pump
-        // and closes `_stderr`, so anything mid-handoff is dropped and the
-        // caller sees a cleanly-closed empty channel, not an error.
+    fun `PASS output buffered at CHANNEL_CLOSE survives a consumer that parks late`() {
+        // Root cause of the #448 CI flake, fixed upstream in sshlib 0.4.2
+        // (connectbot/cbssh#245, commit 762e014d). SessionChannel buffered
+        // arriving stderr in an UNLIMITED ingress and forwarded it to the
+        // RENDEZVOUS channel the caller reads via a pump coroutine, which
+        // closeResources() cancelled on CHANNEL_CLOSE — so anything still
+        // mid-handoff was dropped and the caller saw a cleanly-closed empty
+        // channel rather than an error. The library now drains accepted data
+        // after remote closure instead of cancelling into it.
         //
-        // Below, the consumer deliberately parks late; on 0.4.0 the "oops"
-        // never arrives. SshlibExec works around it by parking both drains
-        // UNDISPATCHED before requestExec — remove that workaround when this
-        // probe flips.
+        // This was written inverted, asserting the loss, so that it would fail
+        // the day the fix landed rather than sit green and unread. It did, and
+        // this is that day; it now asserts the behaviour we actually want. The
+        // consumer still parks deliberately late — that is the whole point.
+        //
+        // Measured on the pin bump, same machine, same load: 0.4.1 lost 11
+        // stdouts and 12 stderrs in 1000 execs, 0.4.2 lost none.
         val server = newServer {
             commandFactory = org.apache.sshd.server.command.CommandFactory { _, _ ->
                 object : org.apache.sshd.server.command.Command {
@@ -550,19 +554,18 @@ class SshlibCapabilitySpikeTest {
         }
 
         assertEquals(
-            "sshlib now drains buffered output before CHANNEL_CLOSE tears the pump down — " +
-                "drop the UNDISPATCHED pre-parking workaround in SshlibExec and close #448",
-            "",
+            "stderr buffered when CHANNEL_CLOSE arrived was dropped — this is the #448 " +
+                "loss returning, so check the sshlib pin before anything else",
+            "oops\n",
             stderr,
         )
     }
 
     @Test
-    fun `GAP shell output is discarded when the reader attaches after CHANNEL_CLOSE — flips when upstream fixes`() {
-        // Same mechanism as #448 (connectbot/cbssh#245), on the shell path:
-        // SessionChannel hands stdout over a RENDEZVOUS channel fed by a pump,
-        // and closeResources() cancels that pump on CHANNEL_CLOSE, dropping
-        // whatever it still holds.
+    fun `PASS shell output survives a reader that attaches after CHANNEL_CLOSE`() {
+        // Same mechanism as #448 (connectbot/cbssh#245) on the shell path, and
+        // fixed by the same 0.4.2 change. Also written inverted so it would
+        // fail when the fix arrived; it now asserts the payload survives.
         //
         // Worse here than for exec. Haven requests the shell, THEN builds the
         // blocking InputStream, and TerminalSession starts its reader thread
@@ -616,9 +619,9 @@ class SshlibCapabilitySpikeTest {
         }
 
         assertEquals(
-            "sshlib now drains buffered stdout before CHANNEL_CLOSE tears the pump down — " +
-                "the shell path is safe and this probe should become a PASS (#58, cbssh#245)",
-            0,
+            "a shell that wrote and exited before the reader attached lost its output — " +
+                "this is the blank-terminal failure from #448 returning",
+            payload.size,
             received,
         )
     }
