@@ -39,6 +39,8 @@ dependencies {
     implementation(libs.lifecycle.viewmodel)
 
     testImplementation(libs.junit)
+    // #504: the input-ordering test drives real dispatchers.
+    testImplementation(libs.coroutines.core)
 }
 
 kotlin {
