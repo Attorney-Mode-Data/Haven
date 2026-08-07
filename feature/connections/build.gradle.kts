@@ -49,7 +49,6 @@ dependencies {
     implementation(project(":core:fido"))
     implementation(project(":core:local"))
     implementation(project(":core:usb"))
-    implementation(project(":core:wayland"))
     implementation(project(":core:stepca"))
 
     implementation(libs.core.ktx)
