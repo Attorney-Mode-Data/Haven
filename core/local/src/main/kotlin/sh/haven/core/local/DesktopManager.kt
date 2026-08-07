@@ -140,9 +140,21 @@ class DesktopManager @Inject constructor(
         when (de.spec.launch) {
             is LaunchSpec.NativeCompositor -> {
                 if (!WaylandBridge.available) {
+                    // liblabwc_android.so is built for arm64 only, so it is
+                    // absent on other devices — but since #510 it is also
+                    // absent from the terminal build on arm64. Telling an
+                    // arm64 user their device is unsupported would send them
+                    // looking for the wrong thing entirely, so distinguish
+                    // the two rather than reuse one message for both.
+                    val arm64 = android.os.Build.SUPPORTED_64_BIT_ABIS.any { it == "arm64-v8a" }
                     _desktops.update { it + (de to DesktopInstance(
                         de, 0, 0, DesktopState.ERROR,
-                        errorMessage = "The native Wayland desktop requires an arm64 device",
+                        errorMessage = if (arm64) {
+                            "This build of Haven doesn't include the native Wayland desktop. " +
+                                "Desktops that run over VNC still work."
+                        } else {
+                            "The native Wayland desktop requires an arm64 device"
+                        },
                     )) }
                     return
                 }
