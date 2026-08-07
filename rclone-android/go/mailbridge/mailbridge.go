@@ -25,7 +25,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	proton "github.com/rclone/go-proton-api"
 )
 
