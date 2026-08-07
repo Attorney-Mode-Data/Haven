@@ -2332,11 +2332,18 @@ class TerminalViewModel @Inject constructor(
     )
 
     /**
-     * True when this tab is a local shell, so "new plain shell" has a profile to open on.
-     * Hidden for SSH and serial tabs, where the session manager preference does not apply.
+     * True when a plain shell is meaningful for this tab: a local shell (whose PTY can skip
+     * the session-manager wrapper) or an SSH profile configured with one.
+     *
+     * The point of the affordance is escaping a multiplexer, so it appears wherever there is
+     * a multiplexer to escape — not only on local tabs. Serial and other transports have no
+     * session-manager concept and are left alone.
      */
-    fun canOpenPlainShell(sessionId: String): Boolean =
-        localSessionManager.sessions.value[sessionId] != null
+    fun canOpenPlainShell(sessionId: String): Boolean {
+        if (localSessionManager.sessions.value[sessionId] != null) return true
+        val profileId = sessionManager.getSession(sessionId)?.profileId ?: return false
+        return sessionManager.getConnectionConfigForProfile(profileId)?.second?.listCommand != null
+    }
 
     /**
      * Open a second shell on this tab's profile with the user's session-manager preference
@@ -2347,9 +2354,13 @@ class TerminalViewModel @Inject constructor(
      * debug from a shell that is not inside it. The agent-facing open_local_shell has had
      * `plain` since #285; this is the same thing for the person holding the phone.
      */
-    fun addPlainLocalShellTab(sessionId: String) {
-        val profileId = localSessionManager.sessions.value[sessionId]?.profileId ?: return
-        addLocalTabForProfile(profileId, plain = true)
+    fun addPlainShellTab(sessionId: String) {
+        localSessionManager.sessions.value[sessionId]?.profileId?.let { profileId ->
+            addLocalTabForProfile(profileId, plain = true)
+            return
+        }
+        val profileId = sessionManager.getSession(sessionId)?.profileId ?: return
+        addSshTabForProfile(profileId, plain = true)
     }
 
     fun addLocalTabForProfile(
@@ -2501,7 +2512,11 @@ class TerminalViewModel @Inject constructor(
      * Called from [addTab] (clone current tab) and from the Connections screen
      * "New Session" context menu item.
      */
-    fun addSshTabForProfile(profileId: String, preselectedSessionName: String? = null) {
+    fun addSshTabForProfile(
+        profileId: String,
+        preselectedSessionName: String? = null,
+        plain: Boolean = false,
+    ) {
         val configPair = sessionManager.getConnectionConfigForProfile(profileId)
         if (configPair == null) {
             Log.w(TAG, "addSshTabForProfile: no connection config for profile $profileId")
@@ -2627,6 +2642,16 @@ class TerminalViewModel @Inject constructor(
                     sessionManager.setChosenSessionName(sessionId, preselectedSessionName)
                 }
 
+                // "Plain shell": never offer the session list, and tell the SSH side to
+                // ignore the profile's tmux/zellij/screen wrapper for this connection only.
+                // Same two calls the picker's own Plain shell row makes, so there is one
+                // implementation of what "plain" means on an SSH profile.
+                if (plain) {
+                    sessionManager.setBypassSessionManager(sessionId, true)
+                    sessionManager.setChosenSessionName(sessionId, "shell")
+                    finishNewSshTab(sessionId)
+                    return@launch
+                }
                 val listCmd = sshSessionMgr.listCommand
                 if (preselectedSessionName == null && listCmd != null) {
                     val existingSessions = withContext(Dispatchers.IO) {

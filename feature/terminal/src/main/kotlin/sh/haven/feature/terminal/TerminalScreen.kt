@@ -908,7 +908,7 @@ fun TerminalScreen(
                                     }
                                     if (viewModel.canOpenPlainShell(tab.sessionId)) {
                                         DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.terminal_new_plain_shell)) },
+                                            text = { Text(stringResource(R.string.terminal_open_plain_shell)) },
                                             leadingIcon = {
                                                 Icon(
                                                     Icons.Filled.Terminal,
@@ -918,7 +918,7 @@ fun TerminalScreen(
                                             },
                                             onClick = {
                                                 tabMenuFor = null
-                                                viewModel.addPlainLocalShellTab(tab.sessionId)
+                                                viewModel.addPlainShellTab(tab.sessionId)
                                             },
                                         )
                                     }
