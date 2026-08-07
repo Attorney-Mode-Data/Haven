@@ -39,3 +39,11 @@ androidx.compose.ui.semantics.SemanticsOwner
 # release builds while every debug test still passes.
 org.openintents.ssh.authentication.ISshAuthenticationService
 org.openintents.ssh.authentication.SshAuthenticationApiError
+
+# sshlib's Ed25519 JCE provider reads its own package name at install time
+# (Ed25519Provider.class.getPackage().getName()). Repackaged into R8's root
+# package, getPackage() returns null and the SSH handshake dies with an NPE
+# right after ECDH_REPLY (#513). Listed here rather than trusted to the keep
+# rule alone: it is a name-dependency like the rest, and this is the only
+# check that would notice the rule being dropped.
+org.connectbot.sshlib.crypto.ed25519.Ed25519Provider

@@ -45,6 +45,22 @@
 # Keep termlib classes — native JNI renderer accesses fields by name
 -keep class org.connectbot.terminal.** { *; }
 
+# sshlib's Ed25519 JCE provider asks for its OWN package name while installing
+# itself:
+#
+#   Ed25519Provider.class.getPackage().getName()      (Ed25519Provider.setup)
+#
+# R8 flattens ~26k classes into the root package, and a class with no package
+# returns null from getPackage() — so that line throws NullPointerException
+# inside the provider's constructor, killing the connection immediately after
+# ECDH_REPLY (#513). Keeping the name keeps the package, which is the whole
+# point of this rule; the members are incidental.
+#
+# Only reached via getEd25519FallbackProvider(), i.e. when the platform's own
+# Ed25519 is unusable — which is why it depends on the device rather than
+# failing for everyone.
+-keep class org.connectbot.sshlib.crypto.ed25519.Ed25519Provider { *; }
+
 # Keep mosh transport + generated protobuf classes.
 # The pure-Kotlin transport reflects on protobuf field names like `width_`.
 # If R8 renames those fields, Mosh connects but never establishes a usable
