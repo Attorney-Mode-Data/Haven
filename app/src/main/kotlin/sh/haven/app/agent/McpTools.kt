@@ -1957,17 +1957,22 @@ internal class McpTools(
             put("sftp")
             put("smb")
             put("rclone")
-            put("vnc")
-            put("rdp")
-            put("spice")
             put("reticulum")
             put("mosh")
             put("eternal_terminal")
             put("proot")
-            // Truthful, unlike its neighbours: the native compositor + cage
-            // virgl path only exist when liblabwc_android.so loaded (#469).
+            // The desktop and media capabilities are reported from what the
+            // build actually shipped, not asserted. The terminal flavour
+            // (#510) drops these native libraries to save ~20 MB, and an
+            // agent that believed a hardcoded list would keep offering
+            // conversions and RDP sessions that can only fail at connect.
+            // Wayland has been truthful since #469, for the same reason.
+            val native = sh.haven.core.data.NativeFeatures(context)
+            if (native.vnc) put("vnc")
+            if (native.rdp) put("rdp")
+            if (native.spice) put("spice")
             if (sh.haven.core.wayland.WaylandBridge.available) put("wayland")
-            put("ffmpeg")
+            if (native.ffmpeg) put("ffmpeg")
         })
         // #469: when the labwc lib failed to load, surface WHY over MCP —
         // the logcat line rotates out long before anyone asks, and reading
