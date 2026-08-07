@@ -1947,7 +1947,23 @@ class TerminalViewModel @Inject constructor(
             }
         }
 
+        // Tabs that just disappeared: their session is gone, so nothing will
+        // write to their emulator again and the native terminal can go now
+        // rather than whenever the collector next runs (#509).
+        //
+        // SSH is excluded deliberately — its emulator outlives this ViewModel
+        // in SshTerminalEmulatorOwner (#290), which closes it in dispose(). A
+        // tab vanishing here does not mean that session is finished.
+        val droppedTabs = _tabs.value.filter { old ->
+            old.transportType != "SSH" && currentTabs.none { it.sessionId == old.sessionId }
+        }
+
         _tabs.value = currentTabs
+
+        droppedTabs.forEach { tab ->
+            runCatching { tab.emulator.close() }
+                .onFailure { Log.w(TAG, "Closing emulator for ${tab.sessionId} failed", it) }
+        }
 
         // Mirror tab → registry so the MCP agent can find each tab's
         // emulator by sessionId. Selection / scroll controllers come in

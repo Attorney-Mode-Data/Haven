@@ -246,6 +246,12 @@ class SshTerminalEmulatorOwner @Inject constructor(
         val b = bundles.remove(sessionId) ?: return
         b.recorder?.close()
         registry.unregister(sessionId, b.profileId, b.label)
+        // Frees the native terminal now rather than whenever the collector next
+        // runs (#509). Unregistering first matters: it is what stops the MCP
+        // agent handing out this emulator, so nothing new can arrive between
+        // here and the close. `emulatorOrNull` because a bundle can be disposed
+        // before `attach` ever built one.
+        b.emulatorOrNull()?.close()
         Log.d(TAG, "Disposed SSH emulator bundle for $sessionId")
     }
 
