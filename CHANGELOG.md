@@ -5,6 +5,21 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.52
+
+- The download is 9.3 MB smaller — 84.4 MB to 75.0 MB on arm64.
+- Release notes now start with a summary like this one, so there is something short to read.
+
+📦 **The same app, 9.3 MB less to download.** A reporter pointed out that an 80 MB download every few days adds up, and asked for a stripped-down build. Measuring the APK first turned up something better: two of its largest files were nearly the same file twice.
+
+Haven ships `ffmpeg` and `ffprobe`, the two programs behind media conversion, previews and streaming. They were 23.7 MB and 23.6 MB — and almost all of that was one shared body of codec, format and filter code, compiled into each of them separately. Building that code once as a library both programs link against leaves 345 KB and 167 KB of actual program.
+
+Nothing about what the app can do changes. Every codec, filter and container is still there, and the conversion path was exercised on a phone — x264, x265, MP3, Opus, scaling and media probing all encode and read as before.
+
+That is 11% off the download for everyone, including people who use the desktop features. The stripped-down build the reporter asked for is a bigger change and is still being looked at; this was the part worth doing first. (#510)
+
+📄 **Release notes you can read in ten seconds.** The same reporter noted the notes are long enough that nobody reads them. They now open with a few bullets, and F-Droid's "What's New" shows those instead of the first 500 characters of an essay. The reasoning stays underneath for anyone who wants it — several bug threads link back to it. (#510)
+
 ## v5.86.51
 
 💥 **Fixed: Haven crashed after saving in `crontab -e`** (#509, thanks @ash-945). The crash was a native one — the C++ terminal being freed by the garbage collector's finalizer while a call into it was still running. Reproduced and fixed in termlib: every native call now holds the lock for its whole duration, and taking the lock away makes the crash come back, which is the evidence that it is the right fix.

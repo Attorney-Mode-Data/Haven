@@ -29,6 +29,17 @@ out="fastlane/metadata/android/en-US/changelogs/${fdroid_code}.txt"
 # text that becomes the GitHub Release body.
 body="$(scripts/check-changelog.sh extract "v$vname")"
 
+# F-Droid's inline "What's New" truncates past ~500 chars, and Haven's sections
+# are prose that always overruns it. When a section opens with a bullet list —
+# the summary added in v5.86.52 — that list alone is the blurb, and the prose
+# stays on the Changelog page where there's room for it. Sections without one
+# fall back to the whole body, as before.
+tldr="$(printf '%s\n' "$body" | sed -n '/^- /!q;p')"
+if [ -n "$tldr" ]; then
+  body="$tldr"
+  echo "  using the leading summary bullets for the F-Droid blurb"
+fi
+
 mkdir -p "$(dirname "$out")"
 printf '%s\n' "$body" > "$out"
 
