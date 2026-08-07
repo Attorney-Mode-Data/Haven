@@ -119,7 +119,7 @@ jobs:
         # known flakiness no longer gates shipping for the default JSch engine.
         # Restore it here the moment a fixed sshlib is out.
         run: >-
-          ./gradlew testDebugUnitTest :app:testArm64DebugUnitTest
+          ./gradlew testDebugUnitTest :app:testArm64FullDebugUnitTest
           -PexcludeSshlibContractTests=true
           -PskipWaylandNatives=true
           -PskipFfmpegNatives=true
@@ -229,7 +229,7 @@ jobs:
         # -PtargetAbi drives core/wayland's buildWaylandNatives, which builds the
         # five arm64-only wayland binaries from the submodule instead of shipping
         # committed copies. This job is what proves they still compile (#493).
-        run: ./gradlew :app:assembleArm64Debug -PtargetAbi=arm64
+        run: ./gradlew :app:assembleArm64FullDebug -PtargetAbi=arm64
       # Runs here rather than in `checks` because it reads the built binaries,
       # and nothing builds them there. #469 was a wayland library linked without
       # gen-stubs.sh's weak stubs: 51 undefined symbols, dlopen refused it, and
@@ -243,7 +243,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: app-debug
-          path: app/build/outputs/apk/arm64/debug/haven-*-arm64-debug.apk
+          path: app/build/outputs/apk/arm64Full/debug/haven-*-arm64-debug.apk
           retention-days: 7
 
   # Nightly-only: build the ABIs the per-push `build` job skips (x64, armv7)
@@ -267,7 +267,7 @@ jobs:
       - uses: ./.github/actions/init-submodules-with-retry
       - uses: ./.github/actions/setup-toolchain
       - name: Build ${{ matrix.abi }} debug APK
-        run: ./gradlew :app:assemble${{ matrix.variant }}Debug -PtargetAbi=${{ matrix.abi }}
+        run: ./gradlew :app:assemble${{ matrix.variant }}FullDebug -PtargetAbi=${{ matrix.abi }}
 
   # Debug builds don't run R8, so an R8 rename of a reflectively-loaded class
   # can ship a feature 100% broken in release while every debug check stays
@@ -297,6 +297,6 @@ jobs:
         # native builds anyway. This job hit its 30-minute timeout on the same
         # three nights, so the R8-keep assertion below has not actually run
         # since the from-source work landed.
-        run: ./gradlew :app:minifyArm64ReleaseWithR8 -PskipWaylandNatives=true -PskipFfmpegNatives=true
+        run: ./gradlew :app:minifyArm64FullReleaseWithR8 -PskipWaylandNatives=true -PskipFfmpegNatives=true
       - name: Assert reflectively-loaded classes survived R8
         run: ./scripts/check-r8-kept-classes.sh

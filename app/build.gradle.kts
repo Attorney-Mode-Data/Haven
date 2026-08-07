@@ -19,7 +19,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    flavorDimensions += listOf("abi")
+    flavorDimensions += listOf("abi", "features")
     productFlavors {
         create("arm64") {
             dimension = "abi"
@@ -32,6 +32,22 @@ android {
         create("armv7") {
             dimension = "abi"
             ndk { abiFilters += "armeabi-v7a" }
+        }
+
+        // #510: an 80 MB download every few days is a real cost for someone
+        // who only uses the terminal. `full` is what has always shipped.
+        create("full") {
+            dimension = "features"
+            buildConfigField("boolean", "DESKTOP", "true")
+        }
+        create("terminal") {
+            dimension = "features"
+            buildConfigField("boolean", "DESKTOP", "false")
+            // The native payload it drops is excluded per-variant below —
+            // ProductFlavor has no `packaging` block, and putting one here
+            // silently resolves against the `android` extension instead,
+            // stripping the libraries from EVERY variant. Measured: it made
+            // the full flavour 55 MB too.
         }
     }
 
@@ -103,22 +119,71 @@ android {
 }
 
 // Version code scheme: base * 10 + abiOffset; APK named
-// haven-<version>-<abi>-<buildtype>.apk. Rewritten from the removed
-// applicationVariants API for AGP 9's Variant API; outputFileName still
-// needs the impl cast — there is no public rename hook yet.
+// haven-<version>-<abi>-<buildtype>.apk, with "-terminal" inserted for the
+// stripped flavour. Rewritten from the removed applicationVariants API for
+// AGP 9's Variant API; outputFileName still needs the impl cast — there is
+// no public rename hook yet.
+//
+// ★ The terminal flavour deliberately carries the SAME versionCode as full:
+// it is the same release of the same app, and changing the code would make
+// one variant look like an update to the other. The consequence is that an
+// updater comparing version codes will not offer a switch between them —
+// switching is a deliberate sideload. Revisit if the variant ever gets its
+// own F-Droid entry, which would want a distinct applicationId instead.
 androidComponents {
+    // #510: the terminal flavour ships the same code without the desktop
+    // native payload. Excluded here rather than on the flavour because
+    // ProductFlavor has no packaging block.
+    //
+    // The modules stay on the compile classpath and are simply inert, which
+    // works because each entry point already degrades when its library is
+    // absent — and did so before this flavour existed:
+    //   WaylandBridge catches UnsatisfiedLinkError and reports available =
+    //     false; every call site checks it before any native call.
+    //   FfmpegExecutor.isAvailable() tests canExecute() on both binaries,
+    //     and the SFTP UI reads it as ffmpegAvailable.
+    // So this rides existing contracts rather than inventing failure modes.
+    // BuildConfig.DESKTOP hides the entry points so nothing offers a feature
+    // that cannot run.
+    onVariants(selector().withFlavor("features" to "terminal")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll(
+            // Remote desktop transports
+            "**/librdp_transport.so",
+            "**/libspice_transport.so",
+            // Native Wayland compositor + GPU renderer
+            "**/liblabwc_android.so",
+            "**/libvirgl_render_server.so",
+            "**/libvirgl_test_server.so",
+            "**/libxwayland_wrapper.so",
+            "**/libbenchmark_gles.so",
+            // Media conversion, preview and streaming. libc++_shared.so is
+            // NOT here — tesseract and others link against it too.
+            "**/libffmpeg.so",
+            "**/libffprobe.so",
+            "**/libavcodec.so",
+            "**/libavdevice.so",
+            "**/libavfilter.so",
+            "**/libavformat.so",
+            "**/libavutil.so",
+            "**/libswresample.so",
+            "**/libswscale.so",
+        )
+    }
+
     onVariants { variant ->
         val abiCodes = mapOf("arm64" to 1, "x64" to 2, "armv7" to 3)
         val abi = variant.productFlavors.firstOrNull { it.first == "abi" }?.second
+        val features = variant.productFlavors.firstOrNull { it.first == "features" }?.second
         val abiCode = abiCodes[abi]
         val base = android.defaultConfig.versionCode ?: 0
         val versionName = android.defaultConfig.versionName
+        val suffix = if (features == "terminal") "-terminal" else ""
         variant.outputs.forEach { output ->
             if (abiCode != null) {
                 output.versionCode.set(base * 10 + abiCode)
             }
             (output as? com.android.build.api.variant.impl.VariantOutputImpl)
-                ?.outputFileName?.set("haven-$versionName-$abi-${variant.buildType}.apk")
+                ?.outputFileName?.set("haven-$versionName-$abi$suffix-${variant.buildType}.apk")
         }
     }
 }

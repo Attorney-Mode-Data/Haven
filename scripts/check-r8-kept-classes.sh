@@ -13,7 +13,7 @@
 #
 # Usage: scripts/check-r8-kept-classes.sh [path/to/mapping.txt]
 #   With no argument it auto-locates the arm64Release mapping. The standalone
-#   :app:minifyArm64ReleaseWithR8 task (what CI runs) writes to the intermediates
+#   :app:minifyArm64FullReleaseWithR8 task (what CI runs) writes to the intermediates
 #   path; a full assemble also copies one to outputs/. Prefer the freshest.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,20 +23,20 @@ if [ $# -ge 1 ]; then
 else
   MAP=""
   for cand in \
-    app/build/intermediates/mapping/arm64Release/minifyArm64ReleaseWithR8/mapping.txt \
-    app/build/outputs/mapping/arm64Release/mapping.txt; do
+    app/build/intermediates/mapping/arm64FullRelease/minifyArm64FullReleaseWithR8/mapping.txt \
+    app/build/outputs/mapping/arm64FullRelease/mapping.txt; do
     if [ -f "$cand" ]; then
       if [ -z "$MAP" ] || [ "$cand" -nt "$MAP" ]; then MAP="$cand"; fi
     fi
   done
-  [ -n "$MAP" ] || MAP="app/build/intermediates/mapping/arm64Release/minifyArm64ReleaseWithR8/mapping.txt"
+  [ -n "$MAP" ] || MAP="app/build/intermediates/mapping/arm64FullRelease/minifyArm64FullReleaseWithR8/mapping.txt"
 fi
 LIST="scripts/r8-must-keep-classes.txt"
 IMAP_CLIENT="core/mail/src/main/kotlin/sh/haven/core/mail/ImapMailClient.kt"
 
 if [ ! -f "$MAP" ]; then
   echo "✖ mapping.txt not found at: $MAP" >&2
-  echo "  Run ./gradlew :app:minifyArm64ReleaseWithR8 first." >&2
+  echo "  Run ./gradlew :app:minifyArm64FullReleaseWithR8 first." >&2
   exit 2
 fi
 

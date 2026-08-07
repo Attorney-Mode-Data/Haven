@@ -136,8 +136,8 @@ jobs:
       # libraries they never package (#493).
       - name: Build signed APK + AAB (${{ matrix.abi }})
         run: >-
-          ./gradlew :app:assemble${{ matrix.variant }}Release
-          :app:bundle${{ matrix.variant }}Release
+          ./gradlew :app:assemble${{ matrix.variant }}FullRelease
+          :app:bundle${{ matrix.variant }}FullRelease
           -PtargetAbi=${{ matrix.abi }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -162,8 +162,8 @@ jobs:
         with:
           name: haven-${{ matrix.abi }}-release
           path: |
-            app/build/outputs/apk/${{ matrix.abi }}/release/haven-*-release.apk
-            app/build/outputs/bundle/${{ matrix.abi }}Release/*.aab
+            app/build/outputs/apk/${{ matrix.abi }}Full/release/haven-*-release.apk
+            app/build/outputs/bundle/${{ matrix.abi }}FullRelease/*.aab
           if-no-files-found: error
           retention-days: 7
 

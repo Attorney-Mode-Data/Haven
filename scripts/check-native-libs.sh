@@ -196,7 +196,7 @@ Nothing was found under either:
     $RDP_DIR
 
 This checks BUILD OUTPUT, so it has to run after a build. By hand:
-    ./gradlew :app:assembleArm64Debug -PtargetAbi=arm64
+    ./gradlew :app:assembleArm64FullDebug -PtargetAbi=arm64
 MSG
     exit 1
 fi

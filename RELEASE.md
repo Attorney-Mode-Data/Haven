@@ -226,7 +226,7 @@ Watch [fdroid/fdroiddata merge requests tagged with our app](https://gitlab.com/
 
 ```bash
 ./gradlew --write-verification-metadata sha256 \
-  :app:assembleArm64Debug testDebugUnitTest :app:testArm64DebugUnitTest lintDebug \
+  :app:assembleArm64FullDebug testDebugUnitTest :app:testArm64FullDebugUnitTest lintDebug \
   --console=plain
 git diff gradle/verification-metadata.xml   # review the added checksums on a clean checkout
 ```
