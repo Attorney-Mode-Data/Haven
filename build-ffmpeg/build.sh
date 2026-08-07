@@ -612,8 +612,13 @@ echo "=== Configuring FFmpeg for $ABI ==="
 # runs a shell eval on ldflags, which mangles $ORIGIN to empty. Instead,
 # the caller must set LD_LIBRARY_PATH to point at nativeLibraryDir so the
 # binary finds libc++_shared.so (pulled in by libx265's C++ code).
-EXTRA_CFLAGS="-fPIE -O2 -DANDROID -I$DEPS_SYSROOT/include"
-EXTRA_LDFLAGS="-pie -Wl,-z,max-page-size=16384 -L$DEPS_SYSROOT/lib"
+#
+# -pie lives in ldexeflags, not ldflags: since the libav* libraries are built
+# shared (see --enable-shared below), a -pie in the common link flags would be
+# applied to `-shared` links too, which clang rejects.
+EXTRA_CFLAGS="-fPIC -O2 -DANDROID -I$DEPS_SYSROOT/include"
+EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384 -L$DEPS_SYSROOT/lib"
+EXTRA_LDEXEFLAGS="-pie"
 
 # Full codec/format/filter build — enable all built-in components plus
 # external libs (x264, x265, vpx, opus, vorbis, lame, ass, freetype,
@@ -638,6 +643,9 @@ EXTRA_LDFLAGS="-pie -Wl,-z,max-page-size=16384 -L$DEPS_SYSROOT/lib"
         --sysroot="$TOOLCHAIN/sysroot" \
         --extra-cflags="$EXTRA_CFLAGS" \
         --extra-ldflags="$EXTRA_LDFLAGS" \
+        --extra-ldexeflags="$EXTRA_LDEXEFLAGS" \
+        --enable-shared \
+        --disable-static \
         --enable-pic \
         --pkg-config=pkg-config \
         --pkg-config-flags="--static" \
@@ -689,6 +697,35 @@ EXTRA_LDFLAGS="-pie -Wl,-z,max-page-size=16384 -L$DEPS_SYSROOT/lib"
     echo "(full configure log: $BUILD_DIR/configure.log)"
 )
 
+# --- Android-compatible shared library names -----------------------------
+# FFmpeg names its shared libraries libavcodec.so.62 with a libavcodec.so
+# symlink. Neither survives an APK: the installer extracts only files matching
+# lib*.so (so the .62 suffix is skipped), and APKs do not carry symlinks. So
+# collapse the versioned names onto the plain one — libavcodec.so, SONAME
+# libavcodec.so — which is what the executables' DT_NEEDED then asks for and
+# what Android's linker finds in nativeLibraryDir.
+CONFIG_MAK="$BUILD_DIR/ffbuild/config.mak"
+if [ ! -f "$CONFIG_MAK" ]; then
+    echo "ERROR: $CONFIG_MAK not produced — configure failed" >&2
+    exit 1
+fi
+sed -i \
+    -e 's|^SLIBNAME_WITH_VERSION=.*|SLIBNAME_WITH_VERSION=$(SLIBNAME)|' \
+    -e 's|^SLIBNAME_WITH_MAJOR=.*|SLIBNAME_WITH_MAJOR=$(SLIBNAME)|' \
+    -e 's|^SLIB_INSTALL_NAME=.*|SLIB_INSTALL_NAME=$(SLIBNAME)|' \
+    -e 's|^SLIB_INSTALL_LINKS=.*|SLIB_INSTALL_LINKS=|' \
+    "$CONFIG_MAK"
+# The sed is only as good as the variable names — fail loudly if FFmpeg
+# renames them rather than silently building unloadable libraries.
+for v in SLIBNAME_WITH_VERSION SLIBNAME_WITH_MAJOR SLIB_INSTALL_NAME; do
+    grep -q "^$v=\$(SLIBNAME)\$" "$CONFIG_MAK" || {
+        echo "ERROR: $v not rewritten in $CONFIG_MAK — FFmpeg's config.mak layout changed" >&2
+        grep -n "^$v=" "$CONFIG_MAK" >&2 || echo "       ($v absent entirely)" >&2
+        exit 1
+    }
+done
+echo "=== Shared library names collapsed to lib<name>.so ==="
+
 echo "=== Building FFmpeg for $ABI ==="
 (
     cd "$BUILD_DIR"
@@ -708,16 +745,57 @@ fi
 cp "$BIN_DIR/ffmpeg"  "$BIN_DIR/libffmpeg.so"
 cp "$BIN_DIR/ffprobe" "$BIN_DIR/libffprobe.so"
 
+# --- Collect the shared libav* libraries ---------------------------------
+# With --enable-shared the codec/format/filter code lives here once instead of
+# being linked into both executables. That is the point of the shared build:
+# ffmpeg and ffprobe were ~23 MB each because they carried a private copy.
+LIB_DIR="$INSTALL_DIR/lib"
+SHARED_LIBS=""
+for so in "$LIB_DIR"/lib*.so; do
+    [ -f "$so" ] || continue
+    "$STRIP" "$so"
+    cp "$so" "$BIN_DIR/$(basename "$so")"
+    SHARED_LIBS="$SHARED_LIBS $(basename "$so")"
+done
+if [ -z "$SHARED_LIBS" ]; then
+    echo "ERROR: no shared libav* libraries in $LIB_DIR — is --enable-shared in effect?" >&2
+    ls -la "$LIB_DIR" >&2 2>/dev/null || true
+    exit 1
+fi
+echo "=== Shared libraries:$SHARED_LIBS ==="
+
+# Every DT_NEEDED the executables name must be either one of ours, one of the
+# NDK's, or libc++_shared.so — anything else will not resolve on the device,
+# and a missing libav* here is the difference between a working build and one
+# that fails at exec time with "library not found".
+if command -v readelf >/dev/null 2>&1; then
+    for exe in libffmpeg.so libffprobe.so; do
+        for need in $(readelf -dW "$BIN_DIR/$exe" 2>/dev/null \
+                | awk -F'[][]' '/NEEDED/ {print $2}'); do
+            case "$need" in
+                libav*|libsw*|libpostproc*)
+                    [ -f "$BIN_DIR/$need" ] || {
+                        echo "ERROR: $exe needs $need, which was not produced" >&2
+                        exit 1
+                    } ;;
+                libc++_shared.so|libc.so|libm.so|libdl.so|liblog.so|libz.so|libandroid.so) ;;
+                *) echo "  note: $exe also needs $need (expected to come from the NDK)" ;;
+            esac
+        done
+    done
+fi
+
 echo ""
 echo "=== Output ==="
 ls -lh "$BIN_DIR/libffmpeg.so" "$BIN_DIR/libffprobe.so"
+( cd "$BIN_DIR" && ls -lh $SHARED_LIBS )
 file   "$BIN_DIR/libffmpeg.so" "$BIN_DIR/libffprobe.so" 2>/dev/null || true
 
 # --- 16 KB page alignment check ------------------------------------------
 echo ""
 echo "=== 16 KB page alignment check ==="
 if command -v readelf >/dev/null 2>&1; then
-    for f in libffmpeg.so libffprobe.so; do
+    for f in libffmpeg.so libffprobe.so $SHARED_LIBS; do
         # -W = wide output, Align is the last column of the LOAD row
         align=$(readelf -lW "$BIN_DIR/$f" 2>/dev/null \
             | awk '/^  LOAD/ {print $NF; exit}')

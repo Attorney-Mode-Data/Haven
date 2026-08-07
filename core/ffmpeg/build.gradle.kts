@@ -112,16 +112,29 @@ val buildFfmpegNatives by tasks.registering {
             require(code == 0) { "build-ffmpeg/build.sh failed for $abi with exit code $code" }
 
             val out = file("src/main/jniLibs/$abi")
+            // Everything the script leaves in bin/: the two executables, the
+            // shared libav*/libsw* libraries they link against, and
+            // libc++_shared.so. Copied by pattern rather than by name so a
+            // library FFmpeg adds or renames travels with the build instead of
+            // being silently dropped and failing at exec time on the device.
+            out.deleteRecursively()
             copy {
                 from(rootProject.file("build-ffmpeg/build-$abi/install/bin")) {
-                    include("libffmpeg.so", "libffprobe.so", "libc++_shared.so")
+                    include("lib*.so")
                 }
                 into(out)
             }
+            val produced = out.listFiles()?.map { it.name }?.sorted().orEmpty()
             val expected = listOf("libffmpeg.so", "libffprobe.so", "libc++_shared.so")
-            val missing = expected.filterNot { File(out, it).isFile }
+            val missing = expected.filterNot { it in produced }
             require(missing.isEmpty()) { "ffmpeg build produced no $missing in $out" }
-            logger.lifecycle("[ffmpeg] $abi: ${expected.size} binaries into $out")
+            // The executables are dynamically linked against these now, so an
+            // empty set means the shared build silently reverted to static and
+            // the APK would be ~11 MB larger for no reason.
+            require(produced.any { it.startsWith("libav") }) {
+                "ffmpeg build produced no shared libav* libraries in $out (got $produced)"
+            }
+            logger.lifecycle("[ffmpeg] $abi: ${produced.size} binaries into $out — $produced")
         }
     }
 }

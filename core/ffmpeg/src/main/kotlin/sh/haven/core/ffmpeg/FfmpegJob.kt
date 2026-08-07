@@ -101,7 +101,10 @@ class FfmpegJob internal constructor(
          *
          * @param binary Path to libffmpeg.so or libffprobe.so
          * @param args Command-line arguments (without the binary path)
-         * @param nativeLibDir Directory containing libc++_shared.so
+         * @param nativeLibDir Directory containing the shared libraries the
+         *   executables link against — libavcodec.so and friends, plus
+         *   libc++_shared.so. Both binaries are dynamically linked, so this
+         *   reaching LD_LIBRARY_PATH is what makes them runnable at all.
          * @param workDir Working directory for the process
          * @param onStderr Line-by-line callback for stderr output
          */
