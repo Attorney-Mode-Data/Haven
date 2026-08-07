@@ -78,6 +78,7 @@
     <string name="terminal_rename">Rename</string>
 
     <!-- Save connection (pin live session onto a profile for one-tap reconnect) -->
+    <string name="terminal_new_plain_shell">New plain shell</string>
     <string name="terminal_save_connection">Save connection</string>
     <string name="terminal_save_connection_title">Save connection</string>
     <string name="terminal_save_connection_id">Profile ID</string>

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.animation.AnimatedVisibility
@@ -868,7 +869,9 @@ fun TerminalScreen(
                                     val renameableName = viewModel.renameableSessionName(tab.sessionId)
                                     val canSaveConnection = viewModel.canSaveConnection(tab.sessionId)
                                     val canShowDetails = viewModel.canShowDetails(tab.sessionId)
-                                    if (renameableName != null || canSaveConnection || canShowDetails) {
+                                    if (renameableName != null || canSaveConnection || canShowDetails ||
+                                        viewModel.canOpenPlainShell(tab.sessionId)
+                                    ) {
                                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                                     }
                                     if (canShowDetails) {
@@ -900,6 +903,22 @@ fun TerminalScreen(
                                             onClick = {
                                                 tabMenuFor = null
                                                 renameDialogFor = renameableName
+                                            },
+                                        )
+                                    }
+                                    if (viewModel.canOpenPlainShell(tab.sessionId)) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.terminal_new_plain_shell)) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Filled.Terminal,
+                                                    null,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                            },
+                                            onClick = {
+                                                tabMenuFor = null
+                                                viewModel.addPlainLocalShellTab(tab.sessionId)
                                             },
                                         )
                                     }

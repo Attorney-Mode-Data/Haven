@@ -806,8 +806,14 @@ class UserPreferencesRepository @Inject constructor(
      * because the whole point is reclaiming vertical space on a small phone,
      * and a collapse that resets on every visit to the tab does not.
      */
-    val keysCollapsedSections: Flow<Set<String>> = dataStore.data.map { prefs ->
-        prefs[keysCollapsedSectionsKey]?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+    /**
+     * Which Keys-screen sections are collapsed, or **null when the user has never touched
+     * one** — which is not the same as "none collapsed" and must not be conflated with it.
+     * The caller supplies the first-run default; once anything is toggled, an empty set here
+     * means the user deliberately expanded everything and that choice has to survive.
+     */
+    val keysCollapsedSections: Flow<Set<String>?> = dataStore.data.map { prefs ->
+        prefs[keysCollapsedSectionsKey]?.split(",")?.filter { it.isNotBlank() }?.toSet()
     }
 
     suspend fun setKeysCollapsedSections(ids: Set<String>) {

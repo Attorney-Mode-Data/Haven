@@ -40,6 +40,12 @@ class TotpSecretRepository @Inject constructor(
         totpSecretDao.upsert(secret.copy(secret = CredentialEncryption.encrypt(context, secret.secret)))
     }
 
+    /**
+     * Rename a secret. Goes straight to the DAO rather than through [save] so the encrypted
+     * secret is never touched — see [TotpSecretDao.rename].
+     */
+    suspend fun rename(id: String, label: String) = totpSecretDao.rename(id, label)
+
     suspend fun delete(id: String) = totpSecretDao.deleteById(id)
 
     private fun decrypt(row: TotpSecret): TotpSecret =

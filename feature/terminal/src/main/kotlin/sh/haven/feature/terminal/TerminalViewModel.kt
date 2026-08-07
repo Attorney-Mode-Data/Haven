@@ -1880,6 +1880,7 @@ class TerminalViewModel @Inject constructor(
                 onDataReceived = { data, offset, length ->
                     localFeedOutput(data, offset, length)
                 },
+                plain = plainSessionIds.remove(sessionId),
             ) ?: continue
 
             val localCoalescer = InputCoalescer { data -> localSession.sendInput(data) }
@@ -2318,7 +2319,45 @@ class TerminalViewModel @Inject constructor(
      * the profile's display name when called from outside the
      * clone-current-tab path.
      */
-    fun addLocalTabForProfile(profileId: String, label: String? = null, desktopDeId: String? = null) {
+    /**
+     * Sessions opened as plain shells, consumed once when the PTY is created.
+     *
+     * The session manager takes `plain` at [LocalSessionManager.createTerminalSession] time,
+     * which happens later in syncSessions than the call that asked for the shell, so the
+     * request has to be parked somewhere in between. Removed on use so a session id that is
+     * later reused cannot inherit it.
+     */
+    private val plainSessionIds = java.util.Collections.newSetFromMap(
+        java.util.concurrent.ConcurrentHashMap<String, Boolean>(),
+    )
+
+    /**
+     * True when this tab is a local shell, so "new plain shell" has a profile to open on.
+     * Hidden for SSH and serial tabs, where the session manager preference does not apply.
+     */
+    fun canOpenPlainShell(sessionId: String): Boolean =
+        localSessionManager.sessions.value[sessionId] != null
+
+    /**
+     * Open a second shell on this tab's profile with the user's session-manager preference
+     * (tmux/zellij/screen/byobu) bypassed — a bare login shell.
+     *
+     * Worth having in reach: a multiplexer's status bar reserves the bottom row with DECSTBM,
+     * which defeats Haven's own scrollback capture, and a wedged multiplexer is easiest to
+     * debug from a shell that is not inside it. The agent-facing open_local_shell has had
+     * `plain` since #285; this is the same thing for the person holding the phone.
+     */
+    fun addPlainLocalShellTab(sessionId: String) {
+        val profileId = localSessionManager.sessions.value[sessionId]?.profileId ?: return
+        addLocalTabForProfile(profileId, plain = true)
+    }
+
+    fun addLocalTabForProfile(
+        profileId: String,
+        label: String? = null,
+        desktopDeId: String? = null,
+        plain: Boolean = false,
+    ) {
         viewModelScope.launch {
             _newTabLoading.value = true
             try {
@@ -2336,6 +2375,7 @@ class TerminalViewModel @Inject constructor(
                     prootDistroId = existingSession?.prootDistroId ?: profile?.prootDistroId,
                     desktopEnv = desktopEnv,
                 )
+                if (plain) plainSessionIds.add(sessionId)
                 localSessionManager.connectSession(sessionId)
                 syncSessions()
                 selectTabBySessionId(sessionId)
