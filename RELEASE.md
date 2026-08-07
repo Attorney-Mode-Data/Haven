@@ -141,7 +141,13 @@ The buildserver no longer pre-installs NDKs in its Docker image — `fdroidserve
 
 Things Haven's CI does **not** exercise but F-Droid does:
 
-- `build-proot/build.sh`, `build-ffmpeg/build.sh`, `wayland-android/build_liblabwc_android.sh`, `wayland-android/build-native-helpers.sh` — F-Droid `scandelete`s the committed `.so`s and rebuilds them from source; **our CI still ships the committed copies for ffmpeg and wayland**, so the two APKs are built differently and a regression in any of those scripts stays invisible until the F-Droid bot MR fails on GitLab. If you touch those scripts or their deps, smoke-test locally before tagging:
+- `build-proot/build.sh`, `build-ffmpeg/build.sh`, `wayland-android/build_liblabwc_android.sh`, `wayland-android/build-native-helpers.sh` — **this gap has narrowed** (2026-08-07): #493 removed the committed `.so`s, so no `jniLibs` directory has tracked files any more and each script is now invoked by a Gradle task (`:core:local:buildProotNatives`, `:core:ffmpeg:buildFfmpegNatives`, `:core:wayland:buildWaylandNatives`). Our packaging jobs build them from source like F-Droid does.
+
+  Two differences remain, and both can still hide a broken script:
+  - **F-Droid builds arm64 only, always cold.** CI keys these tasks on script contents and the submodule SHA and restores from the Gradle build cache, so an unchanged script's output can arrive without compiling. A newly missing build-time tool stays invisible until a cache miss; F-Droid hits it immediately.
+  - **A binary produced by a step the fdroiddata recipe does not name is `scandelete`d and never replaced.** Adding an output here means adding the build step there in the same change.
+
+  So if you touch those scripts or their deps, smoke-test locally before tagging:
   ```bash
   rm -rf core/ffmpeg/src/main/jniLibs core/wayland/src/main/jniLibs core/local/src/main/jniLibs
   ABI=arm64-v8a bash build-ffmpeg/build.sh
