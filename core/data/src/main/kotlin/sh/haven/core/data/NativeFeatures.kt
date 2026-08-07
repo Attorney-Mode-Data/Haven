@@ -23,11 +23,17 @@ import java.io.File
  */
 class NativeFeatures(private val context: Context) {
 
-    private val nativeLibDir: String
-        get() = context.applicationInfo.nativeLibraryDir
+    // Platform type: Android never leaves this null for a real installed
+    // package, but it is null for a mocked Context — and answering "no native
+    // features" is the truthful response to not being able to look, where
+    // throwing would take get_app_info down with it.
+    private val nativeLibDir: String?
+        get() = context.applicationInfo?.nativeLibraryDir
 
-    private fun has(vararg libs: String): Boolean =
-        libs.all { File(nativeLibDir, it).canExecute() }
+    private fun has(vararg libs: String): Boolean {
+        val dir = nativeLibDir ?: return false
+        return libs.all { File(dir, it).canExecute() }
+    }
 
     /** RDP client — `librdp_transport.so`. */
     val rdp: Boolean get() = has("librdp_transport.so")

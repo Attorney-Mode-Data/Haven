@@ -83,6 +83,25 @@ class NativeFeaturesTest {
         assertFalse(features().rdp)
     }
 
+    /**
+     * A Context with no native library directory reports nothing rather than
+     * throwing. Android never leaves it null for an installed package, but a
+     * mocked Context does — and get_app_info taking an NPE because a test
+     * built it that way is a worse failure than answering "not detected".
+     * Three McpTools tests found this the hard way.
+     */
+    @Test
+    fun `a context with no native library dir reports nothing`() {
+        val context = mockk<Context>()
+        every { context.applicationInfo } returns ApplicationInfo()
+        val f = NativeFeatures(context)
+
+        assertFalse("rdp", f.rdp)
+        assertFalse("spice", f.spice)
+        assertFalse("ffmpeg", f.ffmpeg)
+        assertFalse("anyDesktop", f.anyDesktop)
+    }
+
     /** One desktop transport is enough for the desktop UI to be worth showing. */
     @Test
     fun `anyDesktop is true with only one transport present`() {
