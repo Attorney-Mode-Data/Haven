@@ -1,62 +1,37 @@
 package sh.haven.core.ssh
 
-import sh.haven.core.bleserial.BleSerialSessionManager
-import sh.haven.core.btserial.BtSerialSessionManager
-import sh.haven.core.usbserial.UsbSerialSessionManager
-import sh.haven.core.et.EtSessionManager
-import sh.haven.core.local.LocalSessionManager
-import sh.haven.core.mail.MailSessionManager
-import sh.haven.core.mosh.MoshSessionManager
-import sh.haven.core.rclone.RcloneSessionManager
-import sh.haven.core.rdp.RdpSessionManager
-import sh.haven.core.reticulum.ReticulumSessionManager
-import sh.haven.core.smb.SmbSessionManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Central registry for all transport session managers.
  *
- * Provides operations that apply across all transports, preventing
- * bugs where a new transport is added but forgotten in disconnect/cleanup paths.
- * When adding a new transport, add it here and all call sites are covered.
+ * Provides operations that apply across all transports, preventing bugs where
+ * a new transport is added but forgotten in disconnect/cleanup paths. Adding a
+ * transport means contributing one [TransportSessionManager] `@IntoSet`
+ * binding — every call site here is then covered.
+ *
+ * Transports are contributed rather than named (#510): naming them put a
+ * compile dependency on every transport module in `:core:ssh`, which is why a
+ * terminal-only build could not drop the RDP client.
  */
 @Singleton
 class SessionManagerRegistry @Inject constructor(
-    private val ssh: SshSessionManager,
-    private val reticulum: ReticulumSessionManager,
-    private val mosh: MoshSessionManager,
-    private val et: EtSessionManager,
-    private val btSerial: BtSerialSessionManager,
-    private val bleSerial: BleSerialSessionManager,
-    private val usbSerial: UsbSerialSessionManager,
-    private val smb: SmbSessionManager,
-    private val local: LocalSessionManager,
-    private val rdp: RdpSessionManager,
-    private val mail: MailSessionManager,
-    // Disconnect-only: rclone remotes are storage handles, not live
-    // transport sessions — they don't keep the FGS alive and the
-    // connections UI reads RcloneSessionManager's flow directly, so
-    // rclone is deliberately absent from hasActiveSessions/allSessions.
-    // Before this wiring, disconnecting an rclone profile was a silent
-    // no-op and the card stayed CONNECTED forever (#363).
-    private val rclone: RcloneSessionManager,
+    private val transports: Set<@JvmSuppressWildcards TransportSessionManager>,
     private val keepAlives: Set<@JvmSuppressWildcards ForegroundKeepAlive>,
 ) {
+    /**
+     * Set iteration order is undefined, and two of the operations below are
+     * user-visible in their ordering (the session list, and the transport
+     * names in a no-owner error). Sorting by the [Transport] declaration order
+     * makes both stable across builds.
+     */
+    private val ordered: List<TransportSessionManager>
+        get() = transports.sortedBy { it.transport.ordinal }
+
     /** Disconnect all sessions for a profile across all transports. */
     fun disconnectProfile(profileId: String) {
-        ssh.removeAllSessionsForProfile(profileId)
-        reticulum.removeAllSessionsForProfile(profileId)
-        mosh.removeAllSessionsForProfile(profileId)
-        et.removeAllSessionsForProfile(profileId)
-        btSerial.removeAllSessionsForProfile(profileId)
-        bleSerial.removeAllSessionsForProfile(profileId)
-        usbSerial.removeAllSessionsForProfile(profileId)
-        smb.removeAllSessionsForProfile(profileId)
-        local.removeAllSessionsForProfile(profileId)
-        rdp.removeAllSessionsForProfile(profileId)
-        mail.removeAllSessionsForProfile(profileId)
-        rclone.removeAllSessionsForProfile(profileId)
+        transports.forEach { it.removeAllSessionsForProfile(profileId) }
     }
 
     /**
@@ -71,14 +46,11 @@ class SessionManagerRegistry @Inject constructor(
      * @throws IllegalStateException when no transport delivers.
      */
     fun sendTerminalInput(sessionId: String, text: String) {
+        val writable = ordered.filter { it.inputName != null }
         val errors = mutableListOf<String>()
-        val attempts = listOf<(String, String) -> Unit>(
-            ssh::sendInput, local::sendInput, mosh::sendInput, et::sendInput, reticulum::sendInput,
-            btSerial::sendInput, bleSerial::sendInput, usbSerial::sendInput,
-        )
-        for (attempt in attempts) {
+        for (transport in writable) {
             try {
-                attempt(sessionId, text)
+                transport.sendInput(sessionId, text)
                 return
             } catch (e: IllegalStateException) {
                 errors += e.message ?: e.javaClass.simpleName
@@ -88,7 +60,8 @@ class SessionManagerRegistry @Inject constructor(
         // owned the id; anything else is a real diagnosis from the owner.
         throw IllegalStateException(
             errors.firstOrNull { !it.startsWith("No ") }
-                ?: "No terminal session $sessionId on any transport (SSH, local, mosh, ET, Reticulum, Bluetooth-serial, BLE-serial, USB-serial)",
+                ?: "No terminal session $sessionId on any transport " +
+                "(${writable.joinToString(", ") { it.inputName!! }})",
         )
     }
 
@@ -100,18 +73,7 @@ class SessionManagerRegistry @Inject constructor(
      * FGS keep-alive.
      */
     fun hasActiveSessions(): Boolean =
-        ssh.hasActiveSessions ||
-            reticulum.activeSessions.isNotEmpty() ||
-            mosh.activeSessions.isNotEmpty() ||
-            et.activeSessions.isNotEmpty() ||
-            btSerial.activeSessions.isNotEmpty() ||
-            bleSerial.activeSessions.isNotEmpty() ||
-            usbSerial.activeSessions.isNotEmpty() ||
-            local.activeSessions.isNotEmpty() ||
-            rdp.activeSessions.isNotEmpty() ||
-            smb.activeSessions.isNotEmpty() ||
-            mail.activeSessions.isNotEmpty() ||
-            keepAlives.any { it.isActive }
+        transports.any { it.activeSessionCount > 0 } || keepAlives.any { it.isActive }
 
     /**
      * All sessions across all transports as a unified [Session] view.
@@ -119,69 +81,9 @@ class SessionManagerRegistry @Inject constructor(
      * a full registered-session list, not just live ones.
      */
     val allSessions: List<Session>
-        get() = ssh.sessions.value.values.map { it.toSession() } +
-            reticulum.sessions.value.values.map { it.toSession() } +
-            mosh.sessions.value.values.map { it.toSession() } +
-            et.sessions.value.values.map { it.toSession() } +
-            btSerial.sessions.value.values.map { it.toSession() } +
-            bleSerial.sessions.value.values.map { it.toSession() } +
-            usbSerial.sessions.value.values.map { it.toSession() } +
-            smb.sessions.value.values.map { it.toSession() } +
-            local.sessions.value.values.map { it.toSession() } +
-            rdp.sessions.value.values.map { it.toSession() } +
-            mail.sessions.value.values.map { it.toSession() }
+        get() = ordered.flatMap { it.sessions }
 
     /** All sessions belonging to a single profile, across all transports. */
     fun sessionsForProfile(profileId: String): List<Session> =
         allSessions.filter { it.profileId == profileId }
 }
-
-private data class UnifiedSession(
-    override val sessionId: String,
-    override val profileId: String,
-    override val label: String,
-    override val status: SessionStatus,
-    override val transport: Transport,
-    override val sessionName: String? = null,
-    override val sessionManagerLabel: String? = null,
-) : Session
-
-private fun mapStatus(name: String): SessionStatus = SessionStatus.valueOf(name)
-
-// Only SSH carries a session-manager (tmux/zellij/screen) name; other
-// transports have no equivalent, so their sessionName stays null.
-private fun SshSessionManager.SessionState.toSession() =
-    UnifiedSession(
-        sessionId, profileId, label, mapStatus(status.name), Transport.SSH, chosenSessionName,
-        sessionManagerLabel = sessionManager.takeIf { it != SessionManager.NONE }?.label,
-    )
-
-private fun MoshSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.MOSH)
-
-private fun EtSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.ET)
-
-private fun BtSerialSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.BTSERIAL)
-
-private fun BleSerialSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.BLESERIAL)
-
-private fun UsbSerialSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.USBSERIAL)
-
-private fun ReticulumSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.RETICULUM)
-
-private fun LocalSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.LOCAL)
-
-private fun RdpSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.RDP)
-
-private fun SmbSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.SMB)
-
-private fun MailSessionManager.SessionState.toSession() =
-    UnifiedSession(sessionId, profileId, label, mapStatus(status.name), Transport.MAIL)

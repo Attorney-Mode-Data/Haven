@@ -1,109 +1,98 @@
 package sh.haven.core.ssh
 
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.runs
-import io.mockk.verify
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
-import sh.haven.core.bleserial.BleSerialSessionManager
-import sh.haven.core.btserial.BtSerialSessionManager
-import sh.haven.core.et.EtSessionManager
-import sh.haven.core.local.LocalSessionManager
-import sh.haven.core.mosh.MoshSessionManager
-import sh.haven.core.reticulum.ReticulumSessionManager
-import sh.haven.core.usbserial.UsbSerialSessionManager
 
 /**
  * #366 — send_terminal_input only tried SSH + local, so input to a mosh/ET/
  * Reticulum session failed "No local session" while snapshot reads resolved
  * the same id. Pins the registry dispatcher: input reaches whichever
  * transport owns the session, and the no-owner error names all transports.
+ *
+ * Uses fake [TransportSessionManager]s rather than the real managers. Since
+ * #510 the registry knows only that interface — which is what lets `:core:ssh`
+ * stop depending on every transport module — so the dispatcher is testable
+ * without them. That the real transports are actually bound is a separate
+ * question, pinned by `TransportBindingsTest` in `:app`.
  */
 class SessionManagerRegistryInputTest {
 
-    private val ssh = mockk<SshSessionManager>(relaxed = true)
-    private val local = mockk<LocalSessionManager>(relaxed = true)
-    private val mosh = mockk<MoshSessionManager>(relaxed = true)
-    private val et = mockk<EtSessionManager>(relaxed = true)
-    private val reticulum = mockk<ReticulumSessionManager>(relaxed = true)
-    private val btSerial = mockk<BtSerialSessionManager>(relaxed = true)
-    private val bleSerial = mockk<BleSerialSessionManager>(relaxed = true)
-    private val usbSerial = mockk<UsbSerialSessionManager>(relaxed = true)
+    /** A transport that never owns the id, answering like a real manager does. */
+    private class Disowning(
+        override val transport: Transport,
+        override val inputName: String,
+    ) : TransportSessionManager {
+        override fun removeAllSessionsForProfile(profileId: String) = Unit
+    }
 
-    private fun registry() = SessionManagerRegistry(
-        ssh = ssh,
-        reticulum = reticulum,
-        mosh = mosh,
-        et = et,
-        btSerial = btSerial,
-        bleSerial = bleSerial,
-        usbSerial = usbSerial,
-        smb = mockk(relaxed = true),
-        local = local,
-        rdp = mockk(relaxed = true),
-        mail = mockk(relaxed = true),
-        rclone = mockk(relaxed = true),
-        keepAlives = emptySet(),
-    )
-
-    private fun disown(vararg managers: Any, transport: (Any) -> String) {
-        // relaxed mocks silently succeed — non-owners must throw like the real
-        // managers do, or the chain would stop at the first mock.
-        for (m in managers) {
-            val msg = "No ${transport(m)} session: s1"
-            when (m) {
-                is SshSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is LocalSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is MoshSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is EtSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is ReticulumSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is BtSerialSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is BleSerialSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-                is UsbSerialSessionManager -> every { m.sendInput(any(), any()) } throws IllegalStateException(msg)
-            }
+    /** A transport that accepts the id and records what it was given. */
+    private class Owning(
+        override val transport: Transport,
+        override val inputName: String,
+    ) : TransportSessionManager {
+        var received: Pair<String, String>? = null
+        override fun removeAllSessionsForProfile(profileId: String) = Unit
+        override fun sendInput(sessionId: String, text: String) {
+            received = sessionId to text
         }
     }
 
-    private fun name(m: Any) = when (m) {
-        ssh -> "SSH"; local -> "local"; mosh -> "mosh"; et -> "ET"; reticulum -> "Reticulum"; btSerial -> "Bluetooth-serial"
-        bleSerial -> "BLE-serial"
-        usbSerial -> "USB-serial"
-        else -> "?"
+    /** A transport that owns the id but cannot serve it — a real diagnosis. */
+    private class Diagnosing(
+        override val transport: Transport,
+        override val inputName: String,
+        private val message: String,
+    ) : TransportSessionManager {
+        override fun removeAllSessionsForProfile(profileId: String) = Unit
+        override fun sendInput(sessionId: String, text: String): Nothing =
+            throw IllegalStateException(message)
+    }
+
+    private val names = mapOf(
+        Transport.SSH to "SSH",
+        Transport.LOCAL to "local",
+        Transport.MOSH to "mosh",
+        Transport.ET to "ET",
+        Transport.RETICULUM to "Reticulum",
+        Transport.BTSERIAL to "Bluetooth-serial",
+        Transport.BLESERIAL to "BLE-serial",
+        Transport.USBSERIAL to "USB-serial",
+    )
+
+    private fun registry(vararg overrides: TransportSessionManager): SessionManagerRegistry {
+        val overridden = overrides.map { it.transport }.toSet()
+        val rest = names.filterKeys { it !in overridden }.map { (t, n) -> Disowning(t, n) }
+        return SessionManagerRegistry((rest + overrides).toSet(), keepAlives = emptySet())
     }
 
     @Test
     fun `input reaches a mosh-owned session`() {
-        disown(ssh, local, et, reticulum, btSerial, bleSerial, usbSerial, transport = ::name)
-        every { mosh.sendInput("s1", "ls\r") } just runs
+        val mosh = Owning(Transport.MOSH, "mosh")
 
-        registry().sendTerminalInput("s1", "ls\r")
+        registry(mosh).sendTerminalInput("s1", "ls\r")
 
-        verify(exactly = 1) { mosh.sendInput("s1", "ls\r") }
+        assertEquals("s1" to "ls\r", mosh.received)
     }
 
     @Test
     fun `input reaches an ET-owned session`() {
-        disown(ssh, local, mosh, reticulum, btSerial, bleSerial, usbSerial, transport = ::name)
-        every { et.sendInput("s1", "x") } just runs
+        val et = Owning(Transport.ET, "ET")
 
-        registry().sendTerminalInput("s1", "x")
+        registry(et).sendTerminalInput("s1", "x")
 
-        verify(exactly = 1) { et.sendInput("s1", "x") }
+        assertEquals("s1" to "x", et.received)
     }
 
     @Test
     fun `no owner names all transports`() {
-        disown(ssh, local, mosh, et, reticulum, btSerial, bleSerial, usbSerial, transport = ::name)
-
         try {
             registry().sendTerminalInput("s1", "x")
             fail("expected IllegalStateException")
         } catch (e: IllegalStateException) {
             val msg = e.message ?: ""
-            for (t in listOf("SSH", "local", "mosh", "ET", "Reticulum", "Bluetooth-serial", "BLE-serial", "USB-serial")) {
+            for (t in names.values) {
                 assertTrue("error should name $t: \"$msg\"", msg.contains(t))
             }
         }
@@ -111,12 +100,13 @@ class SessionManagerRegistryInputTest {
 
     @Test
     fun `owner's diagnosis wins over not-mine errors`() {
-        disown(local, mosh, et, reticulum, btSerial, bleSerial, usbSerial, transport = ::name)
-        every { ssh.sendInput(any(), any()) } throws
-            IllegalStateException("Session s1 has no active terminal — open a terminal tab first")
+        val ssh = Diagnosing(
+            Transport.SSH, "SSH",
+            "Session s1 has no active terminal — open a terminal tab first",
+        )
 
         try {
-            registry().sendTerminalInput("s1", "x")
+            registry(ssh).sendTerminalInput("s1", "x")
             fail("expected IllegalStateException")
         } catch (e: IllegalStateException) {
             assertTrue(
@@ -124,5 +114,30 @@ class SessionManagerRegistryInputTest {
                 e.message!!.contains("has no active terminal"),
             )
         }
+    }
+
+    /**
+     * A transport with no [TransportSessionManager.inputName] is never offered
+     * the id at all — RDP and SMB have no PTY to write to, and asking them
+     * would put a bogus "No null session" in the error the user sees.
+     */
+    @Test
+    fun `transports without terminal input are not offered the id`() {
+        var asked = false
+        val smb = object : TransportSessionManager {
+            override val transport = Transport.SMB
+            override fun removeAllSessionsForProfile(profileId: String) = Unit
+            override fun sendInput(sessionId: String, text: String) {
+                asked = true
+            }
+        }
+
+        try {
+            registry(smb).sendTerminalInput("s1", "x")
+            fail("expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            assertTrue("SMB should not appear in \"${e.message}\"", !e.message!!.contains("SMB"))
+        }
+        assertTrue("a transport with no inputName must not be asked", !asked)
     }
 }

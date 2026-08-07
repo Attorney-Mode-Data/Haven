@@ -33,4 +33,9 @@ interface Session {
 
 enum class SessionStatus { CONNECTING, CONNECTED, RECONNECTING, DISCONNECTED, ERROR }
 
-enum class Transport { SSH, MOSH, ET, RETICULUM, LOCAL, RDP, SMB, MAIL, BTSERIAL, BLESERIAL, USBSERIAL }
+// RCLONE is last so the existing ordinals are unchanged. It names a transport
+// that contributes no sessions — rclone remotes are storage handles that are
+// disconnected with everything else but never listed (#363) — and exists so
+// its registry entry can identify itself honestly rather than borrowing
+// another transport's name.
+enum class Transport { SSH, MOSH, ET, RETICULUM, LOCAL, RDP, SMB, MAIL, BTSERIAL, BLESERIAL, USBSERIAL, RCLONE }

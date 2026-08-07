@@ -39,6 +39,19 @@ import sh.haven.core.rdp.RdpSessionManager
 import sh.haven.core.ssh.HostKeyVerifier
 import sh.haven.core.ssh.SessionManagerRegistry
 import sh.haven.core.ssh.SshSessionManager
+import sh.haven.core.ssh.Transport
+import sh.haven.core.ssh.TransportSessionManager
+
+/**
+ * A registry entry that only knows how to disconnect — enough for the
+ * disconnect/delete paths under test, and the same shape as the real bindings
+ * for transports with no live session list.
+ */
+private fun disconnectable(t: Transport, onDisconnect: (String) -> Unit) =
+    object : TransportSessionManager {
+        override val transport = t
+        override fun removeAllSessionsForProfile(profileId: String) = onDisconnect(profileId)
+    }
 
 /**
  * Tests that disconnect() and deleteConnection() clean up ALL session manager types.
@@ -115,19 +128,28 @@ class ConnectionsViewModelSessionTest {
         rcloneSessionManager = mockk(relaxed = true) {
             every { sessions } returns MutableStateFlow(emptyMap())
         }
+        // Since #510 the registry takes contributed transports rather than
+        // naming each manager, so the bindings that :app provides in
+        // TransportSessionManagerModule are stood up here as thin fakes that
+        // delegate to the same mocks — which is what keeps the disconnect
+        // assertions below testing real behaviour.
         sessionManagerRegistry = SessionManagerRegistry(
-            ssh = sshSessionManager,
-            reticulum = reticulumSessionManager,
-            mosh = moshSessionManager,
-            et = etSessionManager,
-            btSerial = mockk(relaxed = true),
-            bleSerial = mockk(relaxed = true),
-            usbSerial = mockk(relaxed = true),
-            smb = smbSessionManager,
-            local = localSessionManager,
-            rdp = rdpSessionManager,
-            mail = mailSessionManager,
-            rclone = rcloneSessionManager,
+            transports = setOf(
+                disconnectable(Transport.SSH) { sshSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.RETICULUM) { reticulumSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.MOSH) { moshSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.ET) { etSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.SMB) { smbSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.LOCAL) { localSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.RDP) { rdpSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.MAIL) { mailSessionManager.removeAllSessionsForProfile(it) },
+                disconnectable(Transport.RCLONE) { rcloneSessionManager.removeAllSessionsForProfile(it) },
+                // The three serial transports were anonymous mocks here before
+                // and nothing asserts them; they stay no-ops.
+                disconnectable(Transport.BTSERIAL) {},
+                disconnectable(Transport.BLESERIAL) {},
+                disconnectable(Transport.USBSERIAL) {},
+            ),
             keepAlives = emptySet(),
         )
 

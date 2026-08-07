@@ -197,6 +197,9 @@ data class CapturedDraft(
  * VNC is not in [SessionManagerRegistry] (no session manager), so it
  * isn't represented here — automatic capture skips VNC tabs in v1.
  * MAIL has no workspace Kind yet, so it's likewise skipped (null).
+ * RCLONE never reaches here: it contributes no sessions to the registry
+ * (storage handles, not live sessions — #363), so nothing carries that
+ * transport into a workspace item.
  */
 private fun Transport.toWorkspaceKind(): WorkspaceItem.Kind? = when (this) {
     Transport.SSH, Transport.MOSH, Transport.ET, Transport.RETICULUM, Transport.LOCAL,
@@ -204,5 +207,5 @@ private fun Transport.toWorkspaceKind(): WorkspaceItem.Kind? = when (this) {
         WorkspaceItem.Kind.TERMINAL
     Transport.SMB -> WorkspaceItem.Kind.FILE_BROWSER
     Transport.RDP -> WorkspaceItem.Kind.DESKTOP
-    Transport.MAIL -> null
+    Transport.MAIL, Transport.RCLONE -> null
 }
