@@ -5,6 +5,25 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.53
+
+- Haven no longer offers connection types a build can't actually run, and reports what it supports honestly.
+- GitHub now also carries a lighter 55 MB build without the desktop and media features. F-Droid keeps the full one, so nothing changes here.
+
+📦 **There are now two Haven downloads on GitHub, and you pick.** The full one is unchanged and is what F-Droid carries. Alongside it is **Haven Terminal** — the same app with the remote-desktop clients, the native Wayland desktop and the media tools left out. It is **55 MB against 75 MB**, and if you use Haven for SSH, terminals, files and storage, you lose nothing you were using.
+
+What it drops: RDP and SPICE, the native Wayland desktop, and media conversion, preview and streaming (which also removes video previews in the file browser). What it keeps: everything else, VNC included — that client is written in Kotlin, so a Linux desktop you run in the guest and view over VNC still works.
+
+The files are named `haven-<version>-<abi>-terminal-release.apk`. Both are signed with the same key, so you can install either over the other without losing your connections, keys or Linux guest. They carry the same version number, though, which means an updater won't offer to move you between them — switching is a deliberate download.
+
+If you are on F-Droid, nothing changes and nothing is asked of you. (#510)
+
+🔌 **Haven stops offering things it can't do.** The new-connection screen listed RDP and SPICE regardless of whether that build included them, so on the lighter build you could get three screens into creating a connection before meeting "native library failed to load". Those entries are now shown only when the build can honestly run them. Connections you already have still open and still show their own type.
+
+The same honesty reached the agent interface: a connected AI assistant asked Haven what it supports and was told "rdp, spice, ffmpeg" from a fixed list, whatever the build contained. It now answers from what actually shipped.
+
+And an error message that was quietly wrong: a missing Wayland desktop always said it "requires an arm64 device". True when the library is missing because your phone isn't arm64 — misleading on an arm64 phone running a build that simply omits it. It now says which of the two happened.
+
 ## v5.86.52
 
 - The download is 9.3 MB smaller — 84.4 MB to 75.0 MB on arm64.

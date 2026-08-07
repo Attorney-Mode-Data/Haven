@@ -134,9 +134,15 @@ jobs:
       # has no binaries for. The five wayland natives are arm64-v8a only, so the
       # x64 and armv7 jobs would otherwise spend ~20 minutes each building
       # libraries they never package (#493).
+      # Both flavours ship from GitHub: `full` is the complete app and the
+      # only one F-Droid builds, `terminal` drops the desktop and media
+      # native payload for a ~20 MB smaller download (#510). The AAB stays
+      # full-only — it exists for store distribution, which the stripped
+      # flavour is not part of.
       - name: Build signed APK + AAB (${{ matrix.abi }})
         run: >-
           ./gradlew :app:assemble${{ matrix.variant }}FullRelease
+          :app:assemble${{ matrix.variant }}TerminalRelease
           :app:bundle${{ matrix.variant }}FullRelease
           -PtargetAbi=${{ matrix.abi }}
         env:
@@ -163,6 +169,7 @@ jobs:
           name: haven-${{ matrix.abi }}-release
           path: |
             app/build/outputs/apk/${{ matrix.abi }}Full/release/haven-*-release.apk
+            app/build/outputs/apk/${{ matrix.abi }}Terminal/release/haven-*-terminal-release.apk
             app/build/outputs/bundle/${{ matrix.abi }}FullRelease/*.aab
           if-no-files-found: error
           retention-days: 7
