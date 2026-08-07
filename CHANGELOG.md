@@ -5,6 +5,20 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.0
+
+- Fixes SSH connections failing with a NullPointerException on the alternative sshlib engine.
+
+🔑 **SSH connections that died mid-handshake on the sshlib engine now work.** A reporter on a RedMagic 11 Air found that connecting failed with a `NullPointerException` during authentication — working on v5.86.50, broken from v5.86.51. Their log had everything needed, which is the only reason this was found and fixed the same day.
+
+The cause is a good illustration of why release builds break in ways debug builds never do. Haven's release build runs an optimiser that shrinks the app partly by flattening thousands of classes into one unnamed package. sshlib's Ed25519 component asks for its own package name while it starts up — and a class with no package has no name to give, so it got null and threw.
+
+It only happens on devices where Android's own Ed25519 support isn't usable and sshlib falls back to its own, which is why it hit one reporter and not everyone.
+
+The fix keeps that one class's name intact, and it has been added to the check that runs on every release build and asserts these classes survive — so a future change to the optimiser rules can't quietly bring it back. Debug builds don't run the optimiser at all, which is exactly why a check tied to the release build is the only thing that would catch it. (#513, thanks @Slayerx96)
+
+📦 **A round number for the two-download split.** The lighter *Haven Terminal* build arrived in v5.86.53 as an ordinary patch release, which undersold it. This version number marks it. Nothing about the split changes here — the full build and the terminal build are both on the [releases page](https://github.com/GlassHaven/Haven/releases), F-Droid carries the full one, and 6.0.0 stays reserved for when the alternative SSH engine becomes the default (#58).
+
 ## v5.86.53
 
 - Haven no longer offers connection types a build can't actually run, and reports what it supports honestly.

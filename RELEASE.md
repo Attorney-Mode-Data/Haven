@@ -39,9 +39,10 @@ versionName = "<x.y.z>"
 
 ★ **Two numbers are spoken for:**
 
-- **The next release is `5.87.0`**, not `5.86.54`. It marks the terminal build
-  flavour (#510) — the first time Haven ships as two downloads. Everything
-  after it goes back to `5.86.x`-style patch increments.
+- **The next release is `5.87.0`**, not `5.86.54`. The minor bump marks the
+  era of two downloads (#510) — note the terminal flavour itself first shipped
+  in `5.86.53`, numbered as a patch before the decision was taken, so `5.87.0`
+  marks it a release late. Everything after goes back to patch increments.
 - **`6.0.0` is reserved for the SSH engine default flip (#58)** — JSch →
   sshlib. That version was promised in the issue thread and is the one change
   that alters the default behaviour of every SSH connection, so don't spend it
