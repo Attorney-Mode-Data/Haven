@@ -5,6 +5,20 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.86.51
+
+💥 **Fixed: Haven crashed after saving in `crontab -e`** (#509, thanks @ash-945). The crash was a native one — the C++ terminal being freed by the garbage collector's finalizer while a call into it was still running. Reproduced and fixed in termlib: every native call now holds the lock for its whole duration, and taking the lock away makes the crash come back, which is the evidence that it is the right fix.
+
+Terminals whose session has ended are now closed rather than left to the finalizer, so the race has less to happen in.
+
+🔑 **Authenticator entries can be renamed.** Enrol one client on several routers and you get entries identical down to the issuer, identifiable only by trying a code somewhere. SSH keys have had rename since #231; TOTP now does too.
+
+📂 **The Keys screen starts collapsed, except the codes.** Authenticator codes are what you open that screen to read; the rest is reference material. If you deliberately expand everything, that is remembered.
+
+🐚 **"New plain shell" now works on SSH tabs, not just local ones.** It opens a shell with your session-manager preference bypassed — the point being to escape a multiplexer, so it belongs where the multiplexer is: an SSH profile wrapped in tmux.
+
+The terminal changes are not yet exercised on a device; the unit tests for the modules they touch pass.
+
 ## v5.86.50
 
 🔒 **Your Windows account name and your server's address are out of the remote-desktop logs.** A reporter has now redacted his own account name by hand from three separate log attachments, and asked for the address and port to go too. Haven had been redacting the username since v5.86.46 — at its own log lines. The ones that kept leaking belong to the RDP library underneath, which prints whole protocol messages when logging is turned up, and two of those messages carry the logon name and the server address verbatim.
