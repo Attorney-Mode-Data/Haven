@@ -246,6 +246,36 @@ jobs:
       # body; generate_release_notes still appends the "Full Changelog" link.
       - name: Extract release notes from CHANGELOG.md
         run: ./scripts/check-changelog.sh extract "${GITHUB_REF_NAME}" > RELEASE_NOTES.md
+      # #514: someone asked what the "terminal" APKs are, which means the release
+      # page was not answering it. Appended to every release rather than left to
+      # a changelog entry nobody scrolls back to, or an issue nobody finds.
+      - name: Append the which-APK guide
+        run: |
+          cat >> RELEASE_NOTES.md <<'GUIDE'
+
+          ---
+
+          ### Which APK?
+
+          **`haven-<version>-<abi>-release.apk`** — the full app, and what F-Droid
+          carries. If in doubt, take this one.
+
+          **`haven-<version>-<abi>-terminal-release.apk`** — the same app with the
+          desktop and media parts left out, for people who only use Haven for SSH,
+          terminals, files and storage. Less than half the size on arm64. It drops
+          RDP and SPICE remote desktop, the native Wayland desktop, and ffmpeg — so
+          no media conversion, and no video previews or streaming in the file
+          browser. VNC is kept, so a Linux desktop running inside Haven's guest
+          still works.
+
+          Both are signed with the same key and carry the same version number, so
+          you can install either over the other without losing connections, keys or
+          your Linux guest. The shared version number does mean an updater will not
+          offer to move you between them — switching is a deliberate download.
+
+          `<abi>` is your device's CPU: `arm64` for essentially every modern phone,
+          `armv7` for older 32-bit devices, `x64` for emulators.
+          GUIDE
       - name: Create GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3.0.2
         with:
