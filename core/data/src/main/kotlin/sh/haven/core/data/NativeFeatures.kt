@@ -49,6 +49,17 @@ class NativeFeatures(private val context: Context) {
     val ffmpeg: Boolean get() = has("libffmpeg.so", "libffprobe.so", "libavcodec.so")
 
     /**
+     * The native Wayland compositor — `liblabwc_android.so`.
+     *
+     * Deliberately a file check rather than `WaylandBridge.available`: that
+     * property is the result of actually dlopen-ing the library, and deciding
+     * whether to *show a setting* should not load it. It also keeps
+     * `:core:wayland` out of the dependency graph of modules that only need
+     * to ask the question.
+     */
+    val wayland: Boolean get() = has("liblabwc_android.so")
+
+    /**
      * VNC has no native library of its own — the client is Kotlin. It is
      * listed here so callers have one place to ask, and because the *server*
      * side (a desktop worth connecting to) depends on the compositor.

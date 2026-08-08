@@ -143,6 +143,7 @@ import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import sh.haven.core.ui.navigation.Screen
+import sh.haven.core.data.NativeFeatures
 import sh.haven.core.data.preferences.DesktopKeyPlacement
 import sh.haven.core.data.preferences.EditModeControlsPlacement
 import sh.haven.core.data.preferences.MACRO_PRESETS
@@ -269,6 +270,16 @@ fun SettingsScreen(
     val screenOrder by viewModel.screenOrder.collectAsState()
 
     val context = LocalContext.current
+
+    // #510: the terminal build ships no RDP client, no Wayland compositor and
+    // no ffmpeg, so the settings that tune them are noise there — a toggle for
+    // something that cannot run is worse than no toggle at all.
+    //
+    // Gated per row rather than by hiding whole sections: the Desktop section
+    // also holds VNC settings ("Suggest 256 colours on slow VNC links",
+    // touchpad input) and VNC works in every build, since that client is
+    // Kotlin. Hiding the section would take working features with it.
+    val nativeFeatures = remember(context) { NativeFeatures(context) }
 
     // Strings hoisted out of event callbacks / coroutines below: the Compose
     // LocalContextGetResourceValueCall lint forbids context.getString() at those
@@ -716,12 +727,15 @@ fun SettingsScreen(
         val rdpW by viewModel.rdpDesktopWidth.collectAsState()
         val rdpH by viewModel.rdpDesktopHeight.collectAsState()
         var showRdpSizeDialog by remember { mutableStateOf(false) }
-        SettingsItem(
-            icon = Icons.Filled.DesktopWindows,
-            title = stringResource(R.string.settings_rdp_desktop_size_title),
-            subtitle = stringResource(R.string.settings_rdp_desktop_size_subtitle, rdpW, rdpH),
-            onClick = { showRdpSizeDialog = true },
-        )
+        // RDP-only: the size a remote desktop session negotiates.
+        if (nativeFeatures.rdp) {
+            SettingsItem(
+                icon = Icons.Filled.DesktopWindows,
+                title = stringResource(R.string.settings_rdp_desktop_size_title),
+                subtitle = stringResource(R.string.settings_rdp_desktop_size_subtitle, rdpW, rdpH),
+                onClick = { showRdpSizeDialog = true },
+            )
+        }
         if (showRdpSizeDialog) {
             RdpDesktopSizeDialog(
                 width = rdpW,
@@ -747,13 +761,16 @@ fun SettingsScreen(
                 viewModel.setDesktopInputMode(if (enabled) "TOUCHPAD" else "DIRECT")
             },
         )
-        SettingsToggleItem(
-            icon = Icons.Filled.DesktopWindows,
-            title = stringResource(R.string.settings_gpu_venus_title),
-            subtitle = stringResource(R.string.settings_gpu_venus_subtitle),
-            checked = gpuUseVenus,
-            onCheckedChange = viewModel::setGpuUseVenus,
-        )
+        // Selects the GPU stack for the native compositor.
+        if (nativeFeatures.wayland) {
+            SettingsToggleItem(
+                icon = Icons.Filled.DesktopWindows,
+                title = stringResource(R.string.settings_gpu_venus_title),
+                subtitle = stringResource(R.string.settings_gpu_venus_subtitle),
+                checked = gpuUseVenus,
+                onCheckedChange = viewModel::setGpuUseVenus,
+            )
+        }
         SettingsToggleItem(
             icon = Icons.Filled.CloudDownload,
             title = stringResource(R.string.settings_bandwidth_suggest_title),
@@ -824,20 +841,26 @@ fun SettingsScreen(
             checked = connectionLoggingEnabled,
             onCheckedChange = viewModel::setConnectionLoggingEnabled,
         )
-        SettingsToggleItem(
-            icon = Icons.Filled.BugReport,
-            title = stringResource(R.string.settings_rdp_progressive_upgrade_title),
-            subtitle = stringResource(R.string.settings_rdp_progressive_upgrade_subtitle),
-            checked = rdpProgressiveUpgrade,
-            onCheckedChange = viewModel::setRdpProgressiveUpgrade,
-        )
-        SettingsToggleItem(
-            icon = Icons.Filled.BugReport,
-            title = stringResource(R.string.settings_rdp_avc_title),
-            subtitle = stringResource(R.string.settings_rdp_avc_subtitle),
-            checked = rdpAvcEnabled,
-            onCheckedChange = viewModel::setRdpAvcEnabled,
-        )
+        // RDP-only decode tuning.
+        if (nativeFeatures.rdp) {
+            SettingsToggleItem(
+                icon = Icons.Filled.BugReport,
+                title = stringResource(R.string.settings_rdp_progressive_upgrade_title),
+                subtitle = stringResource(R.string.settings_rdp_progressive_upgrade_subtitle),
+                checked = rdpProgressiveUpgrade,
+                onCheckedChange = viewModel::setRdpProgressiveUpgrade,
+            )
+        }
+        // RDP-only decode tuning.
+        if (nativeFeatures.rdp) {
+            SettingsToggleItem(
+                icon = Icons.Filled.BugReport,
+                title = stringResource(R.string.settings_rdp_avc_title),
+                subtitle = stringResource(R.string.settings_rdp_avc_subtitle),
+                checked = rdpAvcEnabled,
+                onCheckedChange = viewModel::setRdpAvcEnabled,
+            )
+        }
         if (connectionLoggingEnabled) {
             SettingsItem(
                 icon = Icons.Filled.ListAlt,
@@ -893,12 +916,15 @@ fun SettingsScreen(
 
         }
         CollapsibleSettingsSection(stringResource(R.string.settings_section_advanced), settingsExpanded[7], { settingsExpanded[7] = !settingsExpanded[7] }) {
-        SettingsItem(
-            icon = Icons.Filled.DesktopWindows,
-            title = stringResource(R.string.settings_wayland_shell_title),
-            subtitle = waylandShellCommand,
-            onClick = { showWaylandShellDialog = true },
-        )
+        // The command the native compositor launches.
+        if (nativeFeatures.wayland) {
+            SettingsItem(
+                icon = Icons.Filled.DesktopWindows,
+                title = stringResource(R.string.settings_wayland_shell_title),
+                subtitle = waylandShellCommand,
+                onClick = { showWaylandShellDialog = true },
+            )
+        }
         SettingsItem(
             icon = Icons.Filled.Timer,
             title = stringResource(R.string.settings_proot_idle_title),
@@ -969,12 +995,15 @@ fun SettingsScreen(
 
         // Media extensions stays in Advanced (moved up from below the MCP
         // block when the MCP/agent settings were split into their own section).
-        SettingsItem(
-            icon = Icons.Filled.PlayArrow,
-            title = stringResource(R.string.settings_media_extensions_title),
-            subtitle = mediaExtensions,
-            onClick = { showMediaExtensionsDialog = true },
-        )
+        // Which file extensions get ffmpeg previews and streaming.
+        if (nativeFeatures.ffmpeg) {
+            SettingsItem(
+                icon = Icons.Filled.PlayArrow,
+                title = stringResource(R.string.settings_media_extensions_title),
+                subtitle = mediaExtensions,
+                onClick = { showMediaExtensionsDialog = true },
+            )
+        }
         }
 
         // ── AI agent (MCP) — its own top-level section ──
