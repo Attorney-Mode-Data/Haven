@@ -477,11 +477,28 @@ fun TerminalScreen(
     // screen (e.g. typing on a VNC/Wayland desktop tab landed in the
     // terminal).
     val focusManager = LocalFocusManager.current
-    LaunchedEffect(isActive) {
+
+    // #511: on a Meta Quest 3 with a physical keyboard, every keypress popped the
+    // soft keyboard over the session. Where a real keyboard is attached and
+    // usable the soft one is an obstruction, not the input method, so it is never
+    // force-shown — the user can still raise it deliberately from the toolbar.
+    //
+    // hardKeyboardHidden is part of the test on purpose: a docked/folded device
+    // reports KEYBOARD_QWERTY with the keys physically inaccessible, and there the
+    // soft keyboard is the only way to type.
+    val screenConfiguration = LocalConfiguration.current
+    val physicalKeyboardAttached =
+        screenConfiguration.keyboard != android.content.res.Configuration.KEYBOARD_NOKEYS &&
+            screenConfiguration.hardKeyboardHidden ==
+            android.content.res.Configuration.HARDKEYBOARDHIDDEN_NO
+
+    LaunchedEffect(isActive, physicalKeyboardAttached) {
         val window = (view.context as? Activity)?.window ?: return@LaunchedEffect
         val controller = WindowCompat.getInsetsController(window, view)
         if (isActive && tabs.isNotEmpty()) {
-            controller.show(WindowInsetsCompat.Type.ime())
+            if (!physicalKeyboardAttached) {
+                controller.show(WindowInsetsCompat.Type.ime())
+            }
         } else if (!isActive) {
             controller.hide(WindowInsetsCompat.Type.ime())
             focusManager.clearFocus(force = true)
@@ -496,6 +513,28 @@ fun TerminalScreen(
             viewModel.sendRedrawIfZellij()
         }
         wasImeVisible = imeVisible
+    }
+
+    // #515: Android drops the IME when Haven goes to the background and nothing
+    // ever brought it back, so returning to a session always found the keyboard
+    // down even though the user had left it up. Snapshot the state on the way out
+    // — at ON_PAUSE the insets are still intact — and restore it on the way back.
+    //
+    // rememberSaveable so the answer survives the process death that a
+    // long backgrounding tends to end in; a plain remember would restore
+    // "keyboard down" and look like the original bug.
+    val currentImeVisible by rememberUpdatedState(imeVisible)
+    var imeVisibleBeforeBackground by rememberSaveable { mutableStateOf(false) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(isActive, physicalKeyboardAttached) {
+        if (imeVisibleBeforeBackground && isActive && !physicalKeyboardAttached) {
+            (view.context as? Activity)?.window?.let { window ->
+                WindowCompat.getInsetsController(window, view)
+                    .show(WindowInsetsCompat.Type.ime())
+            }
+        }
+        onPauseOrDispose {
+            imeVisibleBeforeBackground = currentImeVisible
+        }
     }
 
     // Navigate to specific tab if requested
