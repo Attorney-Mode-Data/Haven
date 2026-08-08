@@ -58,6 +58,7 @@ class BackupServiceTest {
     private lateinit var portForwardRuleDao: PortForwardRuleDao
     private lateinit var tunnelConfigRepository: TunnelConfigRepository
     private lateinit var sshIdentityRepository: sh.haven.core.data.repository.SshIdentityRepository
+    private lateinit var totpSecretRepository: sh.haven.core.data.repository.TotpSecretRepository
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var service: BackupService
 
@@ -72,6 +73,7 @@ class BackupServiceTest {
         portForwardRuleDao = mockk(relaxed = true)
         tunnelConfigRepository = mockk(relaxed = true)
         sshIdentityRepository = mockk(relaxed = true)
+        totpSecretRepository = mockk(relaxed = true)
         // Default: no tunnels / identities stored. Individual tests override.
         coEvery { tunnelConfigRepository.getAllDecrypted() } returns emptyList()
         coEvery { sshIdentityRepository.getAllDecrypted() } returns emptyList()
@@ -79,7 +81,7 @@ class BackupServiceTest {
         val prefsFile = File(tempFolder.root, "test.preferences_pb")
         dataStore = PreferenceDataStoreFactory.create { prefsFile }
 
-        service = BackupService(connectionDao, connectionRepository, connectionGroupDao, sshKeyDao, sshKeyRepository, knownHostDao, portForwardRuleDao, tunnelConfigRepository, sshIdentityRepository, dataStore)
+        service = BackupService(connectionDao, connectionRepository, connectionGroupDao, sshKeyDao, sshKeyRepository, knownHostDao, portForwardRuleDao, tunnelConfigRepository, sshIdentityRepository, totpSecretRepository, dataStore)
     }
 
     // -- Encrypt/Decrypt roundtrip --
@@ -724,7 +726,7 @@ class BackupServiceTest {
             File(tempFolder.root, "importer-${System.nanoTime()}.preferences_pb")
         }
         return BackupServicePair(
-            service = BackupService(cd, cr, cgd, skd, skr, khd, pfd, tcr, sir, ds),
+            service = BackupService(cd, cr, cgd, skd, skr, khd, pfd, tcr, sir, mockk(relaxed = true), ds),
             connectionRepository = cr,
             sshKeyRepository = skr,
             knownHostDao = khd,
@@ -906,5 +908,68 @@ class BackupServiceTest {
             "Expected JSONException-shaped failure with a message, got $thrown",
             thrown != null && !thrown.message.isNullOrBlank(),
         )
+    }
+
+    // -- Authenticator (TOTP) secrets (#510 migration gap) --
+
+    /**
+     * Backups silently omitted authenticator entries until v5.87.x. They are
+     * the one thing here that cannot be re-derived from anything else: losing
+     * them means going back to every service and re-enrolling by QR.
+     */
+    @Test
+    fun `totp secrets survive an export import roundtrip`() = runTest {
+        coEvery { connectionRepository.getAll() } returns emptyList()
+        coEvery { sshKeyDao.getAll() } returns emptyList()
+        coEvery { sshKeyRepository.getAllDecrypted() } returns emptyList()
+        coEvery { knownHostDao.getAll() } returns emptyList()
+        coEvery { portForwardRuleDao.getAll() } returns emptyList()
+        coEvery { totpSecretRepository.getAll() } returns listOf(
+            sh.haven.core.data.db.entities.TotpSecret(
+                id = "totp-1",
+                label = "Router",
+                secret = "JBSWY3DPEHPK3PXP",
+                issuer = "OpenWrt",
+                accountName = "root",
+                algorithm = "SHA256",
+                digits = 8,
+                periodSeconds = 60,
+                createdAt = 1700000000000L,
+            ),
+        )
+
+        val saved = slot<sh.haven.core.data.db.entities.TotpSecret>()
+        coEvery { totpSecretRepository.save(capture(saved)) } returns Unit
+
+        val encrypted = service.export("testPassword123")
+        service.import(encrypted, "testPassword123")
+
+        // Every field, not just the secret: a wrong algorithm, digit count or
+        // period produces codes that look plausible and never work.
+        assertEquals("totp-1", saved.captured.id)
+        assertEquals("Router", saved.captured.label)
+        assertEquals("JBSWY3DPEHPK3PXP", saved.captured.secret)
+        assertEquals("OpenWrt", saved.captured.issuer)
+        assertEquals("root", saved.captured.accountName)
+        assertEquals("SHA256", saved.captured.algorithm)
+        assertEquals(8, saved.captured.digits)
+        assertEquals(60, saved.captured.periodSeconds)
+        assertEquals(1700000000000L, saved.captured.createdAt)
+    }
+
+    /** A backup written before v5.87.x has no `totp` key; that is not an error. */
+    @Test
+    fun `a backup without a totp section imports cleanly`() = runTest {
+        coEvery { connectionRepository.getAll() } returns emptyList()
+        coEvery { sshKeyDao.getAll() } returns emptyList()
+        coEvery { sshKeyRepository.getAllDecrypted() } returns emptyList()
+        coEvery { knownHostDao.getAll() } returns emptyList()
+        coEvery { portForwardRuleDao.getAll() } returns emptyList()
+        coEvery { totpSecretRepository.getAll() } returns emptyList()
+
+        val encrypted = service.export("pw")
+        val result = service.import(encrypted, "pw")
+
+        assertTrue("no errors expected, got ${result.errors}", result.errors.isEmpty())
     }
 }

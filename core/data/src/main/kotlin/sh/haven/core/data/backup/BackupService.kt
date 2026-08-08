@@ -17,6 +17,7 @@ import sh.haven.core.data.db.entities.KnownHost
 import sh.haven.core.data.db.entities.PortForwardRule
 import sh.haven.core.data.db.entities.SshIdentity
 import sh.haven.core.data.db.entities.SshKey
+import sh.haven.core.data.db.entities.TotpSecret
 import sh.haven.core.data.db.entities.TunnelConfig
 import sh.haven.core.data.repository.TunnelConfigRepository
 import java.security.SecureRandom
@@ -29,8 +30,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Encrypted backup / restore for connection profiles, keys, known hosts,
- * port-forwards, tunnel configs, and a small block of settings.
+ * Encrypted backup / restore for connection profiles, keys, authenticator
+ * (TOTP) secrets, known hosts, port-forwards, tunnel configs, and a small
+ * block of settings.
  *
  * The wire format and a manual-decrypt Python recipe live in
  * `docs/backup-format.md`. Touch that file when changing [encrypt],
@@ -47,6 +49,7 @@ class BackupService @Inject constructor(
     private val portForwardRuleDao: PortForwardRuleDao,
     private val tunnelConfigRepository: TunnelConfigRepository,
     private val sshIdentityRepository: sh.haven.core.data.repository.SshIdentityRepository,
+    private val totpSecretRepository: sh.haven.core.data.repository.TotpSecretRepository,
     private val dataStore: DataStore<Preferences>,
 ) {
     data class BackupResult(val count: Int, val errors: List<String> = emptyList())
@@ -205,6 +208,32 @@ class BackupService @Inject constructor(
         }
         json.put("keys", keys)
 
+        // Authenticator (TOTP) secrets.
+        //
+        // Absent from backups until v5.87.x, which made restoring onto a new
+        // device silently lose every enrolled entry — the one kind of data
+        // here that cannot be re-derived from anything else. Re-enrolling
+        // means going back to each service and doing the QR dance again.
+        //
+        // Exported decrypted, like the SSH private keys above: the backup
+        // file carries its own AES-256-GCM layer, and the at-rest encryption
+        // is keyed to a device keystore the restoring device does not have.
+        val totp = JSONArray()
+        totpSecretRepository.getAll().forEach { t ->
+            totp.put(JSONObject().apply {
+                put("id", t.id)
+                put("label", t.label)
+                put("secret", t.secret)
+                put("issuer", t.issuer ?: JSONObject.NULL)
+                put("accountName", t.accountName ?: JSONObject.NULL)
+                put("algorithm", t.algorithm)
+                put("digits", t.digits)
+                put("periodSeconds", t.periodSeconds)
+                put("createdAt", t.createdAt)
+            })
+        }
+        json.put("totp", totp)
+
         // Known hosts
         val hosts = JSONArray()
         knownHostDao.getAll().forEach { h ->
@@ -332,6 +361,34 @@ class BackupService @Inject constructor(
                     count++
                 } catch (e: Exception) {
                     errors.add("Key ${i}: ${e.message}")
+                }
+            }
+        }
+
+        // Authenticator (TOTP) secrets. Absent from backups written before
+        // v5.87.x, so optJSONArray and skip rather than fail — restoring an
+        // older backup is the common case, not an error.
+        val totp = json.optJSONArray("totp")
+        if (totp != null) {
+            for (i in 0 until totp.length()) {
+                try {
+                    val t = totp.getJSONObject(i)
+                    totpSecretRepository.save(
+                        TotpSecret(
+                            id = t.getString("id"),
+                            label = t.getString("label"),
+                            secret = t.getString("secret"),
+                            issuer = t.optString("issuer").takeIf { it.isNotEmpty() },
+                            accountName = t.optString("accountName").takeIf { it.isNotEmpty() },
+                            algorithm = t.optString("algorithm", "SHA1"),
+                            digits = t.optInt("digits", 6),
+                            periodSeconds = t.optInt("periodSeconds", 30),
+                            createdAt = t.optLong("createdAt", System.currentTimeMillis()),
+                        ),
+                    )
+                    count++
+                } catch (e: Exception) {
+                    errors.add("TOTP ${i}: ${e.message}")
                 }
             }
         }

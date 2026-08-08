@@ -57,12 +57,22 @@ subset present, all optional except `version`):
   "connections": [ { "id": ..., "label": ..., ... }, ... ],
   "groups":      [ ... ],
   "keys":        [ { "id": ..., "privateKeyBytes": "<base64>", ... }, ... ],
+  "totp":        [ { "id": ..., "secret": "<base32>", ... }, ... ],
   "knownHosts":  [ ... ],
   "portForwards":[ ... ],
   "tunnels":     [ { "configText": "<base64>", ... }, ... ],
   "settings":    { ... }
 }
 ```
+
+`totp` carries the authenticator secrets and appeared in v5.87.x. It
+is absent from every earlier backup, and the importer treats it as
+optional rather than failing — restoring an older file is the common
+case. The secrets are base32, decrypted: the file has its own
+AES-256-GCM layer, and the at-rest encryption is keyed to a device
+keystore the restoring device does not have. Anyone who can read this
+file can generate your codes, which is already true of the SSH private
+keys beside them.
 
 `version: 1` files are still readable — the v2 fields default if
 absent. Future versions are rejected with a non-zero exit on the
