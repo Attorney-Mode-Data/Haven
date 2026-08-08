@@ -19,6 +19,34 @@ object RcloneBridge {
     private var initialized = false
 
     /**
+     * Whether this build actually carries rclone's native code.
+     *
+     * Haven's terminal flavour (#510) links a `libgojni.so` built without the
+     * rcbridge package — 8 MB against 28 MB, keeping tailscale, WireGuard and
+     * the mail bridge. The library still loads, so everything else in it works;
+     * only rclone's JNI methods are absent.
+     *
+     * The generated [Rcbridge] class registers those methods from a static
+     * initialiser, so merely *touching* the class throws where they are
+     * missing — an ExceptionInInitializerError the first time and
+     * NoClassDefFoundError after that, neither of which is an Exception.
+     * Hence [Throwable], and hence `touch()`, which gomobile emits as an empty
+     * method for exactly this purpose: it forces class initialisation without
+     * calling into rclone.
+     *
+     * Probed once and cached. Every entry point below checks it, so a caller
+     * that forgets gets a no-op rather than taking the process down.
+     */
+    val available: Boolean by lazy {
+        try {
+            Rcbridge.touch()
+            true
+        } catch (t: Throwable) {
+            false
+        }
+    }
+
+    /**
      * Initialise the rclone library.  Must be called once before any [rpc]
      * calls.  Safe to call multiple times (subsequent calls are no-ops).
      *
@@ -27,6 +55,8 @@ object RcloneBridge {
      *                   Pass empty string to use rclone's default.
      */
     fun initialize(configPath: String) {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return
         if (initialized) return
         Rcbridge.rbInitialize(configPath)
         initialized = true
@@ -34,6 +64,8 @@ object RcloneBridge {
 
     /** Shut down the rclone library. Call once at app shutdown. */
     fun shutdown() {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return
         if (!initialized) return
         Rcbridge.rbFinalize()
         initialized = false
@@ -53,6 +85,8 @@ object RcloneBridge {
      * RPC for the profile, which is fresh.
      */
     fun setProxy(proxyUrl: String?) {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return
         Rcbridge.rbSetProxy(proxyUrl.orEmpty())
     }
 
@@ -64,6 +98,8 @@ object RcloneBridge {
      * @return [RpcResult] with HTTP-style status code and JSON output
      */
     fun rpc(method: String, input: String = "{}"): RpcResult {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return RpcResult(status = 501, output = """{"error":"rclone is not included in this build"}""")
         check(initialized) { "RcloneBridge.initialize() must be called first" }
         val result = Rcbridge.rbRPC(method, input)
         return RpcResult(
@@ -80,6 +116,8 @@ object RcloneBridge {
      * @return [RpcResult] with JSON `{"port": N}` on success
      */
     fun startMediaServer(remoteName: String, preferredPort: Long = 0): RpcResult {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return RpcResult(status = 501, output = """{"error":"rclone is not included in this build"}""")
         check(initialized) { "RcloneBridge.initialize() must be called first" }
         val result = Rcbridge.rbStartMediaServer(remoteName, preferredPort)
         return RpcResult(
@@ -90,6 +128,8 @@ object RcloneBridge {
 
     /** Query the current media server state. Returns JSON with "port" and optional "remote". */
     fun mediaServerStatus(): RpcResult {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return RpcResult(status = 501, output = """{"error":"rclone is not included in this build"}""")
         check(initialized) { "RcloneBridge.initialize() must be called first" }
         val result = Rcbridge.rbMediaServerStatus()
         return RpcResult(
@@ -100,6 +140,8 @@ object RcloneBridge {
 
     /** Stop the media streaming HTTP server if running. */
     fun stopMediaServer(): RpcResult {
+        // #510: no-op rather than crash when this build has no rclone.
+        if (!available) return RpcResult(status = 501, output = """{"error":"rclone is not included in this build"}""")
         check(initialized) { "RcloneBridge.initialize() must be called first" }
         val result = Rcbridge.rbStopMediaServer()
         return RpcResult(

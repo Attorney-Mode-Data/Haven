@@ -51,6 +51,17 @@ android {
         }
     }
 
+    // The terminal flavour's Go library lives outside the module, next to the
+    // full one that :core:rclone contributes. Both are build outputs and both
+    // are gitignored; running rclone-android/tools/build-android.sh produces
+    // the pair. A terminal build made without it would package :core:rclone's
+    // full library instead — 20 MB larger, and correct, just not smaller.
+    sourceSets {
+        getByName("terminal") {
+            jniLibs.srcDir("${rootProject.projectDir}/rclone-android/jniLibs-terminal")
+        }
+    }
+
     signingConfigs {
         create("release") {
             val ksFile = rootProject.file("haven-release.jks")
@@ -110,6 +121,20 @@ android {
         }
         jniLibs {
             useLegacyPackaging = true
+            // #510: the terminal flavour ships a libgojni.so built without
+            // rclone (see rclone-android/tools/build-android.sh) — ~8 MB
+            // against ~28 MB, keeping tailscale, WireGuard and Proton mail.
+            //
+            // gomobile always names its output libgojni.so, so the two cannot
+            // be told apart by name and both reach the merge: the app's own
+            // flavour source set, and :core:rclone's copy of the full one.
+            // pickFirsts resolves that in the app's favour. An exclude cannot
+            // do this job — the pattern would match both and leave the flavour
+            // with no Go library at all.
+            //
+            // The full flavour has no app-level copy, so it takes
+            // :core:rclone's unchanged.
+            pickFirsts += "**/libgojni.so"
         }
     }
 

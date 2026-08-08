@@ -1051,7 +1051,15 @@ fun ConnectionEditDialog(
                 val dialogContext = LocalContext.current
                 val transportOptions = remember(dialogContext) {
                     val native = NativeFeatures(dialogContext)
-                    TransportAvailability.offered(allTransportOptions, native.rdp, native.spice)
+                    TransportAvailability.offered(
+                        allTransportOptions,
+                        rdp = native.rdp,
+                        spice = native.spice,
+                        // Probed, not looked for: libgojni.so is present in
+                        // every build, but the terminal flavour's copy is
+                        // built without rclone.
+                        rclone = sh.haven.rclone.bridge.RcloneBridge.available,
+                    )
                 }
                 var transportExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(

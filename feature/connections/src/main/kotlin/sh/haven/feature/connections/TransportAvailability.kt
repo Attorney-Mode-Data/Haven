@@ -13,19 +13,25 @@ internal object TransportAvailability {
      * @param all every transport the app knows, as (value, label).
      * @param rdp whether `librdp_transport.so` shipped.
      * @param spice whether `libspice_transport.so` shipped.
+     * @param rclone whether this build's `libgojni.so` carries rclone. Unlike
+     *   the other two this is not a missing *file* — the terminal flavour
+     *   ships a smaller library built without the rcbridge package, so the
+     *   answer comes from probing it rather than looking for it.
      *
      * VNC is never filtered: its client is Kotlin and ships in every build.
-     * Nor is anything else — only the two transports with a native client
-     * that the terminal flavour drops.
+     * Nor is anything else — only the transports with native code the
+     * terminal flavour drops.
      */
     fun offered(
         all: List<Pair<String, String>>,
         rdp: Boolean,
         spice: Boolean,
+        rclone: Boolean,
     ): List<Pair<String, String>> = all.filter { (value, _) ->
         when (value) {
             "RDP" -> rdp
             "SPICE" -> spice
+            "RCLONE" -> rclone
             else -> true
         }
     }

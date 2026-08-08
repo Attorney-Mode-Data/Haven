@@ -6,3 +6,4 @@ build/
 !build/rcbridge-bindings.jar
 # Go build cache
 go/vendor/
+jniLibs-terminal/

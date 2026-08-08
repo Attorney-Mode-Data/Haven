@@ -20,10 +20,11 @@ class TransportAvailabilityTest {
         "RDP" to "RDP (Desktop)",
         "SPICE" to "SPICE (Desktop)",
         "SMB" to "SMB (File Share)",
+        "RCLONE" to "Cloud Storage (rclone)",
     )
 
-    private fun values(rdp: Boolean, spice: Boolean) =
-        TransportAvailability.offered(all, rdp, spice).map { it.first }
+    private fun values(rdp: Boolean, spice: Boolean, rclone: Boolean = true) =
+        TransportAvailability.offered(all, rdp, spice, rclone).map { it.first }
 
     @Test
     fun `a full build offers everything`() {
@@ -48,7 +49,7 @@ class TransportAvailabilityTest {
     fun `nothing else is affected, VNC included`() {
         val offered = values(rdp = false, spice = false)
 
-        assertEquals(listOf("SSH", "MOSH", "LOCAL", "VNC", "SMB"), offered)
+        assertEquals(listOf("SSH", "MOSH", "LOCAL", "VNC", "SMB", "RCLONE"), offered)
         assertTrue("VNC must survive", "VNC" in offered)
     }
 
@@ -64,8 +65,22 @@ class TransportAvailabilityTest {
     @Test
     fun `order is preserved`() {
         assertEquals(
-            listOf("SSH", "MOSH", "LOCAL", "VNC", "RDP", "SPICE", "SMB"),
+            listOf("SSH", "MOSH", "LOCAL", "VNC", "RDP", "SPICE", "SMB", "RCLONE"),
             values(rdp = true, spice = true),
         )
+    }
+
+    /**
+     * rclone is gated on a probe rather than a missing file: the terminal
+     * build ships libgojni.so, just built without the rclone package, so
+     * looking for the library would wrongly report it present.
+     */
+    @Test
+    fun `a build whose Go library omits rclone drops the rclone transport`() {
+        val offered = values(rdp = true, spice = true, rclone = false)
+
+        assertFalse("RCLONE", "RCLONE" in offered)
+        assertTrue("SMB should survive", "SMB" in offered)
+        assertTrue("RDP should survive", "RDP" in offered)
     }
 }

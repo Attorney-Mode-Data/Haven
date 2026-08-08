@@ -1956,7 +1956,6 @@ internal class McpTools(
             put("ssh")
             put("sftp")
             put("smb")
-            put("rclone")
             put("reticulum")
             put("mosh")
             put("eternal_terminal")
@@ -1968,6 +1967,10 @@ internal class McpTools(
             // conversions and RDP sessions that can only fail at connect.
             // Wayland has been truthful since #469, for the same reason.
             val native = sh.haven.core.data.NativeFeatures(context)
+            // rclone is probed rather than looked for: libgojni.so ships in
+            // every build, but the terminal flavour's is built without the
+            // rclone package (#510), so its presence proves nothing.
+            if (sh.haven.rclone.bridge.RcloneBridge.available) put("rclone")
             if (native.vnc) put("vnc")
             if (native.rdp) put("rdp")
             if (native.spice) put("spice")
