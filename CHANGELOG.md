@@ -5,6 +5,26 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.2
+
+- Toolbar arrows and other repeating keys no longer stop working after you hold one.
+- The keyboard comes back when you switch back to Haven, instead of always hiding.
+- Three new terminal colour schemes: Campbell, Modern Dark and Modern Light.
+
+⌨️ **Toolbar arrows could stop working until you closed the session.** Hold an arrow to repeat, tap another one, and the first arrow was dead — it still lit up when you touched it, but nothing reached the shell. Only closing and reopening the session brought it back. (#515, thanks @paour)
+
+Two separate faults caused it, either one on its own enough. Haven was reading the wrong field from the touch event, so once a second finger was involved it never saw the release; and the flag that tells a tap from the tail of a hold was cleared in a place that a fast tap could skip entirely. Both are fixed, and the key-repeat logic now has tests covering the exact sequence that was reported — it had none before, which is how this shipped.
+
+Arrows are what got reported, but Home, End, PgUp, PgDn and custom symbol keys behaved the same way, as did the equivalent buttons on the VNC and RDP screens. All fixed together.
+
+⌨️ **Haven remembers whether the keyboard was up.** Android hides the soft keyboard when an app goes to the background, and nothing brought it back — so returning to a session always found it down, even though you left it up. It now restores what you had, and survives Android killing Haven while it's away. (#515, thanks @paour)
+
+🥽 **The virtual keyboard no longer covers the screen when a real keyboard is attached.** On a Meta Quest 3 with a physical keyboard, every keypress raised the on-screen keyboard over the session. Haven was explicitly overriding Android's own rule that a usable hardware keyboard suppresses the soft one. You can still raise it deliberately from the toolbar. (#511, thanks @sae13)
+
+🎨 **Three more terminal colour schemes**, for anyone who wants a dark theme whose default text is plain grey rather than tinted: **Campbell** (Windows Terminal), **Modern Dark** and **Modern Light** (VS Code). Palettes taken from the upstream projects rather than approximated. Note that the 16 ANSI colours only apply if "Apply scheme palette" is switched on in settings — it's off by default so that full-screen terminal programs keep their own colours. (#516, thanks @connesc)
+
+📄 **Release pages now say what the two downloads are.** Every release lists a full APK and a smaller Terminal one per CPU, and nothing on the page explained the difference. Each release now carries a short guide. (#514, thanks @jeyjai)
+
 ## v5.87.1
 
 - Backups now include your authenticator entries. They never did before — restoring onto a new device silently lost them.
