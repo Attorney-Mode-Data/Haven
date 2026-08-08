@@ -15,6 +15,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // MotionEvent's action constants are compile-time ints, but the stubbed
+    // android.jar still needs unmocked calls to return rather than throw.
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -23,6 +29,7 @@ dependencies {
     implementation(libs.termlib) // for optional SelectionController parameter
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
+    testImplementation(libs.junit)
 }
 
 kotlin {

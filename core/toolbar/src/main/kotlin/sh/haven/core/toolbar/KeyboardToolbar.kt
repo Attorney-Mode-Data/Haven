@@ -48,6 +48,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1159,6 +1160,57 @@ private fun NavCell(content: @Composable () -> Unit) {
 private const val REPEAT_DELAY_MS = 400L
 private const val REPEAT_INTERVAL_MS = 80L
 
+/** The new flag state after one touch event, and what the caller owes the key. */
+internal data class KeyTouchResult(
+    val pressed: Boolean,
+    val didRepeat: Boolean,
+    val emitClick: Boolean,
+    val consumed: Boolean,
+)
+
+/**
+ * The whole press/release decision for a repeating key, as a pure function of the
+ * masked action and the two flags.
+ *
+ * It lives out here rather than inline in the touch filter because #515 was a
+ * latch in exactly this transition table and there was no way to test it: the
+ * flags were composable-local, the failing sequence needs multi-touch, and
+ * `core:toolbar` had no test source set at all. A pure transition can be driven
+ * event by event from a plain JVM test, so the two latches now have a regression
+ * each in `KeyTouchTest`.
+ *
+ * Two properties carry the fix, and both are asserted there:
+ *  - a release is a release whichever pointer it belongs to, so ACTION_POINTER_UP
+ *    has to clear the flags the same way ACTION_UP does;
+ *  - every terminal event returns `didRepeat = false`, so the flag cannot outlive
+ *    the touch that set it no matter how composition schedules the repeat effect.
+ */
+internal fun keyTouch(action: Int, pressed: Boolean, didRepeat: Boolean): KeyTouchResult =
+    // Masked here rather than by the caller. Passing the raw `action` in and
+    // stripping the pointer index inside is what makes latch 1 unrepeatable: a
+    // call site cannot forget a step it does not perform.
+    when (action and android.view.MotionEvent.ACTION_MASK) {
+        android.view.MotionEvent.ACTION_DOWN,
+        android.view.MotionEvent.ACTION_POINTER_DOWN ->
+            // Consumed so this node also receives the matching UP.
+            KeyTouchResult(pressed = true, didRepeat = didRepeat, emitClick = false, consumed = true)
+
+        android.view.MotionEvent.ACTION_UP,
+        android.view.MotionEvent.ACTION_POINTER_UP ->
+            // A hold has already delivered its keys; only a plain tap clicks here.
+            KeyTouchResult(
+                pressed = false,
+                didRepeat = false,
+                emitClick = !didRepeat,
+                consumed = true,
+            )
+
+        android.view.MotionEvent.ACTION_CANCEL ->
+            KeyTouchResult(pressed = false, didRepeat = false, emitClick = false, consumed = true)
+
+        else -> KeyTouchResult(pressed, didRepeat, emitClick = false, consumed = false)
+    }
+
 /**
  * FilledTonalButton with key repeat. Uses Android MotionEvent interop to detect
  * press/release, bypassing Compose's gesture system (which the horizontalScroll
@@ -1186,18 +1238,27 @@ private fun ToolbarKeyButton(
     content: @Composable () -> Unit,
 ) {
     var isPressed by remember { mutableStateOf(false) }
+    // True only between the repeat loop starting and the touch ending, so the
+    // release handler can tell a tap from the tail of a hold. That handler is
+    // its sole owner — see the latch note on the touch filter below.
     var didRepeat by remember { mutableStateOf(false) }
+    // The repeat loop can outlive the composition that launched it, and `onClick`
+    // closes over the active tab; without this it would go on firing the lambda
+    // captured at launch, aimed at a session the user has already left.
+    val currentOnClick by rememberUpdatedState(onClick)
     // Aliased so the semantics `onClick` DSL below can invoke the key's action
     // without colliding with the receiver's own `onClick` builder.
     val onClickAction = onClick
 
     LaunchedEffect(isPressed, repeating) {
         if (isPressed && repeating) {
-            didRepeat = false
             delay(REPEAT_DELAY_MS)
             didRepeat = true
-            while (true) {
-                onClick()
+            // Guarded on isPressed as well as on the effect's own cancellation,
+            // so a release that recomposition has not yet delivered still stops
+            // the loop rather than typing into the session.
+            while (isPressed) {
+                currentOnClick()
                 delay(REPEAT_INTERVAL_MS)
             }
         }
@@ -1224,23 +1285,34 @@ private fun ToolbarKeyButton(
                 role = Role.Button
                 onClick { onClickAction(); true }
             }
+            // #515 — two ways this used to latch, both leaving a key that
+            // highlights on touch and sends nothing:
+            //
+            // 1. `actionMasked`, never `action`. Compose hands the callback the
+            //    window's original MotionEvent, so a second finger anywhere makes
+            //    the release arrive as ACTION_POINTER_UP (0x0106 — the pointer
+            //    index is packed into bits 8-15). That never equalled ACTION_UP
+            //    (1), so it fell through to `else` and neither flag was cleared.
+            // 2. Releasing has to clear `didRepeat`. Resetting it only at the top
+            //    of the repeat effect was a race: a DOWN and UP landing in the
+            //    same frame leave `isPressed` unchanged as far as composition can
+            //    see, so the effect never relaunches and the flag stays true.
+            //
+            // Either way a latched `didRepeat` makes every later tap hit
+            // `if (!didRepeat)` and do nothing. It survived until the session id
+            // changed, because the toolbar sits inside key(sessionId) — hence the
+            // report that only closing and reopening the session brought the
+            // arrow back.
+            //
+            // The same primitive is copy-pasted into VncScreen and RdpScreen;
+            // both were fixed with it. Extracting it needs a core:toolbar
+            // dependency those modules do not have yet.
             .pointerInteropFilter { motionEvent ->
-                when (motionEvent.action) {
-                    android.view.MotionEvent.ACTION_DOWN -> {
-                        isPressed = true
-                        true // consume to receive UP
-                    }
-                    android.view.MotionEvent.ACTION_UP -> {
-                        if (!didRepeat) onClick() // single tap
-                        isPressed = false
-                        true
-                    }
-                    android.view.MotionEvent.ACTION_CANCEL -> {
-                        isPressed = false
-                        true
-                    }
-                    else -> false
-                }
+                val result = keyTouch(motionEvent.action, isPressed, didRepeat)
+                if (result.emitClick) onClick()
+                isPressed = result.pressed
+                didRepeat = result.didRepeat
+                result.consumed
             },
         shape = RoundedCornerShape(8.dp),
         color = if (selected) {

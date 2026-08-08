@@ -71,6 +71,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -1319,14 +1320,14 @@ private fun RdpRepeatingButton(
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var didRepeat by remember { mutableStateOf(false) }
+    val currentOnClick by rememberUpdatedState(onClick)
 
     LaunchedEffect(isPressed) {
         if (isPressed) {
-            didRepeat = false
             delay(400)
             didRepeat = true
-            while (true) {
-                onClick()
+            while (isPressed) {
+                currentOnClick()
                 delay(80)
             }
         }
@@ -1334,18 +1335,28 @@ private fun RdpRepeatingButton(
 
     FilledTonalButton(
         onClick = {},
+        // #515 — the same latch fixed in core:toolbar's ToolbarKeyButton, which
+        // carries the full explanation. Short version: `action` misses the
+        // ACTION_POINTER_* forms a second finger produces, and `didRepeat` has to
+        // be cleared on release rather than at the top of the effect. Leaving
+        // either latched gives a button that highlights but sends nothing until
+        // the screen is recreated.
         modifier = modifier.pointerInteropFilter { motionEvent ->
-            when (motionEvent.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
+            when (motionEvent.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN,
+                android.view.MotionEvent.ACTION_POINTER_DOWN -> {
                     isPressed = true
                     true
                 }
-                android.view.MotionEvent.ACTION_UP -> {
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_POINTER_UP -> {
                     if (!didRepeat) onClick()
+                    didRepeat = false
                     isPressed = false
                     true
                 }
                 android.view.MotionEvent.ACTION_CANCEL -> {
+                    didRepeat = false
                     isPressed = false
                     true
                 }
