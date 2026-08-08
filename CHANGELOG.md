@@ -5,6 +5,26 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.1
+
+- Backups now include your authenticator entries. They never did before — restoring onto a new device silently lost them.
+- Haven no longer shows settings for features a build doesn't include.
+- The lighter Terminal download is now 35 MB, down from 54 MB.
+
+🔐 **Your backups were missing your authenticator codes.** Haven's encrypted backup carried connections, SSH keys, known hosts, port-forwards, tunnels and settings — but not the TOTP entries from the Keys screen. Restore onto a new phone and they were simply gone, with nothing to say so.
+
+That is the worst thing in there to lose. A connection can be retyped and a key regenerated; an authenticator secret means going back to every service and enrolling again by QR, if it even lets you.
+
+They are included now. Old backup files still restore exactly as before — they just don't have the entries in them, because they were never written. **If you keep backups, make a fresh one.**
+
+📦 **The lighter build is a lot lighter: 35 MB, against 54 MB last release and 75 MB for the full app.** The largest thing left in it was the Go library behind cloud storage — but the same file also carries Tailscale, WireGuard and the Proton mail bridge, so removing it would have taken three things with it. It's now built twice, and the Terminal download gets the copy without rclone.
+
+So the Terminal build loses **cloud storage** (rclone remotes) on top of the desktop and media features. Tunnels and mail are unaffected. The full build is unchanged. (#510, thanks @paour)
+
+🔌 **Settings stopped offering what a build can't do.** The Terminal build still listed remote-desktop resolution, GPU stack, compositor shell command and media file extensions — settings for libraries it doesn't ship. They're hidden when the feature isn't there, and the connection screen no longer offers cloud storage in a build without it.
+
+Haven also stops claiming those features to a connected AI assistant. It answered from a fixed list before, whatever the build actually contained.
+
 ## v5.87.0
 
 - Fixes SSH connections failing with a NullPointerException on the alternative sshlib engine.
