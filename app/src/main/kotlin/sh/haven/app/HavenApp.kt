@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import sh.haven.app.agent.ConsentActionReceiver
+import sh.haven.core.data.NativeCrashLog
 import sh.haven.core.data.agent.AgentConsentManager
 import sh.haven.core.data.agent.ConsentRequest
 import androidx.hilt.work.HiltWorkerFactory
@@ -21,6 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.launchIn
@@ -90,6 +92,23 @@ class HavenApp : Application(), Configuration.Provider {
         // Register Shizuku binder listeners early so the async callback
         // has time to fire before any UI checks isShizukuAvailable().
         sh.haven.core.local.WaylandSocketHelper.initShizukuListeners()
+
+        // Recover the tombstone from any previous native crash (#509, #517).
+        // Haven records its logcat from inside its own process, so a native
+        // signal kills the recorder along with everything else and the backtrace
+        // is written after Haven is already gone — the one log that identifies a
+        // native crash was the one Haven structurally could not capture. This is
+        // the next launch asking the system what happened to the last one.
+        //
+        // Off the main thread: it reads a file and a system service, and nothing
+        // about startup should wait on diagnostics.
+        appScope.launch {
+            try {
+                NativeCrashLog(this@HavenApp).refresh()
+            } catch (e: Exception) {
+                android.util.Log.w("HavenApp", "native crash sweep failed: ${e.message}")
+            }
+        }
 
         // Mirror saved workspaces into Android launcher long-press
         // shortcuts so the home-screen icon offers "Open <workspace>"

@@ -308,6 +308,13 @@ internal class McpTools(
             inputSchema = emptyObjectSchema(),
         ) { _ -> getAppInfo() },
 
+        "get_native_crashes" to ToolHandler(
+            description = "Return native crashes (SIGSEGV, SIGABRT, …) from previous runs of Haven, newest first, each with the system's tombstone when one was kept — the backtrace that names the failing function and library. This is the diagnostic Haven could not previously produce: it records its own logcat from inside its own process, so a native signal kills the recorder too and the tombstone lands after Haven is gone. Recovered on the next launch from ActivityManager.getHistoricalProcessExitReasons. Requires Android 11 (API 30); on older releases `supported` is false and the list is empty rather than misleadingly so. Kotlin/Java exceptions are NOT here — those do not kill the process this way. Read-only.",
+            inputSchema = objectSchema {
+                boolean("includeTrace", "Include the full tombstone text for each crash. Default true; set false for a short index when the traces are long.")
+            },
+        ) { args -> getNativeCrashes(args) },
+
         "list_paired_clients" to ToolHandler(
             description = "List the MCP clients paired with Haven — the clientInfo.name values that passed the first-connect pairing prompt and may call tools. For each: `name`; `autoApprove` (true when the user has enabled 'Skip approval prompts' for it under Settings → Agent endpoint → Paired MCP clients, so its calls bypass per-call consent); and `isCaller` (true for the client making this request). Read-only.",
             inputSchema = emptyObjectSchema(),
@@ -1945,6 +1952,39 @@ internal class McpTools(
     }
 
     // --- Tool implementations ---
+
+    /**
+     * Native crashes from previous runs, with their tombstones.
+     *
+     * #509 and #517 both stalled on the same missing evidence: the reporter's
+     * log ends at `Fatal signal …` and the backtrace is absent, because Haven
+     * captures logcat from inside the process that just died. Recovering it on
+     * the next launch turns "please reproduce this under adb" into a question
+     * the app can answer about itself.
+     */
+    private fun getNativeCrashes(args: JSONObject): JSONObject {
+        val includeTrace = if (args.has("includeTrace")) args.optBoolean("includeTrace", true) else true
+        val log = sh.haven.core.data.NativeCrashLog(context)
+        return JSONObject().apply {
+            put("supported", log.supported)
+            if (!log.supported) {
+                put("note", "Requires Android 11 (API 30); this device reports API ${android.os.Build.VERSION.SDK_INT}.")
+            }
+            val records = log.records().sortedByDescending { it.timestampMs }
+            put("count", records.size)
+            put("crashes", JSONArray().apply {
+                for (r in records) {
+                    put(JSONObject().apply {
+                        put("timestampMs", r.timestampMs)
+                        put("description", r.description)
+                        put("signal", r.signal)
+                        put("hasTrace", r.trace != null)
+                        if (includeTrace && r.trace != null) put("trace", r.trace)
+                    })
+                }
+            })
+        }
+    }
 
     private fun getAppInfo(): JSONObject = JSONObject().apply {
         put("app", "haven")

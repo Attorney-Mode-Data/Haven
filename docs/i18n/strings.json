@@ -30729,9 +30729,51 @@
      }
     },
     {
+     "name": "settings_native_crash_title",
+     "en": "App crashes",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_native_crash_subtitle",
+     "en": "Haven closed unexpectedly. The report below identifies where — please attach it to a bug report.",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_native_crash_no_trace",
+     "en": "No detailed report was kept for this crash.",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_native_crash_copy",
+     "en": "Copy report",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_native_crash_copied",
+     "en": "Crash report copied",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
+     "name": "settings_native_crash_dismiss",
+     "en": "Dismiss",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "settings_audit_log_status_sync",
      "en": "Sync",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "مزامنة",
@@ -30750,7 +30792,7 @@
     {
      "name": "settings_audit_log_status_sync_failed",
      "en": "Sync failed",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "فشل المزامنة",
@@ -30769,7 +30811,7 @@
     {
      "name": "settings_agent_activity_screen_title",
      "en": "Agent activity",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "نشاط الوكيل",
@@ -30788,7 +30830,7 @@
     {
      "name": "settings_agent_activity_cd_clear",
      "en": "Clear history",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "مسح السجل",
@@ -30807,7 +30849,7 @@
     {
      "name": "settings_agent_activity_empty",
      "en": "No agent activity yet.\\n\\nWhen an MCP client calls a tool, the call will appear here with arguments redacted and the result summarised.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "لا يوجد نشاط وكيل بعد.\\n\\nعند استدعاء عميل MCP أداةً، سيظهر الاستدعاء هنا مع إخفاء المعامِلات وتلخيص النتيجة.",
@@ -30826,7 +30868,7 @@
     {
      "name": "settings_agent_activity_clear_dialog_title",
      "en": "Clear agent activity?",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "مسح نشاط الوكيل؟",
@@ -30845,7 +30887,7 @@
     {
      "name": "settings_agent_activity_clear_dialog_text",
      "en": "All recorded MCP calls will be deleted from this device. This cannot be undone.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "ستُحذف جميع استدعاءات MCP المسجّلة من هذا الجهاز. لا يمكن التراجع عن هذا.",
@@ -30864,7 +30906,7 @@
     {
      "name": "settings_agent_activity_unknown_client",
      "en": "unknown client",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "عميل غير معروف",
@@ -30883,7 +30925,7 @@
     {
      "name": "settings_agent_activity_args_redacted",
      "en": "args (redacted)",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "المعامِلات (مخفية)",
@@ -30902,7 +30944,7 @@
     {
      "name": "settings_standing_policies_header",
      "en": "Standing policies — these tools run without asking",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "السياسات الدائمة — تعمل هذه الأدوات دون طلب تأكيد",
@@ -30921,7 +30963,7 @@
     {
      "name": "settings_standing_policy_meta",
      "en": "%1$s · up to %2$d calls/min · expires %3$s",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [
       "%1$s",
       "%2$d",
@@ -30944,7 +30986,7 @@
     {
      "name": "settings_standing_policy_revoke",
      "en": "Revoke",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "إبطال",
@@ -30963,7 +31005,7 @@
     {
      "name": "settings_proot_install_log_screen_title",
      "en": "PRoot install log",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "سجل تثبيت PRoot",
@@ -30982,7 +31024,7 @@
     {
      "name": "settings_proot_install_log_cd_clear",
      "en": "Clear log",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "مسح السجل",
@@ -31001,7 +31043,7 @@
     {
      "name": "settings_proot_install_log_empty",
      "en": "No install events recorded yet. Install a distro via Connections → Desktops to populate this log.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "لا توجد أحداث تثبيت مسجّلة بعد. ثبّت توزيعة عبر الاتصالات ← أسطح المكتب لملء هذا السجل.",
@@ -31020,7 +31062,7 @@
     {
      "name": "settings_proot_install_log_clear_dialog_title",
      "en": "Clear install log?",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "مسح سجل التثبيت؟",
@@ -31039,7 +31081,7 @@
     {
      "name": "settings_proot_install_log_clear_dialog_text",
      "en": "All recorded install events will be removed.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "ستُزال جميع أحداث التثبيت المسجّلة.",
@@ -31058,7 +31100,7 @@
     {
      "name": "settings_ime_flag_no_suggestions_title",
      "en": "Hide suggestion strip",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "إخفاء شريط الاقتراحات",
@@ -31077,7 +31119,7 @@
     {
      "name": "settings_ime_flag_no_suggestions_detail",
      "en": "TYPE_TEXT_FLAG_NO_SUGGESTIONS — universally honoured",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "TYPE_TEXT_FLAG_NO_SUGGESTIONS — مدعوم بشكل عام",
@@ -31096,7 +31138,7 @@
     {
      "name": "settings_ime_flag_visible_password_title",
      "en": "Suppress autocorrect / autocap / autospace",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "كبت التصحيح التلقائي / الكتابة بالأحرف الكبيرة / المسافة التلقائية",
@@ -31115,7 +31157,7 @@
     {
      "name": "settings_ime_flag_visible_password_detail",
      "en": "TYPE_TEXT_VARIATION_VISIBLE_PASSWORD — strongest hint; Gboard honours it. Mutually exclusive with full editor on most IMEs (no swipe / voice).",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "TYPE_TEXT_VARIATION_VISIBLE_PASSWORD — أقوى تلميح؛ يحترمه Gboard. حصري مع محرر كامل على معظم بيئات IME (بدون سحب/صوت).",
@@ -31134,7 +31176,7 @@
     {
      "name": "settings_ime_flag_auto_correct_title",
      "en": "Enable autocorrect protocol",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "تفعيل بروتوكول التصحيح التلقائي",
@@ -31153,7 +31195,7 @@
     {
      "name": "settings_ime_flag_auto_correct_detail",
      "en": "TYPE_TEXT_FLAG_AUTO_CORRECT — required by Samsung Honeyboard\\'s commit-text gate (#110); explicitly enables autocorrect on Gboard.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "TYPE_TEXT_FLAG_AUTO_CORRECT — مطلوب لبوابة commit-text في Samsung Honeyboard (#110)؛ يفعّل صراحةً التصحيح التلقائي على Gboard.",
@@ -31172,7 +31214,7 @@
     {
      "name": "settings_ime_flag_full_editor_title",
      "en": "Voice &amp; swipe (full editor)",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "الصوت والسحب (محرر كامل)",
@@ -31191,7 +31233,7 @@
     {
      "name": "settings_ime_flag_full_editor_detail",
      "en": "Give the IME a real Editable. Needed for voice input, swipe typing, and CJK composition. Conflicts with the autocorrect-suppression hint above.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "إعطاء IME Editable حقيقيًا. مطلوب للإدخال الصوتي والكتابة بالسحب وتأليف CJK. يتعارض مع تلميح كبت التصحيح التلقائي أعلاه.",
@@ -31210,7 +31252,7 @@
     {
      "name": "settings_ime_flag_no_extract_ui_title",
      "en": "Suppress fullscreen IME",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "كبت IME ملء الشاشة",
@@ -31229,7 +31271,7 @@
     {
      "name": "settings_ime_flag_no_extract_ui_detail",
      "en": "IME_FLAG_NO_EXTRACT_UI — stops landscape\\'s fullscreen IME UI from showing.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "IME_FLAG_NO_EXTRACT_UI — يمنع ظهور واجهة IME ملء الشاشة في الوضع الأفقي.",
@@ -31248,7 +31290,7 @@
     {
      "name": "settings_ime_flag_no_learning_title",
      "en": "Block IME from learning",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "منع IME من التعلم",
@@ -31267,7 +31309,7 @@
     {
      "name": "settings_ime_flag_no_learning_detail",
      "en": "IME_FLAG_NO_PERSONALIZED_LEARNING — privacy: IME\\'s word bank ignores typed text. Strong enough on Gboard to also hide the mic.",
-     "comment": "#210 i18n sweep: AuditLogScreen / AgentActivityScreen / ProotInstallLogScreen",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
      "args": [],
      "t": {
       "ar": "IME_FLAG_NO_PERSONALIZED_LEARNING — خصوصية: يتجاهل مستودع كلمات IME ما يُكتب. قوي بما يكفي على Gboard لإخفاء الميكروفون أيضًا.",
