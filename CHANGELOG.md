@@ -5,7 +5,23 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
-## v5.87.2
+## v5.87.3
+
+- If Haven closes unexpectedly, the crash report is now waiting for you in Settings → Connection log.
+- Fixed a crash that a remote program could trigger just by setting a window title.
+
+🐞 **Haven can finally tell you why it crashed.** Two open bug reports have been stuck for days on the same missing piece: the crash log stops at the moment of the crash, right before the part that says *where*. That was Haven's fault. It recorded its log from inside itself, so when it died the recorder died too, and the report the system writes afterwards arrived when Haven was no longer there to read it.
+
+Haven now picks that report up the next time it starts, and shows it in **Settings → Connection log** with a **Copy report** button. If Haven closes unexpectedly, please open that screen and paste what you find into a bug report — it names the exact place the crash happened, which is usually the difference between a fix and a guess. (#509, #517)
+
+Two caveats worth stating. It needs **Android 11 or newer**; on older versions the system simply doesn't offer this, and Haven says so rather than showing you an empty screen and letting you think nothing happened. And it only covers crashes of this specific low-level kind — the sort that close the app instantly, which is exactly the sort that has been hardest to diagnose.
+
+🔡 **Fixed a crash triggerable by a remote program.** When a program on the far end set a window title — or sent one of several other routine terminal messages — containing text Haven couldn't interpret as valid Unicode, Haven closed instantly, with no error and nothing to catch. A window title from a Windows console not set to UTF-8 does this as a matter of course.
+
+Such text is now shown as `�` instead. A terminal that displays a replacement character for a mis-encoded title is behaving correctly; one that vanishes is not.
+
+This was found while investigating #517 and is **not** that crash — that one is still open, and the report above is now the fastest way to solve it.
+
 
 - Toolbar arrows and other repeating keys no longer stop working after you hold one.
 - The keyboard comes back when you switch back to Haven, instead of always hiding.
