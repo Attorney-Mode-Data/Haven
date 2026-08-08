@@ -149,8 +149,10 @@ export CC CXX AR RANLIB STRIP NM
 # the failure message, and check it against upstream before committing it.
 
 fetch_git_tag() {
-    # fetch_git_tag <name> <repo> <ref> <expected-commit-sha>
+    # fetch_git_tag <name> <repo> <ref> <expected-commit-sha> [mirror-url ...]
     local name="$1" repo="$2" ref="$3" want="$4"
+    shift 4
+    local mirrors=("$@")
     local dst="$SRC_DIR/$name"
     if [ ! -d "$dst/.git" ]; then
         echo "  [fetch] $name @ $ref"
@@ -172,10 +174,48 @@ fetch_git_tag() {
             echo "  clone of $name failed (attempt $attempt/3) — retrying" >&2
             sleep 5
         done
+        # Mirrors, for when retrying cannot help: an outage outlasts three
+        # bounded attempts. code.videolan.org went unreachable on 2026-08-08 and
+        # took the F-Droid build of 5.87.1 down at the x264 clone; measured at
+        # 2 successes in 8 probes while it recovered, so a retry was a coin flip.
+        #
+        # Fetched by COMMIT, not by ref, and that is the whole point. A mirror's
+        # branch tip is its own business — github.com/mirror/x264 has `stable` at
+        # 31e19f92 while our pin is b35605ac — so asking for the branch would
+        # fetch different source and fail the check below. Asking for the exact
+        # object either produces that object or fails outright.
+        #
+        # This is why a mirror costs nothing in trust: the pin verification is
+        # unchanged and runs against whatever we end up with, so a hostile or
+        # stale mirror is caught exactly as a tampered primary would be. Every
+        # mirror listed was confirmed to carry the pinned commit before being
+        # added, rather than assumed to be a faithful copy.
+        if [ ! -d "$dst/.git" ] && [ ${#mirrors[@]} -gt 0 ]; then
+            local mirror
+            for mirror in "${mirrors[@]}"; do
+                echo "  [mirror] $name <- $mirror" >&2
+                rm -rf "$dst"
+                mkdir -p "$dst"
+                if (
+                    cd "$dst" &&
+                    git init -q . &&
+                    git remote add origin "$mirror" &&
+                    timeout 120 git fetch --depth 1 -q origin "$want" &&
+                    git checkout -q FETCH_HEAD
+                ) 2>&1 | tail -3; then
+                    break
+                fi
+                echo "  mirror failed for $name: $mirror" >&2
+                rm -rf "$dst"
+            done
+        fi
         # Checked rather than trusted to the loop: the pin verification below
         # reads $dst, and must never run against a directory a failed clone left.
         if [ ! -d "$dst/.git" ]; then
             echo "ERROR: could not clone $name from $repo @ $ref" >&2
+            if [ ${#mirrors[@]} -gt 0 ]; then
+                echo "       ${#mirrors[@]} mirror(s) also failed" >&2
+            fi
             exit 1
         fi
     else
@@ -287,7 +327,8 @@ build_x264() {
     # NB: `stable` is a BRANCH — it moves. The pin is what makes this
     # reproducible; without it every build could compile different x264.
     fetch_git_tag "$name" "https://code.videolan.org/videolan/x264.git" "stable" \
-        "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"
+        "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" \
+        "https://github.com/mirror/x264.git"
 
     local SRC="$SRC_DIR/$name"
     local LOG="$SCRIPT_DIR/dep-$name.log"
@@ -364,7 +405,9 @@ build_vpx() {
         return
     fi
     echo "=== Building libvpx for $ABI ==="
-    fetch_git_tag vpx "https://chromium.googlesource.com/webm/libvpx" "v1.14.1" "12f3a2ac603e8f10742105519e0cd03c3b8f71dd"
+    fetch_git_tag vpx "https://chromium.googlesource.com/webm/libvpx" "v1.14.1" \
+        "12f3a2ac603e8f10742105519e0cd03c3b8f71dd" \
+        "https://github.com/webmproject/libvpx.git"
     local SRC="$SRC_DIR/vpx"
     local LOG="$SCRIPT_DIR/dep-vpx.log"
     local VPX_TARGET VPX_AS
@@ -501,7 +544,12 @@ build_x265() {
         return
     fi
     echo "=== Building libx265 for $ABI ==="
-    fetch_git_tag x265 "https://bitbucket.org/multicoreware/x265_git.git" "4.1" "1d117bed4747758b51bd2c124d738527e30392cb"
+    # bitbucket.org is the one that stopped answering for 300s on CI run
+    # 30887507336; videolan's GitHub mirror carries the same commit.
+    # github.com/multicoreware/x265 does NOT — it was checked and rejected.
+    fetch_git_tag x265 "https://bitbucket.org/multicoreware/x265_git.git" "4.1" \
+        "1d117bed4747758b51bd2c124d738527e30392cb" \
+        "https://github.com/videolan/x265.git"
     local SRC="$SRC_DIR/x265"
     local LOG="$SCRIPT_DIR/dep-x265.log"
     local BUILD="$SCRIPT_DIR/build-$ABI/deps/x265"
