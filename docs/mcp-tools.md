@@ -43,7 +43,7 @@ consent level:
 
 - **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (69 tools).
 - **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (50 tools).
-- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (84 tools).
+- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (85 tools).
 
 ## Sections
 
@@ -57,7 +57,7 @@ consent level:
 - [**USB & host-device brokers**](#sec-usb) — 17 tools
 - [**Security — SSH keys, host keys, TOTP & age**](#sec-security) — 15 tools
 - [**Agent ↔ you (attention & self-drive)**](#sec-agent-you) — 12 tools
-- [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 14 tools
+- [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 15 tools
 
 <a id="sec-connections"></a>
 
@@ -2095,7 +2095,7 @@ Inject a tap (or, with holdMs > 0, a press-and-hold) into HAVEN'S OWN UI at wind
 
 <a id="sec-agent-endpoint"></a>
 
-## Agent endpoint, device & diagnostics (14)
+## Agent endpoint, device & diagnostics (15)
 
 Pairing, standing policies, app info/update, preferences, and device diagnostics.
 
@@ -2116,6 +2116,15 @@ Propose a Tier-3 STANDING POLICY: a scoped, rate-capped, expiring grant that let
 <summary><code>get_app_info</code> · no per-call prompt</summary>
 
 Return Haven version, which optional features are available in this build, and mcpCarriers — which MCP transports are actually open right now (a WireGuard-collision warning if the WG carrier is shadowed by a system VPN, and whether the near/SSH carrier is currently riding a connected interactive session — see McpNearCarrier).
+
+</details>
+
+<details markdown="1">
+<summary><code>get_native_crashes</code> · no per-call prompt</summary>
+
+Return native crashes (SIGSEGV, SIGABRT, …) from previous runs of Haven, newest first, each with the system's tombstone when one was kept — the backtrace that names the failing function and library. This is the diagnostic Haven could not previously produce: it records its own logcat from inside its own process, so a native signal kills the recorder too and the tombstone lands after Haven is gone. Recovered on the next launch from ActivityManager.getHistoricalProcessExitReasons. Requires Android 11 (API 30); on older releases `supported` is false and the list is empty rather than misleadingly so. Kotlin/Java exceptions are NOT here — those do not kill the process this way. Read-only.
+
+- `includeTrace` (boolean) — Include the full tombstone text for each crash. Default true; set false for a short index when the traces are long.
 
 </details>
 
