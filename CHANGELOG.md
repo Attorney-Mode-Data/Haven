@@ -5,7 +5,21 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
-## v5.87.3
+## v5.87.4
+
+- Haven no longer writes hostnames, usernames or clipboard contents to the device log.
+- If you have shared a log with anyone, it may contain more than you intended — worth checking.
+
+🔒 **Haven was writing private details into the device log.** Connection details — username, hostname, IP address, port — and, worse, **anything copied to the clipboard from a remote session** were being recorded in Android's log. A password taken from a password manager, an API token, a private key: if it went through the clipboard in a terminal session, it was written down in plain text. (#518, thanks @skeezmoe)
+
+**What this does and does not mean.** Since Android 4.1 no other app on your phone can read Haven's log, so nothing was quietly harvesting this. The exposure is **sharing**: the log is captured by `adb logcat` and by system bug reports, Haven displays it in Settings, and Haven asks you to send logs when reporting a problem — including through the crash-report feature added in v5.87.3. The person who reported this had to edit their own details out of a log before it was safe to attach.
+
+**If you have shared a Haven log with anyone** — attached one to a bug report, sent one to someone helping you — it is worth going back and checking what was in it. Sorry; it should not have been there.
+
+Haven still logs enough to diagnose problems. Hostnames and names you chose are replaced with a short marker that stays consistent within one run, so a support log still shows which connection did what without saying where it went. Clipboard contents are simply never logged.
+
+A test now fails the build if anyone reintroduces this, in any of the fifty-odd places it could happen.
+
 
 - If Haven closes unexpectedly, the crash report is now waiting for you in Settings → Connection log.
 - Fixed a crash that a remote program could trigger just by setting a window title.
