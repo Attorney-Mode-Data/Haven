@@ -140,4 +140,80 @@ class RdpScancodeTest {
         assertEquals(0x53, SC_DELETE and 0xFF)
         assertEquals(0x5B, SC_WIN_L and 0xFF)
     }
+
+    /**
+     * #507 — no numpad key was mapped at all, so every one of them fell through
+     * to `else -> null` and reached the guest as nothing. Silent on a phone;
+     * visible the moment someone attaches a real keyboard, which is the same
+     * situation that produced the report.
+     */
+    @Test
+    fun `every numpad key maps to a scancode`() {
+        val numpad = mapOf(
+            "NumPad0" to Key.NumPad0, "NumPad1" to Key.NumPad1, "NumPad2" to Key.NumPad2,
+            "NumPad3" to Key.NumPad3, "NumPad4" to Key.NumPad4, "NumPad5" to Key.NumPad5,
+            "NumPad6" to Key.NumPad6, "NumPad7" to Key.NumPad7, "NumPad8" to Key.NumPad8,
+            "NumPad9" to Key.NumPad9, "NumPadEnter" to Key.NumPadEnter,
+            "NumPadDivide" to Key.NumPadDivide, "NumPadMultiply" to Key.NumPadMultiply,
+            "NumPadSubtract" to Key.NumPadSubtract, "NumPadAdd" to Key.NumPadAdd,
+            "NumPadDot" to Key.NumPadDot, "NumLock" to Key.NumLock,
+        )
+        val unmapped = numpad.filterValues { androidKeyToScancode(it) == null }.keys
+        assertTrue("these numpad keys reach the guest as nothing: $unmapped", unmapped.isEmpty())
+    }
+
+    /**
+     * The subtle half. Numpad Enter and Divide ARE E0-prefixed; the rest of the
+     * numpad is not. Getting this backwards is the #422 bug in mirror image —
+     * there, navigation keys were sent bare and pressed their numpad twins.
+     */
+    @Test
+    fun `only numpad Enter and Divide are extended`() {
+        assertTrue("numpad Enter is E0-prefixed", isExtended(SC_NUMPAD_ENTER))
+        assertTrue("numpad Divide is E0-prefixed", isExtended(SC_NUMPAD_DIVIDE))
+
+        val bare = mapOf(
+            "0" to SC_NUMPAD_0, "1" to SC_NUMPAD_1, "2" to SC_NUMPAD_2, "3" to SC_NUMPAD_3,
+            "4" to SC_NUMPAD_4, "5" to SC_NUMPAD_5, "6" to SC_NUMPAD_6, "7" to SC_NUMPAD_7,
+            "8" to SC_NUMPAD_8, "9" to SC_NUMPAD_9, "." to SC_NUMPAD_DOT,
+            "+" to SC_NUMPAD_ADD, "-" to SC_NUMPAD_SUBTRACT, "*" to SC_NUMPAD_MULTIPLY,
+            "NumLock" to SC_NUMLOCK,
+        )
+        bare.forEach { (name, code) ->
+            assertFalse(
+                "numpad $name must NOT be extended — the extended twin is the navigation key",
+                isExtended(code),
+            )
+        }
+    }
+
+    /**
+     * Numpad Enter must not collapse onto Return, and the numpad digits must not
+     * collapse onto the navigation cluster. Both would be silent: the key would
+     * appear to work while pressing something else.
+     */
+    @Test
+    fun `numpad keys are distinct from the keys they share bare codes with`() {
+        assertNotEquals("numpad Enter is not Return", SC_RETURN, SC_NUMPAD_ENTER)
+        assertNotEquals("numpad 8 is not Up", SC_UP, SC_NUMPAD_8)
+        assertNotEquals("numpad 2 is not Down", SC_DOWN, SC_NUMPAD_2)
+        assertNotEquals("numpad 4 is not Left", SC_LEFT, SC_NUMPAD_4)
+        assertNotEquals("numpad 6 is not Right", SC_RIGHT, SC_NUMPAD_6)
+        assertNotEquals("numpad 7 is not Home", SC_HOME, SC_NUMPAD_7)
+        assertNotEquals("numpad 1 is not End", SC_END, SC_NUMPAD_1)
+        assertNotEquals("numpad 0 is not Insert", SC_INSERT, SC_NUMPAD_0)
+        assertNotEquals("numpad . is not Delete", SC_DELETE, SC_NUMPAD_DOT)
+    }
+
+    /** Every numpad scancode is its own key — a duplicate means two keys collide. */
+    @Test
+    fun `numpad scancodes are unique`() {
+        val all = listOf(
+            SC_NUMPAD_0, SC_NUMPAD_1, SC_NUMPAD_2, SC_NUMPAD_3, SC_NUMPAD_4,
+            SC_NUMPAD_5, SC_NUMPAD_6, SC_NUMPAD_7, SC_NUMPAD_8, SC_NUMPAD_9,
+            SC_NUMPAD_DOT, SC_NUMPAD_ADD, SC_NUMPAD_SUBTRACT, SC_NUMPAD_MULTIPLY,
+            SC_NUMPAD_DIVIDE, SC_NUMPAD_ENTER, SC_NUMLOCK,
+        )
+        assertEquals("two numpad keys share a scancode", all.size, all.toSet().size)
+    }
 }

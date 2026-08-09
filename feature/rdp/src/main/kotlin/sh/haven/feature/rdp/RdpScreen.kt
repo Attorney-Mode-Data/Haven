@@ -1500,6 +1500,35 @@ internal fun androidKeyToScancode(key: Key): Int? = when (key) {
     Key.F10 -> SC_F10
     Key.F11 -> SC_F11
     Key.F12 -> SC_F12
+    // Numpad (#507). None of these were mapped at all, so numpad Enter, the
+    // digits and the arrows fell straight through to `else -> null` and reached
+    // the guest as nothing — invisible on a phone, but people do attach real
+    // keyboards, and a numeric keypad is exactly what someone doing data entry
+    // over RDP reaches for.
+    //
+    // These are the BARE Set-1 codes, and that is not an oversight: the numpad
+    // is what those values natively mean. The navigation cluster above borrows
+    // the same numbers with the 0xE000 marker precisely because it is the
+    // *extended* twin of this block. Numpad Enter and Divide are the two
+    // exceptions — they ARE E0-prefixed, sharing their bare codes with Return
+    // and the `/` key.
+    Key.NumPad0 -> SC_NUMPAD_0
+    Key.NumPad1 -> SC_NUMPAD_1
+    Key.NumPad2 -> SC_NUMPAD_2
+    Key.NumPad3 -> SC_NUMPAD_3
+    Key.NumPad4 -> SC_NUMPAD_4
+    Key.NumPad5 -> SC_NUMPAD_5
+    Key.NumPad6 -> SC_NUMPAD_6
+    Key.NumPad7 -> SC_NUMPAD_7
+    Key.NumPad8 -> SC_NUMPAD_8
+    Key.NumPad9 -> SC_NUMPAD_9
+    Key.NumPadEnter -> SC_NUMPAD_ENTER
+    Key.NumPadDivide -> SC_NUMPAD_DIVIDE
+    Key.NumPadMultiply -> SC_NUMPAD_MULTIPLY
+    Key.NumPadSubtract -> SC_NUMPAD_SUBTRACT
+    Key.NumPadAdd -> SC_NUMPAD_ADD
+    Key.NumPadDot -> SC_NUMPAD_DOT
+    Key.NumLock -> SC_NUMLOCK
     else -> null
 }
 
@@ -1518,6 +1547,27 @@ internal fun androidKeyToScancode(key: Key): Int? = when (key) {
 // advertises fast-path input. The native layer now falls back to slow-path
 // TS_INPUT_PDUs for such servers.
 internal const val EXT = 0xE000
+
+// Numpad, Set 1. Bare values — these ARE the meaning of these codes; the
+// navigation cluster above is the E0-prefixed twin of this same block.
+internal const val SC_NUMPAD_7 = 0x47
+internal const val SC_NUMPAD_8 = 0x48
+internal const val SC_NUMPAD_9 = 0x49
+internal const val SC_NUMPAD_SUBTRACT = 0x4A
+internal const val SC_NUMPAD_4 = 0x4B
+internal const val SC_NUMPAD_5 = 0x4C
+internal const val SC_NUMPAD_6 = 0x4D
+internal const val SC_NUMPAD_ADD = 0x4E
+internal const val SC_NUMPAD_1 = 0x4F
+internal const val SC_NUMPAD_2 = 0x50
+internal const val SC_NUMPAD_3 = 0x51
+internal const val SC_NUMPAD_0 = 0x52
+internal const val SC_NUMPAD_DOT = 0x53
+internal const val SC_NUMPAD_MULTIPLY = 0x37
+internal const val SC_NUMLOCK = 0x45
+// The two extended ones: their bare codes belong to Return and `/`.
+internal const val SC_NUMPAD_ENTER = EXT or 0x1C
+internal const val SC_NUMPAD_DIVIDE = EXT or 0x35
 internal const val SC_ESCAPE = 0x01
 internal const val SC_BACKSPACE = 0x0E
 internal const val SC_TAB = 0x0F
