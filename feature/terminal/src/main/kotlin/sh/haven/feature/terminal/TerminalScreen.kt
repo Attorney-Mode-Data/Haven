@@ -134,6 +134,17 @@ private val TAB_STRIP_PADDING = 4.dp
 private val MIN_JUSTIFIED_TAB_WIDTH = 96.dp
 
 /** Distinct colors for grouping tabs by connection profile. */
+/**
+ * Above this relative luminance a background counts as bright enough to need
+ * dark system-bar icons (#523).
+ *
+ * Compose's [luminance] is already perceptual (Rec. 709, gamma-corrected), so
+ * a mid grey lands near 0.2 rather than 0.5 — the halfway point of the scale
+ * is well above mid grey, which is what we want: only genuinely light
+ * backgrounds such as Solarized Light flip the icons dark.
+ */
+private const val BRIGHT_BACKGROUND_LUMINANCE = 0.5f
+
 private val TAB_GROUP_COLORS = listOf(
     Color(0xFF42A5F5), // blue
     Color(0xFF66BB6A), // green
@@ -203,6 +214,17 @@ fun TerminalScreen(
     // see-through) background, so the host can make the Scaffold/window
     // behind the terminal transparent. False otherwise.
     onTransparentChanged: (Boolean) -> Unit = {},
+    /**
+     * The active terminal's background colour while this pane is showing, or
+     * null when it isn't (#523).
+     *
+     * The terminal's colours come from its own colour scheme, independent of
+     * the app theme, so a black scheme under a light app theme left a white
+     * strip behind the status bar with the terminal starting abruptly beneath
+     * it. The host paints its container with this so the terminal reaches the
+     * top of the screen.
+     */
+    onBackgroundColorChanged: (Color?) -> Unit = {},
     onReorderModeChanged: (Boolean) -> Unit = {},
     onToolbarLayoutChanged: (ToolbarLayout) -> Unit = {},
     snippetLibrary: List<ToolbarItem.Custom> = emptyList(),
@@ -652,6 +674,34 @@ fun TerminalScreen(
     val showWallpaper = isActive && effectiveBgOpacity < 1f
     LaunchedEffect(showWallpaper) { onTransparentChanged(showWallpaper) }
     DisposableEffect(Unit) { onDispose { onTransparentChanged(false) } }
+
+    // Carry the terminal's own background up to the host so it reaches behind
+    // the status bar, and match the status-bar icons to it (#523).
+    //
+    // Only while this pane is actually showing, and only when it is opaque —
+    // a translucent terminal already hands the host Color.Transparent above,
+    // and painting a solid colour underneath would defeat that.
+    val statusBarBg = if (isActive && effectiveBgOpacity >= 1f) terminalBg else null
+    LaunchedEffect(statusBarBg) { onBackgroundColorChanged(statusBarBg) }
+    DisposableEffect(Unit) { onDispose { onBackgroundColorChanged(null) } }
+
+    // Icon contrast follows the colour scheme's measured luminance rather than
+    // the app's light/dark theme. Deciding from the theme would put dark icons
+    // on a black terminal whenever the app is in light mode, which is the
+    // reported bug in mirror image; deciding from a scheme's *name* would fail
+    // for the light schemes (Solarized Light, Modern Light) that need the
+    // opposite treatment. `isAppearanceLightStatusBars` means "light
+    // background, so draw dark icons".
+    // Falling back to the app's own background when this pane isn't showing
+    // keeps it symmetric: the icons always contrast whatever is actually
+    // painted behind them, so leaving the terminal restores the theme's
+    // treatment without having to remember what it was.
+    val appBg = MaterialTheme.colorScheme.background
+    LaunchedEffect(statusBarBg, appBg, window) {
+        if (window == null) return@LaunchedEffect
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+            (statusBarBg ?: appBg).luminance() > BRIGHT_BACKGROUND_LUMINANCE
+    }
 
     val saveConnectionUi by viewModel.saveConnectionUi.collectAsState()
     saveConnectionUi?.let { ui ->
