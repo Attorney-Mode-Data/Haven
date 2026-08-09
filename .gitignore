@@ -69,3 +69,4 @@ core/wayland/src/main/jniLibs/*/*.so
 # buildFfmpegNatives task (#493). 172 MB of committed blobs that nothing
 # rebuilt; F-Droid always built them from source, our releases never did.
 core/ffmpeg/src/main/jniLibs/*/*.so
+.grepai/
