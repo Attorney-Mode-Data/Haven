@@ -13,6 +13,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "BtSerialSessionManager"
 
@@ -102,7 +103,7 @@ class BtSerialSessionManager @Inject constructor(
         val transport = try {
             withContext(Dispatchers.IO) { openTransport(state.deviceAddress, state.secure) }
         } catch (e: Exception) {
-            Log.e(TAG, "RFCOMM connect failed for ${state.label}: ${e.message}")
+            Log.e(TAG, "RFCOMM connect failed for ${LogRedact.of(state.label)}: ${e.message}")
             updateStatus(sessionId, SessionState.Status.ERROR)
             throw e
         }

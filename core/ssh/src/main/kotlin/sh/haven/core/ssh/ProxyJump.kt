@@ -8,6 +8,7 @@ import com.jcraft.jsch.SocketFactory
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "ProxyJump"
 
@@ -41,7 +42,7 @@ class ProxyJump(private val jumpSession: Session) : Proxy {
         private set
 
     override fun connect(factory: SocketFactory?, host: String, port: Int, timeout: Int) {
-        Log.d(TAG, "Opening direct-tcpip channel to $host:$port (timeout=${timeout}ms, jumpConnected=${jumpSession.isConnected})")
+        Log.d(TAG, "Opening direct-tcpip channel to ${LogRedact.host(host, port)} (timeout=${timeout}ms, jumpConnected=${jumpSession.isConnected})")
         target = "$host:$port"
         val ch = jumpSession.getStreamForwarder(host, port)
         // Bind the streams BEFORE connecting: getInputStream() is what installs
@@ -61,13 +62,13 @@ class ProxyJump(private val jumpSession: Session) : Proxy {
         // auth later in the handshake is never cut off. (#383)
         deadline = FirstByteDeadlineInputStream(raw, timeout.toLong()) {
             timedOut = true
-            Log.w(TAG, "No reply from $host:$port through the jump host after ${timeout}ms — closing the channel")
+            Log.w(TAG, "No reply from ${LogRedact.host(host, port)} through the jump host after ${timeout}ms — closing the channel")
             try { ch.disconnect() } catch (_: Exception) { /* best effort — unblocking the read is the point */ }
         }
         input = deadline
         ch.connect(timeout)
         channel = ch
-        Log.d(TAG, "Channel connected to $host:$port")
+        Log.d(TAG, "Channel connected to ${LogRedact.host(host, port)}")
     }
 
     /** Message for a [timedOut] connect — says which hop went quiet. */

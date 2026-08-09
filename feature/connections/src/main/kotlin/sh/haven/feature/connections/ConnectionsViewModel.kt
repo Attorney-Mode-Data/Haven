@@ -81,6 +81,7 @@ import android.util.Log
 import sh.haven.core.ssh.HavenProxy
 import java.io.File
 import javax.inject.Inject
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "ConnectionsVM"
 
@@ -1169,12 +1170,12 @@ class ConnectionsViewModel @Inject constructor(
                     return@launch
                 }
                 if (decision.backoffMs > 0) {
-                    Log.d(TAG, "Mosh reconnect for ${profile.label} in ${decision.backoffMs}ms (attempt ${decision.attempt})")
+                    Log.d(TAG, "Mosh reconnect for ${LogRedact.of(profile.label)} in ${decision.backoffMs}ms (attempt ${decision.attempt})")
                     delay(decision.backoffMs)
                 }
                 moshReconnectState[profileId] =
                     MoshReconnectState(decision.attempt, System.currentTimeMillis())
-                Log.d(TAG, "Mosh session for ${profile.label} died — reconnecting (attempt ${decision.attempt}) (#421)")
+                Log.d(TAG, "Mosh session for ${LogRedact.of(profile.label)} died — reconnecting (attempt ${decision.attempt}) (#421)")
                 connectMoshSilent(profile)
             } catch (e: Exception) {
                 Log.e(TAG, "Mosh auto-reconnect failed for $profileId: ${e.message} — retrying (#421)", e)
@@ -1723,7 +1724,7 @@ class ConnectionsViewModel @Inject constructor(
                         connectSilent(profile)
                         true
                     } catch (e: Exception) {
-                        Log.e(TAG, "Group launch failed for ${profile.label}: ${e.message}")
+                        Log.e(TAG, "Group launch failed for ${LogRedact.of(profile.label)}: ${e.message}")
                         false
                     }
                     _groupLaunchState.update { state ->
@@ -1962,7 +1963,7 @@ class ConnectionsViewModel @Inject constructor(
         )
         val jumpProfile = if (isAuthMessage) repository.getById(sshProfileId) else null
         if (jumpProfile != null) {
-            Log.d(TAG, "Jump-host auth failed; prompting for password (${jumpProfile.label})")
+            Log.d(TAG, "Jump-host auth failed; prompting for password (${LogRedact.of(jumpProfile.label)})")
             _pendingTunnelDependent.value = dependentProfile
             _passwordFallback.value = jumpProfile
         } else {
@@ -2301,7 +2302,7 @@ class ConnectionsViewModel @Inject constructor(
                         sshClient.setPortForwardingL("127.0.0.1", 0, host, port)
                     }
                     sshClientCloseable = sshClient
-                    Log.d(TAG, "SMB SSH tunnel: 127.0.0.1:$tunnelPort -> $host:$port")
+                    Log.d(TAG, "SMB SSH tunnel: 127.0.0.1:$tunnelPort -> ${LogRedact.host(host, port)}")
                 }
 
                 // WireGuard / Tailscale routing — only used when not going
@@ -2719,7 +2720,7 @@ class ConnectionsViewModel @Inject constructor(
                 localSessionManager.prootManager.uninstallDesktop(de)
                 localSessionManager.prootManager.resetDesktopState()
             } catch (e: Exception) {
-                Log.e(TAG, "uninstallDesktop failed for ${de.label}", e)
+                Log.e(TAG, "uninstallDesktop failed for ${LogRedact.of(de.label)}", e)
                 _error.value = "Uninstall failed: ${e.message}"
             }
         }
@@ -2750,7 +2751,7 @@ class ConnectionsViewModel @Inject constructor(
         viewModelScope.launch {
             val desktopManager = localSessionManager.desktopManager
             val shellCmd = preferencesRepository.waylandShellCommand.first()
-            Log.d(TAG, "startDesktop: ${de.label} shell=$shellCmd")
+            Log.d(TAG, "startDesktop: ${LogRedact.of(de.label)} shell=$shellCmd")
             withContext(Dispatchers.IO) {
                 desktopManager.startDesktop(de, shellCmd)
             }
@@ -3227,7 +3228,7 @@ class ConnectionsViewModel @Inject constructor(
                         // re-establishes the shared client) and a fresh empty
                         // Password so tearDown's auth-zeroing can never reach
                         // back into the primary's live credential.
-                        Log.i(TAG, "Reusing live SSH connection to ${profile.label} for a second session (no new dial)")
+                        Log.i(TAG, "Reusing live SSH connection to ${LogRedact.of(profile.label)} for a second session (no new dial)")
                         val config = ConnectionConfig(
                             host = profile.host,
                             port = profile.port,
@@ -3264,7 +3265,7 @@ class ConnectionsViewModel @Inject constructor(
                         } else {
                             tunnelResolver.havenProxy(profile)
                         }
-                        Log.d(TAG, "Connecting to ${config.host}:${config.port} (proxy=${proxy != null})")
+                        Log.d(TAG, "Connecting to ${LogRedact.host(config.host, config.port)} (proxy=${proxy != null})")
                         try {
                             val hostKeyEntry = client.connect(
                                 config,
@@ -3359,7 +3360,7 @@ class ConnectionsViewModel @Inject constructor(
                     maybeAutoDeployKey(profile, password)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "connectSsh failed for ${profile.label}: ${e.message}", e)
+                Log.e(TAG, "connectSsh failed for ${LogRedact.of(profile.label)}: ${e.message}", e)
                 connectionLogRepository.logEvent(profile.id, ConnectionLog.Status.FAILED, details = e.message, verboseLog = verboseLogger?.drain())
                 sshSessionManager.updateStatus(sessionId, SshSessionManager.SessionState.Status.ERROR)
                 sshSessionManager.removeSession(sessionId)
@@ -3394,7 +3395,7 @@ class ConnectionsViewModel @Inject constructor(
                         msg.ifBlank { "Security key authentication failed" }
                     }
                 } else if (isAuthError) {
-                    Log.d(TAG, "Auth failed, showing password fallback for ${profile.label}")
+                    Log.d(TAG, "Auth failed, showing password fallback for ${LogRedact.of(profile.label)}")
                     _passwordFallback.value = profile
                 } else if (keyOnly && !isNetworkError && msg.isBlank()) {
                     _passwordFallback.value = profile
@@ -3648,7 +3649,7 @@ class ConnectionsViewModel @Inject constructor(
                 // and nothing running) start a fresh one.
                 finishEtConnect(sessionId, profile, client, smgr, autoAttach, verboseLogger = verboseLogger)
             } catch (e: Exception) {
-                Log.e(TAG, "connectEternalTerminal failed for ${profile.label}: ${e.message}", e)
+                Log.e(TAG, "connectEternalTerminal failed for ${LogRedact.of(profile.label)}: ${e.message}", e)
                 connectionLogRepository.logEvent(profile.id, ConnectionLog.Status.FAILED, details = e.message, verboseLog = verboseLogger?.drain())
                 etPendingClient?.disconnect()
                 etPendingClient = null
@@ -3769,7 +3770,7 @@ class ConnectionsViewModel @Inject constructor(
                 // and nothing running) start a fresh one.
                 finishMoshConnect(sessionId, profile.id, profile.host, client, smgr, autoAttach, verboseLogger = verboseLogger)
             } catch (e: Exception) {
-                Log.e(TAG, "connectMosh failed for ${profile.label}: ${e.message}", e)
+                Log.e(TAG, "connectMosh failed for ${LogRedact.of(profile.label)}: ${e.message}", e)
                 connectionLogRepository.logEvent(profile.id, ConnectionLog.Status.FAILED, details = e.message, verboseLog = verboseLogger?.drain())
                 moshPendingClient?.disconnect()
                 moshPendingClient = null
@@ -4193,7 +4194,7 @@ class ConnectionsViewModel @Inject constructor(
             savedSshPassword = jumpProfile.sshPassword,
         )
 
-        Log.d(TAG, "Auto-connecting jump host: ${jumpProfile.label} (${jumpProfile.host}:${jumpProfile.port})")
+        Log.d(TAG, "Auto-connecting jump host: ${LogRedact.of(jumpProfile.label)} (${LogRedact.host(jumpProfile.host, jumpProfile.port)})")
         // #381: a jump-host connect used to log nothing to the in-app
         // connection log and never wired a verbose SSH logger, so an auth
         // failure on the jump leg went only to logcat with no detail on WHY
@@ -4258,7 +4259,7 @@ class ConnectionsViewModel @Inject constructor(
             }
 
             sshSessionManager.updateStatus(jumpSessionId, SshSessionManager.SessionState.Status.CONNECTED)
-            Log.d(TAG, "Jump host connected: ${jumpProfile.label} ($jumpSessionId), isConnected=${jumpClient.isConnected}")
+            Log.d(TAG, "Jump host connected: ${LogRedact.of(jumpProfile.label)} ($jumpSessionId), isConnected=${jumpClient.isConnected}")
             connectionLogRepository.logEvent(jumpProfileId, ConnectionLog.Status.CONNECTED, verboseLog = jumpVerbose?.drain())
             // Newly-opened tunnel session: bind it to its owner so the
             // session is torn down when the owner disconnects (#121).
@@ -4271,7 +4272,7 @@ class ConnectionsViewModel @Inject constructor(
             // session orphaned in the active-sessions list — undismissable,
             // and one accumulates per retry (#121, KoriKraut: "5 active
             // sessions"). Mark it ERROR and unregister before re-throwing.
-            Log.e(TAG, "Jump host connect failed for ${jumpProfile.label}: ${e.message}", e)
+            Log.e(TAG, "Jump host connect failed for ${LogRedact.of(jumpProfile.label)}: ${e.message}", e)
             connectionLogRepository.logEvent(jumpProfileId, ConnectionLog.Status.FAILED, details = e.message, verboseLog = jumpVerbose?.drain())
             sshSessionManager.updateStatus(jumpSessionId, SshSessionManager.SessionState.Status.ERROR)
             sshSessionManager.removeSession(jumpSessionId)
@@ -4748,7 +4749,7 @@ class ConnectionsViewModel @Inject constructor(
             // it, not key material, so they go through verbatim exactly as
             // an SK credential handle does.
             if (key.keyType == OpenKeychainKeyData.KEY_TYPE) {
-                Log.d(TAG, "Using a provider-held key: ${key.label}")
+                Log.d(TAG, "Using a provider-held key: ${LogRedact.of(key.label)}")
                 return ConnectionConfig.AuthMethod.ProviderKey(
                     keyData = keyBytes,
                     keyLabel = key.label,
@@ -5274,7 +5275,7 @@ class ConnectionsViewModel @Inject constructor(
                 }
                 if (result.exitStatus == 0) {
                     _deploySuccess.value = true
-                    Log.d(TAG, "Auto-deployed SSH key to ${profile.host}:${profile.port}")
+                    Log.d(TAG, "Auto-deployed SSH key to ${LogRedact.host(profile.host, profile.port)}")
                 }
             } catch (e: Exception) {
                 Log.d(TAG, "Auto-deploy key failed (non-fatal): ${e.message}")
@@ -5575,7 +5576,7 @@ class ConnectionsViewModel @Inject constructor(
             }
             finishConnect(sessionId, profile.id, verboseLog = verboseLogger?.drain(), silent = true)
         } catch (e: Exception) {
-            Log.e(TAG, "connectSshSilent failed for ${profile.label}: ${e.message}", e)
+            Log.e(TAG, "connectSshSilent failed for ${LogRedact.of(profile.label)}: ${e.message}", e)
             connectionLogRepository.logEvent(profile.id, ConnectionLog.Status.FAILED, details = e.message, verboseLog = verboseLogger?.drain())
             sshSessionManager.updateStatus(sessionId, SshSessionManager.SessionState.Status.ERROR)
             sshSessionManager.removeSession(sessionId)
@@ -5610,7 +5611,7 @@ class ConnectionsViewModel @Inject constructor(
                 startupCommand = profile.remoteCommand?.takeIf { it.isNotBlank() },
             )
         } catch (e: Exception) {
-            Log.e(TAG, "connectMoshSilent failed for ${profile.label}: ${e.message}", e)
+            Log.e(TAG, "connectMoshSilent failed for ${LogRedact.of(profile.label)}: ${e.message}", e)
             connectionLogRepository.logEvent(profile.id, ConnectionLog.Status.FAILED, details = e.message, verboseLog = verboseLogger?.drain())
             moshSessionManager.updateStatus(sessionId, MoshSessionManager.SessionState.Status.ERROR)
             moshSessionManager.removeSession(sessionId)
@@ -5667,7 +5668,7 @@ class ConnectionsViewModel @Inject constructor(
                 finishEtConnect(sessionId, profile, client, smgr, profile.lastSessionName, silent = true, verboseLogger = verboseLogger)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "connectEtSilent failed for ${profile.label}: ${e.message}", e)
+            Log.e(TAG, "connectEtSilent failed for ${LogRedact.of(profile.label)}: ${e.message}", e)
             connectionLogRepository.logEvent(profile.id, ConnectionLog.Status.FAILED, details = e.message, verboseLog = verboseLogger?.drain())
             etSessionManager.updateStatus(sessionId, EtSessionManager.SessionState.Status.ERROR)
             etSessionManager.removeSession(sessionId)

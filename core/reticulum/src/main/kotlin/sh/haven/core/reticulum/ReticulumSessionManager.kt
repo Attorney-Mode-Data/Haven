@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.update
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "ReticulumSessionManager"
 
@@ -88,7 +89,7 @@ class ReticulumSessionManager @Inject constructor(
             ?: throw IllegalStateException("Session $sessionId not found")
 
         // Init Reticulum (idempotent — safe to call multiple times)
-        Log.w(TAG, "initReticulum: host=$host port=$port ifac=${ifacNetname != null} tunnel=${socketDialer != null}")
+        Log.w(TAG, "initReticulum: host=${LogRedact.of(host)} port=$port ifac=${ifacNetname != null} tunnel=${socketDialer != null}")
         val identityHash = transport.init(configDir, host, port, ifacNetname, ifacNetkey, socketDialer)
         Log.w(TAG, "initReticulum OK, identity=$identityHash")
 

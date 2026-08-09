@@ -15,6 +15,7 @@ import sh.haven.core.security.KeystoreSection
 import sh.haven.core.security.KeystoreStore
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "SshKeySection"
 
@@ -70,7 +71,7 @@ class SshKeySection @Inject constructor(
      */
     override suspend fun fetch(entryId: String): KeystoreFetch {
         val row = sshKeyDao.getById(entryId) ?: return KeystoreFetch.NotFound
-        Log.d(TAG, "fetch(id=$entryId, label=${row.label}, biometricProtected=${row.biometricProtected})")
+        Log.d(TAG, "fetch(id=$entryId, label=${LogRedact.of(row.label)}, biometricProtected=${row.biometricProtected})")
         // Biometric gate runs *before* the decrypt — a denied prompt
         // returns Failed without ever asking Tink to unwrap the bytes.
         // Foreground-inactive surfaces as the same Failed string so a

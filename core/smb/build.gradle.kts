@@ -23,6 +23,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:redact"))
     api(libs.smbj)
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)

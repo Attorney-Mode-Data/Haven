@@ -22,6 +22,7 @@ import sh.haven.core.ssh.SshSessionAttacher
 import sh.haven.core.ssh.SshSessionManager
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "WorkspaceLauncher"
 
@@ -282,7 +283,7 @@ class WorkspaceLauncher @Inject constructor(
                 is SshSessionAttacher.Result.Attached -> {
                     liveSessionId = liveSessionId ?: r.sessionId
                     if (wasGone) {
-                        Log.i(TAG, "session '$name' was gone on ${profile.label} — recreated")
+                        Log.i(TAG, "session '$name' was gone on ${LogRedact.of(profile.label)} — recreated")
                     }
                     progress.update(
                         item.id,

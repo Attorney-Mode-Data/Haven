@@ -18,6 +18,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.EnumSet
 import javax.net.SocketFactory
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "SmbClient"
 
@@ -88,7 +89,7 @@ class SmbClient : Closeable {
         connection = conn
         session = sess
         share = diskShare
-        Log.d(TAG, "Connected to \\\\${p.host}\\${p.shareName}")
+        Log.d(TAG, "Connected to \\\\${LogRedact.of(p.host)}\\${p.shareName}")
     }
 
     /**

@@ -23,6 +23,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:redact"))
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
     implementation(libs.hilt.android)

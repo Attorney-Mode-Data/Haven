@@ -59,6 +59,7 @@ import sh.haven.feature.vnc.VncViewModel
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.inject.Inject
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "DesktopViewModel"
 
@@ -434,7 +435,7 @@ class DesktopViewModel @Inject constructor(
     fun startDesktop(de: ProotManager.DesktopEnvironment) {
         viewModelScope.launch {
             val shellCmd = preferencesRepository.waylandShellCommand.first()
-            Log.d(TAG, "startDesktop: ${de.label} shell=$shellCmd")
+            Log.d(TAG, "startDesktop: ${LogRedact.of(de.label)} shell=$shellCmd")
             withContext(Dispatchers.IO) {
                 desktopManager.startDesktop(de, shellCmd)
             }
@@ -479,7 +480,7 @@ class DesktopViewModel @Inject constructor(
                     desktopManager.markRunning(de)
                 }
                 is DesktopStartOutcome.Error -> {
-                    Log.e(TAG, "startDesktop: ${de.label} failed — ${outcome.message}")
+                    Log.e(TAG, "startDesktop: ${LogRedact.of(de.label)} failed — ${outcome.message}")
                     val activeDistro = prootManager.activeDistroId
                     // Surface to the user via a toast + the Manage row's
                     // ERROR chip (DesktopManager already holds the state).
@@ -1270,7 +1271,7 @@ class DesktopViewModel @Inject constructor(
                     val lp = sshClient.setPortForwardingL("127.0.0.1", 0, "127.0.0.1", port)
                     actualHost = "127.0.0.1"
                     actualPort = lp
-                    Log.d(TAG, "VNC SSH tunnel: localhost:$lp -> 127.0.0.1:$port (via $host)")
+                    Log.d(TAG, "VNC SSH tunnel: localhost:$lp -> 127.0.0.1:$port (via ${LogRedact.of(host)})")
                     // Tie this tab to the SSH session: if the SSH is torn down
                     // for any reason (Connections-list disconnect, network
                     // death, jump cascade), the lease fires and closes the tab
@@ -1512,7 +1513,7 @@ class DesktopViewModel @Inject constructor(
                     val lp = sshClient.setPortForwardingL("127.0.0.1", 0, host, port)
                     actualHost = "127.0.0.1"
                     actualPort = lp
-                    Log.d(TAG, "RDP SSH tunnel: localhost:$lp -> $host:$port")
+                    Log.d(TAG, "RDP SSH tunnel: localhost:$lp -> ${LogRedact.host(host, port)}")
                     // Tie this tab to the SSH session so it closes if the SSH
                     // is torn down for any reason (#121).
                     if (profileId != null) {
@@ -1533,7 +1534,7 @@ class DesktopViewModel @Inject constructor(
                                     host = addr.hostString,
                                     port = addr.port.toUShort(),
                                 )
-                                Log.d(TAG, "RDP routed via SOCKS5 ${addr.hostString}:${addr.port} -> $host:$port")
+                                Log.d(TAG, "RDP routed via SOCKS5 ${LogRedact.of(addr.hostString)}:${addr.port} -> ${LogRedact.host(host, port)}")
                             }
                         }
                     }
@@ -1750,7 +1751,7 @@ class DesktopViewModel @Inject constructor(
                     val lp = sshClient.setPortForwardingL("127.0.0.1", 0, host, port)
                     actualHost = "127.0.0.1"
                     actualPort = lp
-                    Log.d(TAG, "SPICE SSH tunnel: localhost:$lp -> $host:$port")
+                    Log.d(TAG, "SPICE SSH tunnel: localhost:$lp -> ${LogRedact.host(host, port)}")
                     if (profileId != null) {
                         tunnelLease = sshSessionManager.acquireTunnelLease(
                             sessionId = sshSessionId,

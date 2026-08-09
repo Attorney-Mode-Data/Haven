@@ -33,6 +33,7 @@ import sh.haven.core.reticulum.ReticulumSessionManager
 import sh.haven.core.data.db.entities.ConnectionProfile
 import sh.haven.core.data.preferences.UserPreferencesRepository
 import javax.inject.Inject
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "TerminalViewModel"
 
@@ -2604,7 +2605,7 @@ class TerminalViewModel @Inject constructor(
                         is HostKeyResult.NewHost -> {
                             client.disconnect()
                             sessionManager.removeSession(sessionId)
-                            Log.w(TAG, "Unknown host key for ${config.host}:${config.port} — aborting new tab")
+                            Log.w(TAG, "Unknown host key for ${LogRedact.host(config.host, config.port)} — aborting new tab")
                             _newTabMessage.value = appContext.getString(
                                 R.string.terminal_new_tab_host_key_unknown,
                                 "${config.host}:${config.port}",
@@ -2615,7 +2616,7 @@ class TerminalViewModel @Inject constructor(
                         is HostKeyResult.KeyChanged -> {
                             client.disconnect()
                             sessionManager.removeSession(sessionId)
-                            Log.w(TAG, "Host key changed for ${config.host}:${config.port} — aborting new tab")
+                            Log.w(TAG, "Host key changed for ${LogRedact.host(config.host, config.port)} — aborting new tab")
                             _newTabMessage.value = appContext.getString(
                                 R.string.terminal_new_tab_host_key_changed,
                                 "${config.host}:${config.port}",

@@ -27,6 +27,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:redact"))
     implementation(project(":core:security"))
     // The Keystore aggregator surfaces FIDO SK credentials alongside
     // regular SSH keys, so the SshKeySection adapter needs SkKeyData

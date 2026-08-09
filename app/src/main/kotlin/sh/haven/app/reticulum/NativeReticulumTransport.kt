@@ -26,6 +26,7 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "NativeReticulumTransport"
 
@@ -89,7 +90,7 @@ class NativeReticulumTransport @Inject constructor() : ReticulumTransport {
             return@withContext clientIdentity?.hexHash ?: "already-initialised"
         }
 
-        Log.d(TAG, "init: configDir=$configDir, host=$host, port=$port")
+        Log.d(TAG, "init: configDir=$configDir, host=${LogRedact.of(host)}, port=$port")
         File(configDir).mkdirs()
 
         val isSideband = host in listOf("127.0.0.1", "localhost", "::1") && port == 37428
@@ -126,7 +127,7 @@ class NativeReticulumTransport @Inject constructor() : ReticulumTransport {
                 Thread.sleep(100)
             }
             if (!tcpClient.online.get()) {
-                Log.w(TAG, "TCP connection to $host:$port not established within 10s")
+                Log.w(TAG, "TCP connection to ${LogRedact.host(host, port)} not established within 10s")
             }
         }
 

@@ -13,6 +13,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "BleSerialSessionManager"
 
@@ -98,7 +99,7 @@ class BleSerialSessionManager @Inject constructor(
         val link = try {
             withContext(Dispatchers.IO) { openLink(state.deviceAddress, state.params) }
         } catch (e: Exception) {
-            Log.e(TAG, "GATT connect failed for ${state.label}: ${e.message}")
+            Log.e(TAG, "GATT connect failed for ${LogRedact.of(state.label)}: ${e.message}")
             updateStatus(sessionId, SessionState.Status.ERROR)
             throw e
         }

@@ -25,6 +25,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:redact"))
     implementation(project(":core:ui"))
     implementation(project(":core:security"))
     implementation(project(":core:ssh"))

@@ -10,6 +10,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "SmbSessionManager"
 
@@ -77,7 +78,7 @@ class SmbSessionManager @Inject constructor() {
         _sessions.value[sessionId]
             ?: throw IllegalStateException("Session $sessionId not found")
 
-        Log.d(TAG, "Connecting SMB session: \\\\$host\\$shareName (ssh tunnel: ${sshClient != null}, wg/ts tunnel: ${socketFactory != null})")
+        Log.d(TAG, "Connecting SMB session: \\\\${LogRedact.of(host)}\\$shareName (ssh tunnel: ${sshClient != null}, wg/ts tunnel: ${socketFactory != null})")
 
         val client = SmbClient()
         try {

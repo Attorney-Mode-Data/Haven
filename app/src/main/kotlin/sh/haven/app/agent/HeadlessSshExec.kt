@@ -16,6 +16,7 @@ import sh.haven.core.ssh.SshKeyExporter
 import sh.haven.core.ssh.SshSessionManager
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 /**
  * One-shot `command in, output out` execution on a saved SSH profile for the
@@ -75,7 +76,7 @@ class HeadlessSshExec @Inject constructor(
                 // "Not connected": the session status raced the transport
                 // (e.g. a mosh session whose bootstrap SSH client is gone).
                 // Fall through to a fresh headless connect.
-                Log.i(TAG, "Live client for '${stored.label}' not usable (${e.message}) — trying headless connect")
+                Log.i(TAG, "Live client for '${LogRedact.of(stored.label)}' not usable (${e.message}) — trying headless connect")
             }
         }
 
@@ -110,7 +111,7 @@ class HeadlessSshExec @Inject constructor(
                 if (newHost == null) {
                     throw McpError(-32603, "Connect to '${profile.label}' failed: ${e.message ?: e.cause?.message ?: e.javaClass.simpleName}")
                 }
-                Log.i(TAG, "'${profile.label}' host rediscovered ${profile.host} → $newHost — retrying")
+                Log.i(TAG, "'${LogRedact.of(profile.label)}' host rediscovered ${LogRedact.of(profile.host)} → ${LogRedact.of(newHost)} — retrying")
                 try {
                     client.connect(config.copy(host = newHost), trustedHostCaKeys = hostKeyVerifier.trustedHostCaKeys())
                 } catch (e2: Exception) {

@@ -45,6 +45,7 @@ import sh.haven.core.ssh.SshKeyExporter
 import sh.haven.core.ssh.SshKeyImporter
 import sh.haven.core.stepca.StepCaSignFlow
 import javax.inject.Inject
+import sh.haven.core.redact.LogRedact
 
 /**
  * One row in the discovery picker after [KeysViewModel.discoverFromSecurityKey]
@@ -739,7 +740,7 @@ class KeysViewModel @Inject constructor(
                 }
                 repository.save(key.copy(privateKeyBytes = SkKeyData.serialize(sk.copy(flags = newFlags))))
                 _message.value = if (required) "Key now requires a PIN at sign-in" else "Key is now touch-only"
-                Log.d("KeysViewModel", "SK verify-required set to $required for ${key.label}")
+                Log.d("KeysViewModel", "SK verify-required set to $required for ${LogRedact.of(key.label)}")
             } catch (e: Exception) {
                 Log.e("KeysViewModel", "setSkVerifyRequired failed", e)
                 _error.value = "Couldn't update the key: ${e.message}"

@@ -58,6 +58,7 @@ import sh.haven.core.ssh.SshConnectionService
 import sh.haven.core.ui.KeyEventInterceptor
 import sh.haven.core.ui.theme.HavenTheme
 import javax.inject.Inject
+import sh.haven.core.redact.LogRedact
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -405,7 +406,7 @@ class MainActivity : AppCompatActivity() {
         val params = ConnectDeepLink.parse { data.getQueryParameter(it) } ?: return
         if (!isFreshDeepLink(data)) return
         intent.data = null
-        Log.d("MainActivity", "connect deep link host=${params.host} transport=${params.transport}")
+        Log.d("MainActivity", "connect deep link host=${LogRedact.of(params.host)} transport=${params.transport}")
         MainScope().launch {
             agentUiCommandBus.emit(ConnectDeepLink.resolve(connectionRepository.getAll(), params))
         }

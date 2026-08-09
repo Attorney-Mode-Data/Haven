@@ -24,6 +24,7 @@ import sh.haven.core.ssh.SshClient
 import sh.haven.core.ssh.SshSessionManager
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "McpTunnelManager"
 
@@ -371,7 +372,7 @@ class McpTunnelManager @Inject constructor(
             return Outcome.FATAL
         }
         if (!storedProfile.isSsh) {
-            Log.w(TAG, "MCP tunnel endpoint profile ${storedProfile.label} is not SSH — ignoring")
+            Log.w(TAG, "MCP tunnel endpoint profile ${LogRedact.of(storedProfile.label)} is not SSH — ignoring")
             return Outcome.FATAL
         }
         // Apply the effective SSH identity (#360) before resolving headless
@@ -426,12 +427,12 @@ class McpTunnelManager @Inject constructor(
             when (val r = if (hostKeyEntry == null) HostKeyResult.Trusted else hostKeyVerifier.verify(hostKeyEntry)) {
                 is HostKeyResult.Trusted -> { /* ok */ }
                 is HostKeyResult.NewHost -> {
-                    Log.w(TAG, "Unknown host key for ${profile.label} — refusing MCP tunnel (connect it interactively first)")
+                    Log.w(TAG, "Unknown host key for ${LogRedact.of(profile.label)} — refusing MCP tunnel (connect it interactively first)")
                     cleanup(sid)
                     return Outcome.FATAL
                 }
                 is HostKeyResult.KeyChanged -> {
-                    Log.w(TAG, "Host key changed for ${profile.label} — refusing MCP tunnel")
+                    Log.w(TAG, "Host key changed for ${LogRedact.of(profile.label)} — refusing MCP tunnel")
                     cleanup(sid)
                     return Outcome.FATAL
                 }
@@ -459,9 +460,9 @@ class McpTunnelManager @Inject constructor(
                 // rather than tearing down a fresh connect for nothing;
                 // refreshForwards()/exposeAdbPort() will use it once there's
                 // something to carry again.
-                Log.i(TAG, "Connected to ${profile.label} with nothing (yet) to forward")
+                Log.i(TAG, "Connected to ${LogRedact.of(profile.label)} with nothing (yet) to forward")
             } else if (!sshSessionManager.applyPortForwards(sid, forwards)) {
-                Log.w(TAG, "Forward(s) failed to bind on ${profile.label} (stale bind?) — retrying")
+                Log.w(TAG, "Forward(s) failed to bind on ${LogRedact.of(profile.label)} (stale bind?) — retrying")
                 cleanup(sid)
                 return Outcome.RETRY
             }
@@ -476,7 +477,7 @@ class McpTunnelManager @Inject constructor(
             )
             Outcome.ESTABLISHED
         } catch (e: Exception) {
-            Log.w(TAG, "MCP tunnel connect to ${profile.label} failed: ${e.message}")
+            Log.w(TAG, "MCP tunnel connect to ${LogRedact.of(profile.label)} failed: ${e.message}")
             cleanup(sid)
             Outcome.RETRY
         }

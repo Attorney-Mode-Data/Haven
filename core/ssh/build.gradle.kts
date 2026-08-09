@@ -43,6 +43,7 @@ if (providers.gradleProperty("excludeSshlibContractTests").orNull == "true") {
 }
 
 dependencies {
+    implementation(project(":core:redact"))
     api(libs.jsch)
     // Second SSH engine (#58). implementation, NOT api — no module outside
     // core:ssh may see sshlib types, same rule as ChannelSftp before it.

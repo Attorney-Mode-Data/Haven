@@ -26,6 +26,7 @@ import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "NetworkDiscovery"
 
@@ -333,7 +334,7 @@ class NetworkDiscovery(private val context: Context) {
                                     arpHosts.add(host)
                                 }
                                 mergeAndEmit()
-                                Log.d(TAG, "SSH found: $ip ($hostname)")
+                                Log.d(TAG, "SSH found: ${LogRedact.of(ip)} (${LogRedact.of(hostname)})")
                             }
                         }
                     }
@@ -374,7 +375,7 @@ class NetworkDiscovery(private val context: Context) {
                                     smbScanHosts.add(host)
                                 }
                                 mergeSmbAndEmit()
-                                Log.d(TAG, "SMB found: $ip ($hostname)")
+                                Log.d(TAG, "SMB found: ${LogRedact.of(ip)} (${LogRedact.of(hostname)})")
                             }
                         }
                     }

@@ -7,6 +7,7 @@ import sh.haven.core.data.repository.StepCaConfigRepository
 import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 sealed class HostKeyResult {
     data object Trusted : HostKeyResult()
@@ -80,7 +81,7 @@ class HostKeyVerifier @Inject constructor(
         // otherwise fall through to TOFU (which prompts the user). (#208 finding 1)
         val verified = OpenSshCertificate.verifyHostCertSignature(certBlob, cert.signatureKey)
         if (verified) {
-            Log.d(TAG, "Trusting CA-signed host cert for ${entry.hostname} (signature verified)")
+            Log.d(TAG, "Trusting CA-signed host cert for ${LogRedact.of(entry.hostname)} (signature verified)")
         } else {
             Log.w(
                 TAG,

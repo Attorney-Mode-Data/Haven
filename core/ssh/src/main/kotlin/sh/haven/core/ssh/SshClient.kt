@@ -20,6 +20,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.nio.ByteBuffer
+import sh.haven.core.redact.LogRedact
 
 
 private const val TAG = "SshClient"
@@ -1051,11 +1052,11 @@ class SshClient : SshConnection {
                 }
                 future.get(5, java.util.concurrent.TimeUnit.SECONDS)
             } catch (e: java.util.concurrent.TimeoutException) {
-                Log.w(TAG, "DNS resolve timed out for $hostname")
+                Log.w(TAG, "DNS resolve timed out for ${LogRedact.of(hostname)}")
                 null
             } catch (e: Exception) {
                 val cause = if (e is java.util.concurrent.ExecutionException) e.cause ?: e else e
-                Log.w(TAG, "System DNS resolve failed for $hostname", cause)
+                Log.w(TAG, "System DNS resolve failed for ${LogRedact.of(hostname)}", cause)
                 null
             }
         }
@@ -1082,7 +1083,7 @@ class SshClient : SshConnection {
                     socket.close()
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "mDNS resolve failed for $hostname: ${e.message}")
+                Log.d(TAG, "mDNS resolve failed for ${LogRedact.of(hostname)}: ${e.message}")
                 null
             }
         }

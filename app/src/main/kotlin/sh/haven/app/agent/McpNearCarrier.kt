@@ -16,6 +16,7 @@ import sh.haven.core.data.repository.ConnectionRepository
 import sh.haven.core.ssh.SshSessionManager
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 private const val TAG = "McpNearCarrier"
 
@@ -125,12 +126,12 @@ class McpNearCarrier @Inject constructor(
                 val ok = sshSessionManager.applyPortForwards(session.sessionId, listOf(forward))
                 if (ok) {
                     appliedSessionId = session.sessionId
-                    Log.i(TAG, "MCP now riding the interactive session for ${session.label} (-R $mcpPort)")
+                    Log.i(TAG, "MCP now riding the interactive session for ${LogRedact.of(session.label)} (-R $mcpPort)")
                     mcpStatusHolder.setNearCarrier(
                         NearCarrierStatus(active = true, profileId = session.profileId, profileLabel = session.label),
                     )
                 } else {
-                    Log.w(TAG, "MCP forward failed to bind on the interactive session for ${session.label} — leaving MCP-over-near down")
+                    Log.w(TAG, "MCP forward failed to bind on the interactive session for ${LogRedact.of(session.label)} — leaving MCP-over-near down")
                     mcpStatusHolder.setNearCarrier(
                         NearCarrierStatus(active = false, profileId = session.profileId, profileLabel = session.label),
                     )

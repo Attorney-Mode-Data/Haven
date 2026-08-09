@@ -17,6 +17,7 @@ import java.net.NetworkInterface
 import java.net.Socket
 import javax.inject.Inject
 import javax.inject.Singleton
+import sh.haven.core.redact.LogRedact
 
 /**
  * Follows a device across DHCP address changes by its SSH host key (#376).
@@ -73,7 +74,7 @@ class HostRediscovery @Inject constructor(
             ipv4Base(profile.host)?.let { add(it) }
         }
         if (bases.isEmpty()) return@withContext null
-        Log.d(TAG, "rediscover ${profile.label}: scanning ${bases.size} subnet(s) $bases on :${profile.port}")
+        Log.d(TAG, "rediscover ${LogRedact.of(profile.label)}: scanning ${bases.size} subnet(s) $bases on :${profile.port}")
 
         val candidates = coroutineScope {
             bases.flatMap { base ->
@@ -86,7 +87,7 @@ class HostRediscovery @Inject constructor(
             }.awaitAll().filterNotNull()
         }.distinct()
         if (candidates.isEmpty()) return@withContext null
-        Log.d(TAG, "rediscover ${profile.label}: ${candidates.size} responder(s) on :${profile.port}")
+        Log.d(TAG, "rediscover ${LogRedact.of(profile.label)}: ${candidates.size} responder(s) on :${profile.port}")
 
         val matches = coroutineScope {
             candidates.map { ip ->
@@ -101,14 +102,14 @@ class HostRediscovery @Inject constructor(
             }.awaitAll().filterNotNull()
         }
         val newHost = matches.singleOrNull() ?: run {
-            Log.i(TAG, "rediscover ${profile.label}: ${matches.size} key match(es) — not following")
+            Log.i(TAG, "rediscover ${LogRedact.of(profile.label)}: ${matches.size} key match(es) — not following")
             return@withContext null
         }
 
         connectionRepository.updateHost(profile.id, newHost)
         knownHostDao.deleteByHostPort(newHost, profile.port)
         knownHostDao.upsert(stored.copy(id = 0, hostname = newHost))
-        Log.i(TAG, "rediscover ${profile.label}: ${profile.host} → $newHost (host key matched)")
+        Log.i(TAG, "rediscover ${LogRedact.of(profile.label)}: ${LogRedact.of(profile.host)} → ${LogRedact.of(newHost)} (host key matched)")
         newHost
     }
 
