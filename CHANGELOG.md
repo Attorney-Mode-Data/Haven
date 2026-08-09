@@ -5,6 +5,18 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.6
+
+- The status bar now matches the terminal instead of clashing with it — no more white strip above a dark terminal.
+- Fixed a stray "%" in the background-opacity help text.
+- Groundwork for the keyboard-closing-on-return bug: Haven now records why, so a log can say which cause it is.
+
+🎨 **A white strip above a dark terminal.** If your app theme is light but your terminal colours are dark — Classic Green, Ocean, anything with a dark background — the top of the screen showed a band of app-theme colour with the terminal starting abruptly beneath it. The status bar was following the *theme*, while the terminal follows its own colour scheme, so the two disagreed by design. The status bar now takes its colour from the terminal that's actually on screen, and picks light or dark icons from how bright that colour really is — so a light scheme like Solarized Light gets dark icons rather than invisible ones. (#523, reported by @a8645322)
+
+🔤 **"Below 100%%" in the opacity help text.** A stray escape that was never being processed, in English and all eleven translations.
+
+⌨️ **Why the keyboard closes when you come back to Haven.** Not fixed yet — and worth being straight about that, because the fix I shipped for this in v5.87.2 has been running ever since and doing nothing. Rather than guess a second time, Haven now records whether the keyboard was up when it was sent to the background and whether it asked for it back, which separates the two possible causes. They need opposite fixes, so this is the step that decides which one to write. (#515, from @paour's testing)
+
 ## v5.87.5
 
 - Number-pad keys now work in remote desktop sessions — previously they did nothing at all.
