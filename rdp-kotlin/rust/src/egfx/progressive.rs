@@ -294,9 +294,17 @@ impl ProgressiveDecoder {
         }
     }
 
-    /// Enable WBT_TILE_UPGRADE refinement decoding (#418). Default off; see
-    /// [`ProgressiveDecoder::upgrade_enabled`]. Intended for capture-verified
-    /// builds / field testing before it becomes the default.
+    /// Enable or disable WBT_TILE_UPGRADE refinement decoding (#418).
+    ///
+    /// **Default is ON** since v5.86.40 — see
+    /// [`ProgressiveDecoder::upgrade_enabled`] for the measurement that
+    /// discharged the gate. This setter now exists to turn it *off*, which is
+    /// only useful for reproducing the pre-v5.86.40 behaviour when diagnosing a
+    /// report against an older build.
+    ///
+    /// (This doc said "Default off" until 2026-08-09, two releases after the
+    /// default flipped. Stale by exactly the amount that would send someone
+    /// looking for a toggle that no longer needs touching.)
     #[allow(dead_code)]
     pub fn set_upgrade_enabled(&mut self, enabled: bool) {
         self.upgrade_enabled = enabled;
