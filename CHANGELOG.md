@@ -5,7 +5,19 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
-## v5.87.4
+## v5.87.5
+
+- Number-pad keys now work in remote desktop sessions — previously they did nothing at all.
+- If SSH connections feel slow, Haven now records where the time went, so a log can say which part is slow.
+
+⌨️ **The number pad did nothing in remote desktop sessions.** Not the digits, not the arrows, not Enter, not the operators — every key on the pad was dropped before it left the phone. Invisible if you use a touchscreen, which is why it lasted; obvious the moment you attach a real keyboard. Fixed. (#507, from a report by @pawlosck)
+
+⏱️ **Haven now records how long each part of an SSH connection takes.** This is a diagnostic, not a fix: @frebib reported connections that used to take under a tenth of a second now reliably taking more than one, and there was no way to tell which part had got slow. (#519)
+
+Each connection now writes one line saying how long it spent looking up the address, preparing the session, and doing the SSH handshake — so a log can point at the culprit instead of just saying "it was slow". It deliberately contains no hostnames or usernames, so it is safe to attach to a bug report.
+
+**If SSH connecting feels slow to you**, updating and sending a log would genuinely help. The line begins `connect timing:`.
+
 
 - Haven no longer writes hostnames, usernames or clipboard contents to the device log.
 - If you have shared a log with anyone, it may contain more than you intended — worth checking.
