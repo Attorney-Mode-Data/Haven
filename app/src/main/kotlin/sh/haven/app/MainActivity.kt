@@ -9,6 +9,7 @@ import android.util.Log
 import android.util.Rational
 import android.view.KeyEvent
 import android.view.WindowManager
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -501,6 +502,32 @@ class MainActivity : AppCompatActivity() {
                 UserPreferencesRepository.ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
 
+            // Point the system bars at Haven's theme rather than the system's (#523).
+            //
+            // The onCreate enableEdgeToEdge() uses androidx's default detectDarkMode,
+            // which reads Configuration.UI_MODE_NIGHT_MASK — the *system* night mode.
+            // Haven has its own theme setting, so "app dark, phone light" gave a white
+            // status bar with black icons over a dark app, which is what was reported.
+            // It also ran once in onCreate, so changing the theme in Settings never
+            // restyled the bars until the next launch.
+            //
+            // Re-applied on every change of the resolved theme. The scrim arguments
+            // reproduce androidx's own defaults (transparent status bar; scrimmed
+            // navigation bar for contrast below API 29) so only the dark-mode source
+            // changes — their constants are @VisibleForTesting, hence the local copies.
+            LaunchedEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        NAV_BAR_LIGHT_SCRIM,
+                        NAV_BAR_DARK_SCRIM,
+                    ) { darkTheme },
+                )
+            }
+
             HavenTheme(darkTheme = darkTheme) {
                 val biometricEnabled by preferencesRepository.biometricEnabled
                     .collectAsState(initial = false)
@@ -627,6 +654,19 @@ class MainActivity : AppCompatActivity() {
          * user deliberately re-firing the same link still works.
          */
         private const val DEEP_LINK_DEDUPE_MS = 3_000L
+
+        /**
+         * androidx's own navigation-bar scrims, copied because the originals are
+         * `@VisibleForTesting` with private backing fields (#523).
+         *
+         * Passing a style to `enableEdgeToEdge` means supplying these explicitly,
+         * and supplying the wrong ones would regress contrast under a translucent
+         * navigation bar below API 29 — Haven's minSdk is 26. Read out of
+         * `androidx.activity` 1.13.0: `Color.argb(0xe6, 0xff, 0xff, 0xff)` and
+         * `Color.argb(0x80, 0x1b, 0x1b, 0x1b)`.
+         */
+        private val NAV_BAR_LIGHT_SCRIM = android.graphics.Color.argb(0xe6, 0xff, 0xff, 0xff)
+        private val NAV_BAR_DARK_SCRIM = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
         @Volatile
         private var activeInstanceRef: java.lang.ref.WeakReference<MainActivity>? = null
