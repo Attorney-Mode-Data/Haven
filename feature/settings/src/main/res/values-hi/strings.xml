@@ -435,7 +435,7 @@
     <string name="settings_terminal_locale_label">LANG</string>
     <string name="settings_terminal_opacity_title">बैकग्राउंड अपारदर्शिता</string>
     <string name="settings_terminal_opacity_value">%1$d%%</string>
-    <string name="settings_terminal_opacity_hint">100%% से नीचे Haven पारभासी हो जाता है और हर स्क्रीन (टर्मिनल, सूचियाँ, सेटिंग्स) के पीछे आपके डिवाइस का वॉलपेपर दिखाता है। प्रति-कनेक्शन ओवरराइड केवल उसी टर्मिनल पर लागू होता है।</string>
+    <string name="settings_terminal_opacity_hint">100% से नीचे Haven पारभासी हो जाता है और हर स्क्रीन (टर्मिनल, सूचियाँ, सेटिंग्स) के पीछे आपके डिवाइस का वॉलपेपर दिखाता है। प्रति-कनेक्शन ओवरराइड केवल उसी टर्मिनल पर लागू होता है।</string>
     <string name="settings_section_mcp">AI एजेंट (MCP)</string>
     <string name="settings_audio_bridge_title">Proot ऑडियो (प्रायोगिक)</string>
     <string name="settings_audio_bridge_subtitle">गेस्ट के अंदर PulseAudio ब्रिज के ज़रिये Linux ऐप्स की आवाज़ डिवाइस स्पीकर से चलाएँ। केवल आउटपुट। चालू रहने पर लगातार स्ट्रीम होता है — उपयोग में न हो तो बंद करें।</string>

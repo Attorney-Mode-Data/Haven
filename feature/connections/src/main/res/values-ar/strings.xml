@@ -502,7 +502,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">‏shell الأصلي لنظام Android</string>
     <string name="connections_field_background_opacity">تجاوز عتامة الخلفية</string>
-    <string name="connections_helper_background_opacity">أقل من 100%% تصبح الطرفية شبه شفافة وتُظهر خلفية الجهاز خلف النص لهذا الملف الشخصي. معطّل = استخدام الإعداد العام.</string>
+    <string name="connections_helper_background_opacity">أقل من 100% تصبح الطرفية شبه شفافة وتُظهر خلفية الجهاز خلف النص لهذا الملف الشخصي. معطّل = استخدام الإعداد العام.</string>
     <string name="connections_background_opacity_value">العتامة: %1$d%%</string>
     <string name="connections_reveal_password_title">إظهار كلمة المرور المحفوظة</string>
     <string name="connections_reveal_password_subtitle">أكّد هويتك لعرض كلمة المرور المحفوظة</string>

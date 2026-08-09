@@ -494,7 +494,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">네이티브 Android 셸</string>
     <string name="connections_field_background_opacity">배경 불투명도 재정의</string>
-    <string name="connections_helper_background_opacity">100%% 미만이면 이 프로필의 터미널이 반투명해지고 글자 뒤로 기기 배경화면이 표시됩니다. 끄면 전역 설정을 사용합니다.</string>
+    <string name="connections_helper_background_opacity">100% 미만이면 이 프로필의 터미널이 반투명해지고 글자 뒤로 기기 배경화면이 표시됩니다. 끄면 전역 설정을 사용합니다.</string>
     <string name="connections_background_opacity_value">불투명도: %1$d%%</string>
     <string name="connections_reveal_password_title">저장된 비밀번호 표시</string>
     <string name="connections_reveal_password_subtitle">본인 확인 후 저장된 비밀번호를 표시합니다</string>
