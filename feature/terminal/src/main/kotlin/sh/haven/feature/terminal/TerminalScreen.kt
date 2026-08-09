@@ -548,13 +548,34 @@ fun TerminalScreen(
     val currentImeVisible by rememberUpdatedState(imeVisible)
     var imeVisibleBeforeBackground by rememberSaveable { mutableStateOf(false) }
     androidx.lifecycle.compose.LifecycleResumeEffect(isActive, physicalKeyboardAttached) {
-        if (imeVisibleBeforeBackground && isActive && !physicalKeyboardAttached) {
+        val willRestore = imeVisibleBeforeBackground && isActive && !physicalKeyboardAttached
+        // @paour confirmed on v5.87.4 that the restore above still does not work,
+        // and the code reads as correct — which means one of its assumptions is
+        // false and reasoning has already picked the wrong one once. This says
+        // which, rather than inviting a second guess:
+        //
+        //  recorded=false  the insets had already dropped the IME by the time we
+        //                  were paused, so there was never anything to restore —
+        //                  the "insets are still intact at ON_PAUSE" assumption
+        //                  in this block is simply wrong.
+        //  recorded=true   we did ask and Android declined, most likely because
+        //                  the input field has not regained focus this early in
+        //                  the return. A different fix entirely.
+        //
+        // Booleans only — this line is meant for logs users attach to issues (#518).
+        android.util.Log.i(
+            "TerminalIme",
+            "ime restore: recorded=$imeVisibleBeforeBackground active=$isActive " +
+                "physicalKeyboard=$physicalKeyboardAttached action=${if (willRestore) "show" else "skip"}",
+        )
+        if (willRestore) {
             (view.context as? Activity)?.window?.let { window ->
                 WindowCompat.getInsetsController(window, view)
                     .show(WindowInsetsCompat.Type.ime())
             }
         }
         onPauseOrDispose {
+            android.util.Log.i("TerminalIme", "ime pause: imeVisible=$currentImeVisible (recording)")
             imeVisibleBeforeBackground = currentImeVisible
         }
     }
