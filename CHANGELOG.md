@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.9
+
+- The keyboard now really does come back when you return to Haven — the previous fix remembered correctly but Android refused the request; this one was watched working on a device before shipping.
+
+⌨️ **The keyboard restore, round three — witnessed working this time.** v5.87.8 fixed the *recording* half of this bug: Haven correctly remembered that a keyboard was up when you switched away. But the restore it then issued was refused. Android ignores a keyboard request from a window whose input field isn't focused, and the terminal's input view deliberately gives up focus while Haven is in the background (a guard against an Android 16 crash on warm returns) — so the request had nothing to attach to. The half-second flash @paour reported was that refusal happening in real time. The restore now goes through the terminal's own show path, which takes its focus back before asking. Confirmed over adb against both reported gestures — app switcher and straight back, another app and back — with the keyboard still up seconds later, and a keyboard you dismissed yourself staying down. (#515, pinned by @paour's retest and one "tantalizing half second")
+
 ## v5.87.8
 
 - The on-screen keyboard comes back when you return to Haven, instead of staying away and leaving the arrow buttons doing nothing.
