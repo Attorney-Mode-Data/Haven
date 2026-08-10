@@ -41,7 +41,9 @@ fn remember_secret(value: &str) {
 /// because rustls does not print addresses as dotted quads — it prints the Rust
 /// `Debug` of the octet array:
 ///
-///     rustls::client::hs: No cached session for IpAddress(V4(Ipv4Addr([192, 168, 1, 100])))
+/// ```text
+/// rustls::client::hs: No cached session for IpAddress(V4(Ipv4Addr([192, 168, 1, 100])))
+/// ```
 ///
 /// A substring search for the dotted form cannot match that, so an exact-match
 /// scrubber is only as good as its guess about formatting — and third-party
