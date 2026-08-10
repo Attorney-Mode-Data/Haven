@@ -35,13 +35,36 @@ fn remember_secret(value: &str) {
     }
 }
 
+/// Every way a secret can appear in a log line, not just the way we were given it.
+///
+/// #477: the scrubber held "192.168.1.100" and the address still reached logcat,
+/// because rustls does not print addresses as dotted quads — it prints the Rust
+/// `Debug` of the octet array:
+///
+///     rustls::client::hs: No cached session for IpAddress(V4(Ipv4Addr([192, 168, 1, 100])))
+///
+/// A substring search for the dotted form cannot match that, so an exact-match
+/// scrubber is only as good as its guess about formatting — and third-party
+/// crates format however they like. Where a secret parses as an IPv4 address,
+/// its octet rendering is registered alongside it.
+fn secret_renderings(secret: &str) -> Vec<String> {
+    let mut forms = vec![secret.to_owned()];
+    let octets: Vec<&str> = secret.split('.').collect();
+    if octets.len() == 4 && octets.iter().all(|o| o.parse::<u8>().is_ok()) {
+        forms.push(format!("[{}]", octets.join(", ")));
+    }
+    forms
+}
+
 fn scrub(line: &str, secrets: &[String]) -> String {
     let mut out = line.to_owned();
     for secret in secrets {
-        // The `contains` guard keeps the common (nothing to redact) case down
-        // to a substring search instead of a fresh allocation per secret.
-        if out.contains(secret.as_str()) {
-            out = out.replace(secret.as_str(), "<redacted>");
+        for form in secret_renderings(secret) {
+            // The `contains` guard keeps the common (nothing to redact) case down
+            // to a substring search instead of a fresh allocation per secret.
+            if out.contains(form.as_str()) {
+                out = out.replace(form.as_str(), "<redacted>");
+            }
         }
     }
     out
@@ -108,6 +131,26 @@ mod log_scrub_tests {
         assert!(!out.contains("192.168.1.100"), "{out}");
         // The PDU shape survives — this is still a usable connect-phase trace.
         assert!(out.contains("address_family: AddressFamily(2)"), "{out}");
+    }
+
+    /// #477: the exact line that reached a reporter's logcat while the scrubber
+    /// already held this address. rustls prints the octet array, not the dotted
+    /// quad, so the substring search never fired.
+    #[test]
+    fn an_address_printed_as_octets_is_scrubbed() {
+        let line = "rustls::client::hs: No cached session for IpAddress(V4(Ipv4Addr([192, 168, 1, 100])))";
+        let out = scrub(line, &secrets());
+        assert!(!out.contains("192, 168, 1, 100"), "{out}");
+        // Still a usable trace: the crate and the event survive.
+        assert!(out.contains("rustls::client::hs"), "{out}");
+    }
+
+    /// A dotted quad that is not an address must not sprout a bogus octet form.
+    #[test]
+    fn a_non_address_secret_gains_no_octet_rendering() {
+        let secrets = vec!["desktop.lan".to_string(), "1.2.3.999".to_string()];
+        let line = "rdp_transport: connecting to host [1, 2, 3, 999]";
+        assert_eq!(scrub(line, &secrets), line);
     }
 
     #[test]
