@@ -1,5 +1,6 @@
 package sh.haven.feature.settings
 
+import android.os.Build
 import android.text.format.DateUtils
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -352,16 +353,32 @@ private fun NativeCrashCard(
                 stringResource(R.string.settings_native_crash_title),
                 style = MaterialTheme.typography.titleMedium,
             )
+            // Don't promise a backtrace we may not have (#526). The tombstone comes
+            // from the system, and on some devices none is kept — a reporter was told
+            // "the report below identifies where" above ten lines that identified
+            // nothing. Say which case they are in.
+            val anyTrace = crashes.any { it.trace != null }
             Text(
-                stringResource(R.string.settings_native_crash_subtitle),
+                stringResource(
+                    if (anyTrace) {
+                        R.string.settings_native_crash_subtitle
+                    } else {
+                        R.string.settings_native_crash_subtitle_no_trace
+                    },
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp),
             )
 
             for (crash in crashes) {
                 val when_ = DateFormat.getDateTimeInstance().format(Date(crash.timestampMs))
+                // Show the signal on the line itself (#526). A reporter sent ten
+                // entries that all read "— crash" and told me nothing; the signal was
+                // recorded the whole time and only reachable via Copy report. SIGABRT
+                // and SIGSEGV point at different causes, so this is the difference
+                // between a useful screenshot and a useless one.
                 Text(
-                    "$when_ — ${crash.description}",
+                    "$when_ — ${crash.description} (${crash.signalName})",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .padding(top = 8.dp)
@@ -379,10 +396,19 @@ private fun NativeCrashCard(
 
             Row(modifier = Modifier.padding(top = 8.dp)) {
                 TextButton(onClick = {
+                    // Lead with version and device: the first thing a crash report
+                    // needs is which build it came from, and #526 cost a round trip
+                    // asking for exactly that. Model and release only — nothing
+                    // identifying (#518).
+                    val version = runCatching {
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    }.getOrNull() ?: "unknown"
+                    val header = "Haven $version — ${Build.MANUFACTURER} ${Build.MODEL}, " +
+                        "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
                     onCopy(
-                        crashes.joinToString("\n\n") { c ->
+                        header + "\n\n" + crashes.joinToString("\n\n") { c ->
                             val stamp = DateFormat.getDateTimeInstance().format(Date(c.timestampMs))
-                            "$stamp ${c.description} (signal ${c.signal})\n${c.trace ?: "no trace"}"
+                            "$stamp ${c.description} (${c.signalName})\n${c.trace ?: "no trace kept"}"
                         },
                     )
                     Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()

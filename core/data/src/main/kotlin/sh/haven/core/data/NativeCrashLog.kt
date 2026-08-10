@@ -20,6 +20,25 @@ data class NativeCrashRecord(
     /** The tombstone, when the system kept one. Null is common and not an error. */
     val trace: String?,
 ) {
+    /**
+     * The signal as a name — `SIGABRT (6)` — or just the number when unknown (#526).
+     *
+     * This is the one field that survives when no tombstone was kept, and on a device
+     * that keeps none it is the *only* thing distinguishing one crash from another.
+     * SIGABRT means the runtime deliberately aborted (a failed JNI check, say),
+     * SIGSEGV means a bad access; they point at completely different causes, and a
+     * reporter staring at ten identical lines reading "crash" can tell me neither.
+     */
+    val signalName: String
+        get() = when (signal) {
+            4 -> "SIGILL"
+            6 -> "SIGABRT"
+            7 -> "SIGBUS"
+            8 -> "SIGFPE"
+            11 -> "SIGSEGV"
+            else -> null
+        }?.let { "$it ($signal)" } ?: "signal $signal"
+
     fun toJson(): String = JSONObject().apply {
         put("timestampMs", timestampMs)
         put("description", description)

@@ -456,6 +456,7 @@
     <!-- #509 #517: native crashes recovered from the system on the next launch -->
     <string name="settings_native_crash_title">App crashes</string>
     <string name="settings_native_crash_subtitle">Haven closed unexpectedly. The report below identifies where — please attach it to a bug report.</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven closed unexpectedly. Android kept no detailed report for these, so only the time and the signal are known — please attach them to a bug report anyway, as the signal narrows it down.</string>
     <string name="settings_native_crash_no_trace">No detailed report was kept for this crash.</string>
     <string name="settings_native_crash_copy">Copy report</string>
     <string name="settings_native_crash_copied">Crash report copied</string>

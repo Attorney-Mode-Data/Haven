@@ -30743,6 +30743,13 @@
      "t": {}
     },
     {
+     "name": "settings_native_crash_subtitle_no_trace",
+     "en": "Haven closed unexpectedly. Android kept no detailed report for these, so only the time and the signal are known — please attach them to a bug report anyway, as the signal narrows it down.",
+     "comment": "#509 #517: native crashes recovered from the system on the next launch",
+     "args": [],
+     "t": {}
+    },
+    {
      "name": "settings_native_crash_no_trace",
      "en": "No detailed report was kept for this crash.",
      "comment": "#509 #517: native crashes recovered from the system on the next launch",

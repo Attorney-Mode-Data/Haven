@@ -19,8 +19,8 @@ import org.junit.Test
  */
 class NativeCrashLogTest {
 
-    private fun record(ts: Long, desc: String = "SIGSEGV", trace: String? = "backtrace") =
-        NativeCrashRecord(timestampMs = ts, description = desc, signal = 11, trace = trace)
+    private fun record(ts: Long, desc: String = "SIGSEGV", trace: String? = "backtrace", signal: Int = 11) =
+        NativeCrashRecord(timestampMs = ts, description = desc, signal = signal, trace = trace)
 
     @Test
     fun `a record survives a JSON round trip`() {
@@ -97,5 +97,24 @@ class NativeCrashLogTest {
     fun `merging nothing new leaves the list untouched`() {
         val stored = listOf(record(100), record(200))
         assertTrue(NativeCrashLog.merge(stored, emptyList()) == stored)
+    }
+
+    /**
+     * #526: a reporter sent a screenshot of ten crashes that all read "— crash".
+     * When Android keeps no tombstone the signal is the only thing telling them
+     * apart, and SIGABRT (the runtime deliberately aborting, e.g. a failed JNI
+     * check) points somewhere completely different from SIGSEGV (a bad access).
+     */
+    @Test
+    fun `the signal is named, not just numbered`() {
+        assertEquals("SIGABRT (6)", record(1, signal = 6).signalName)
+        assertEquals("SIGSEGV (11)", record(1, signal = 11).signalName)
+        assertEquals("SIGBUS (7)", record(1, signal = 7).signalName)
+    }
+
+    /** An unmapped signal must still say something, not render as an empty name. */
+    @Test
+    fun `an unknown signal falls back to its number`() {
+        assertEquals("signal 99", record(1, signal = 99).signalName)
     }
 }
