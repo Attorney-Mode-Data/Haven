@@ -60,19 +60,19 @@
     <string name="terminal_rename_session_title">セッション名を変更</string>
     <string name="terminal_name">名前</string>
     <string name="terminal_rename">名前変更</string>
-    <string name="terminal_new_tab_no_active">No active session to clone</string>
-    <string name="terminal_new_tab_no_config">Connection config not found — try reconnecting first</string>
-    <string name="terminal_new_tab_host_key_changed">Host key changed for %s — connection refused for security</string>
-    <string name="terminal_new_tab_connection_failed">Could not connect: %s</string>
-    <string name="terminal_new_tab_shell_failed">Failed to open shell: %s</string>
-    <string name="terminal_new_tab_reticulum_no_session">No active Reticulum session to clone</string>
-    <string name="terminal_new_tab_connecting">Connecting…</string>
+    <string name="terminal_new_tab_no_active">複製できるアクティブなセッションがありません</string>
+    <string name="terminal_new_tab_no_config">接続設定が見つかりません — 先に再接続してください</string>
+    <string name="terminal_new_tab_host_key_changed">%s のホスト鍵が変更されました — セキュリティのため接続を拒否しました</string>
+    <string name="terminal_new_tab_connection_failed">接続できませんでした: %s</string>
+    <string name="terminal_new_tab_shell_failed">シェルを開けませんでした: %s</string>
+    <string name="terminal_new_tab_reticulum_no_session">複製できるアクティブな Reticulum セッションがありません</string>
+    <string name="terminal_new_tab_connecting">接続中…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="terminal_no_contact">サーバー応答なし（%1$d 秒）— 再試行中</string>
     <string name="terminal_new_session_create">作成</string>
-    <string name="terminal_vnc_username_label">Username (optional — VeNCrypt only)</string>
-    <string name="terminal_vnc_username_placeholder">Leave blank for classic VncAuth</string>
-    <string name="terminal_vnc_color_depth">Colour depth</string>
+    <string name="terminal_vnc_username_label">ユーザー名 (任意 — VeNCrypt のみ)</string>
+    <string name="terminal_vnc_username_placeholder">従来の VncAuth を使う場合は空欄のまま</string>
+    <string name="terminal_vnc_color_depth">色深度</string>
     <string name="terminal_open_plain_shell">プレーンシェルを開く</string>
 
     <string name="terminal_enter_fullscreen">全画面表示にする</string>

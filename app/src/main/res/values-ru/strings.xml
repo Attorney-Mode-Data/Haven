@@ -62,9 +62,9 @@
     <string name="workspace_launch_failed">Ошибка: %1$s</string>
     <string name="workspace_launch_cancel">Отмена</string>
     <string name="workspace_launch_dismiss">Закрыть</string>
-    <string name="biometric_screen_lock_icon">Screen lock</string>
-    <string name="desktop_screen_title">Desktop</string>
-    <string name="agent_deny">Deny</string>
+    <string name="biometric_screen_lock_icon">Блокировка экрана</string>
+    <string name="desktop_screen_title">Рабочий стол</string>
+    <string name="agent_deny">Отклонить</string>
 
     <!-- Biometric lock -->
     <string name="app_biometric_locked_title">Haven заблокирован</string>
@@ -134,7 +134,6 @@
     <string name="app_agent_action_requested">Запрос действия агента</string>
     <string name="app_agent_from_client">От: %1$s</string>
     <string name="app_agent_tool">Инструмент: %1$s</string>
-    <string name="app_agent_more_pending">＋за этим ждёт ещё запросов: %1$d — вы увидите их после</string>
     <string name="app_agent_bypass_label">Разрешить все MCP-запросы от \'%1$s\' до перезапуска Haven</string>
     <string name="app_agent_bypass_description">Включает деструктивные операции (ввод в терминал, запись/удаление файлов, установка APK). Сбрасывается при закрытии приложения.</string>
     <string name="app_agent_auto_allow_window">Окно автоодобрения:</string>
@@ -205,9 +204,6 @@
 
     <!-- Agent Activity log — result summaries (#239) -->
     <string name="agent_summary_ok">готово</string>
-    <string name="agent_summary_connections">%1$d подключений</string>
-    <string name="agent_summary_sessions">%1$d сеансов</string>
-    <string name="agent_summary_remotes">%1$d удалённых</string>
     <string name="agent_summary_entries_at">%1$d записей в %2$s:%3$s</string>
     <string name="agent_summary_entries_via">%1$d записей через %2$s в %3$s</string>
     <string name="agent_summary_version">версия %1$s</string>
@@ -312,4 +308,30 @@
     <string name="backup_pull_notify_failure_title">Не удалось восстановить резервную копию</string>
     <string name="backup_pull_toast_success">Резервная копия восстановлена</string>
     <string name="backup_pull_toast_failure">Не удалось загрузить резервную копию: %1$s</string>
+    <string name="backup_pull_started">Резервная копия загружается в фоне…</string>
+    <string name="backup_pull_no_password">Пароль не сохранён. Открывается Haven…</string>
+    <plurals name="app_agent_more_pending">
+        <item quantity="one">＋за этим ждёт ещё %1$d запрос — вы увидите его следом</item>
+        <item quantity="few">＋за этим ждут ещё %1$d запроса — вы увидите их следом</item>
+        <item quantity="many">＋за этим ждут ещё %1$d запросов — вы увидите их следом</item>
+        <item quantity="other">＋за этим ждут ещё %1$d запроса — вы увидите их следом</item>
+    </plurals>
+    <plurals name="agent_summary_connections">
+        <item quantity="one">%1$d подключение</item>
+        <item quantity="few">%1$d подключения</item>
+        <item quantity="many">%1$d подключений</item>
+        <item quantity="other">%1$d подключения</item>
+    </plurals>
+    <plurals name="agent_summary_sessions">
+        <item quantity="one">%1$d сеанс</item>
+        <item quantity="few">%1$d сеанса</item>
+        <item quantity="many">%1$d сеансов</item>
+        <item quantity="other">%1$d сеанса</item>
+    </plurals>
+    <plurals name="agent_summary_remotes">
+        <item quantity="one">%1$d удалённое хранилище</item>
+        <item quantity="few">%1$d удалённых хранилища</item>
+        <item quantity="many">%1$d удалённых хранилищ</item>
+        <item quantity="other">%1$d удалённых хранилища</item>
+    </plurals>
 </resources>

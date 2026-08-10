@@ -66,22 +66,22 @@
     <string name="keys_ssh_public_key_clip_label">Öffentlicher SSH-Schlüssel</string>
 
     <!-- #133 phase 2: step-ca generate-via-OIDC (en fallback) -->
-    <string name="keys_generate_via_stepca">Generate via step-ca</string>
-    <string name="keys_generate_via_stepca_hint">OIDC sign-in mints a fresh keypair + signed cert</string>
-    <string name="keys_generate_via_stepca_no_ca">Tap Certificate authorities above to add one</string>
-    <string name="keys_stepca_dialog_title">Generate via step-ca</string>
+    <string name="keys_generate_via_stepca">Über step-ca erzeugen</string>
+    <string name="keys_generate_via_stepca_hint">Die OIDC-Anmeldung erzeugt ein neues Schlüsselpaar und ein signiertes Zertifikat</string>
+    <string name="keys_generate_via_stepca_no_ca">Tippe oben auf „Zertifizierungsstellen“, um eine hinzuzufügen</string>
+    <string name="keys_stepca_dialog_title">Über step-ca erzeugen</string>
     <string name="keys_stepca_pick_ca">Certificate authority</string>
-    <string name="keys_stepca_principals_override_label">Override principals (optional, comma-separated)</string>
+    <string name="keys_stepca_principals_override_label">Principals überschreiben (optional, kommagetrennt)</string>
     <string name="keys_stepca_label">Key label</string>
     <string name="keys_stepca_generate">Generate</string>
     <string name="keys_chip_certificate_minted">Minted %1$s</string>
 
-    <!-- #133 phase 2b: regenerate menu --> (en fallback)
-    <string name="keys_regenerate_via_stepca">Regenerate via step-ca</string>
+    <!-- #133 phase 2b: regenerate menu (en fallback) -->
+    <string name="keys_regenerate_via_stepca">Über step-ca neu erzeugen</string>
 
     <!-- #133 phase 2b: step-ca CA registration (moved from Settings) -->
-    <string name="stepca_add_title">Add certificate authority</string>
-    <string name="stepca_edit_title">Edit certificate authority</string>
+    <string name="stepca_add_title">Zertifizierungsstelle hinzufügen</string>
+    <string name="stepca_edit_title">Zertifizierungsstelle bearbeiten</string>
     <string name="stepca_add">Add</string>
     <string name="stepca_save">Save</string>
     <string name="stepca_cancel">Cancel</string>
@@ -90,33 +90,33 @@
     <string name="stepca_field_name">Display name</string>
     <string name="stepca_field_ca_url">CA URL</string>
     <string name="stepca_field_ca_url_hint">https://ca.example.com</string>
-    <string name="stepca_field_oidc_issuer">OIDC issuer URL</string>
-    <string name="stepca_field_oidc_auth_url">OIDC authorize URL</string>
-    <string name="stepca_field_oidc_token_url">OIDC token URL</string>
-    <string name="stepca_field_oidc_client_id">OIDC client ID</string>
+    <string name="stepca_field_oidc_issuer">OIDC-Aussteller-URL</string>
+    <string name="stepca_field_oidc_auth_url">OIDC-Autorisierungs-URL</string>
+    <string name="stepca_field_oidc_token_url">OIDC-Token-URL</string>
+    <string name="stepca_field_oidc_client_id">OIDC-Client-ID</string>
     <string name="stepca_field_provisioner">step-ca provisioner</string>
-    <string name="stepca_field_principals">Default principals (comma-separated)</string>
-    <string name="stepca_field_root_cert">Root certificate (PEM)</string>
+    <string name="stepca_field_principals">Standard-Principals (kommagetrennt)</string>
+    <string name="stepca_field_root_cert">Stammzertifikat (PEM)</string>
     <string name="stepca_field_root_cert_hint">-----BEGIN CERTIFICATE-----…</string>
     <string name="stepca_test_ok">Reachable</string>
-    <string name="stepca_test_bad_root_cert">Invalid root cert: %1$s</string>
+    <string name="stepca_test_bad_root_cert">Ungültiges Stammzertifikat: %1$s</string>
     <string name="stepca_test_http_error">HTTP %1$d: %2$s</string>
-    <string name="stepca_test_network_error">Network error: %1$s</string>
-    <string name="stepca_empty_state">No certificate authorities configured.\nTap + to add one.</string>
-    <string name="stepca_validation_required">%1$s is required</string>
+    <string name="stepca_test_network_error">Netzwerkfehler: %1$s</string>
+    <string name="stepca_empty_state">Keine Zertifizierungsstellen konfiguriert.\nTippe auf +, um eine hinzuzufügen.</string>
+    <string name="stepca_validation_required">%1$s ist erforderlich</string>
     <string name="stepca_validation_url">%1$s must start with https://</string>
-    <string name="stepca_validation_pem">Root certificate must be PEM-encoded</string>
+    <string name="stepca_validation_pem">Das Stammzertifikat muss PEM-codiert sein</string>
     <string name="stepca_validation_host_ca_or_signing">Host-CA-Public-Key eingeben oder die Signierfelder ausfüllen.</string>
     <string name="stepca_validation_host_ca">Kein gültiger SSH-Host-CA-Public-Key.</string>
     <string name="stepca_delete_confirm_title">Delete %1$s?</string>
-    <string name="stepca_delete_confirm_body">Existing keys minted via this CA will keep working until their certificates expire, but you won\'t be able to renew or generate new ones.</string>
-    <string name="stepca_field_ssh_host_ca">SSH host CA public key (optional)</string>
+    <string name="stepca_delete_confirm_body">Über diese CA erzeugte Schlüssel funktionieren weiter, bis ihre Zertifikate ablaufen; du kannst sie dann aber weder erneuern noch neue erzeugen.</string>
+    <string name="stepca_field_ssh_host_ca">Öffentlicher Schlüssel der SSH-Host-CA (optional)</string>
     <string name="stepca_field_ssh_host_ca_hint">ssh-ed25519 AAAAC3…</string>
-    <string name="stepca_discover_host_ca">Discover from /1.0/ssh/config</string>
+    <string name="stepca_discover_host_ca">Aus /1.0/ssh/config ermitteln</string>
     <string name="stepca_discovering">Discovering…</string>
-    <string name="stepca_import_from_file">Import from file</string>
-    <string name="stepca_import_failed">Import failed: %1$s</string>
-    <string name="keys_section_certificate_authorities">Certificate authorities (%1$d)</string>
+    <string name="stepca_import_from_file">Aus Datei importieren</string>
+    <string name="stepca_import_failed">Import fehlgeschlagen: %1$s</string>
+    <string name="keys_section_certificate_authorities">Zertifizierungsstellen (%1$d)</string>
     <string name="keys_section_ssh">SSH-Schlüssel (%1$d)</string>
     <string name="keys_section_passwords">Gespeicherte Passwörter (%1$d)</string>
     <string name="keys_chip_hardware_backed">Hardwaregestützt</string>
@@ -220,4 +220,29 @@
     <string name="keys_identity_key_none">Keiner</string>
     <string name="keys_identity_no_username">Kein Benutzername</string>
     <string name="keys_identity_has_password">Passwort</string>
+    <string name="keys_sort">Schlüssel sortieren</string>
+    <string name="keys_sort_manual">Meine Reihenfolge</string>
+    <string name="keys_sort_label_asc">Name (A–Z)</string>
+    <string name="keys_sort_label_desc">Name (Z–A)</string>
+    <string name="keys_sort_newest">Neueste zuerst</string>
+    <string name="keys_sort_oldest">Älteste zuerst</string>
+    <string name="keys_select">Auswählen…</string>
+    <string name="keys_select_all">Alle auswählen</string>
+    <string name="keys_selection_cancel">Auswahlmodus verlassen</string>
+    <string name="keys_selection_delete">Ausgewählte Schlüssel löschen</string>
+    <plurals name="keys_bulk_delete_title">
+        <item quantity="one">Diesen Schlüssel löschen?</item>
+        <item quantity="other">%1$d Schlüssel löschen?</item>
+    </plurals>
+    <string name="keys_bulk_delete_body">Dies kann nicht rückgängig gemacht werden. Das private Schlüsselmaterial wird aus dem Keystore gelöscht.</string>
+    <string name="keys_bulk_delete_in_use">Wird von einer gespeicherten Verbindung verwendet: %1$s. Diese Verbindungen authentifizieren sich dann nicht mehr mit einem Schlüssel.</string>
+    <string name="keys_section_collapse">%1$s einklappen</string>
+    <string name="keys_section_expand">%1$s ausklappen</string>
+    <string name="keys_from_provider">Einen Schlüssel aus %1$s verwenden</string>
+    <string name="keys_from_provider_hint">Wähle einen Schlüssel, den diese App verwaltet. Sie signiert im Auftrag von Haven — der private Schlüssel bleibt, wo er ist, auch auf einem Hardware-Token.</string>
+    <string name="keys_totp_code_copied">Code kopiert</string>
+    <plurals name="keys_selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
 </resources>

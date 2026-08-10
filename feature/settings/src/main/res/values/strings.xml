@@ -106,7 +106,6 @@
     <string name="settings_proot_idle_dialog_title">Auto-stop idle Linux guest</string>
     <string name="settings_proot_idle_dialog_body">After Haven has been in the background this long, stop the Linux guest\'s terminals and desktops to free memory. A running guest service keeps it up. A long job in a backgrounded terminal would be stopped too — leave this off unless you want idle reclamation.</string>
     <string name="settings_proot_idle_off_label">Off</string>
-    <string name="settings_proot_idle_minutes">%1$d minutes</string>
     <string name="settings_shizuku_title">Shizuku integration</string>
     <string name="settings_shizuku_enabled">Enabled — auto battery exemption, Wayland socket sharing</string>
     <string name="settings_shizuku_available">Shizuku running — tap to grant permission</string>
@@ -506,4 +505,8 @@
     <string name="settings_paired_clients_unpair_message">It will have to be approved again the next time it connects, and any auto-approval is revoked.</string>
     <string name="settings_paired_clients_unpair_confirm">Un-pair</string>
     <string name="settings_paired_clients_unpaired_toast">Un-paired \'%1$s\'</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
 </resources>

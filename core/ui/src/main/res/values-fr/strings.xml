@@ -35,4 +35,10 @@
     <string name="common_github">GitHub</string>
     <string name="common_support">Support</string>
     <string name="common_unlock">Déverrouiller</string>
+    <string name="wayland_cd_session_menu">Menu de session</string>
+    <string name="wayland_cd_reset_zoom">Réinitialiser le zoom</string>
+    <string name="wayland_cd_exit_fullscreen">Quitter le plein écran</string>
+    <string name="wayland_cd_toggle_keyboard">Afficher/masquer le clavier</string>
+    <string name="wayland_cd_fullscreen">Plein écran</string>
+    <string name="wayland_cd_desktop_resolution">Résolution du bureau</string>
 </resources>

@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">निष्क्रिय Linux गेस्ट स्वतः बंद करें</string>
     <string name="settings_proot_idle_dialog_body">जब Haven इतनी देर बैकग्राउंड में रहे, तो मेमोरी खाली करने के लिए Linux गेस्ट के टर्मिनल और डेस्कटॉप बंद कर दें। कोई चालू गेस्ट सेवा इसे चालू रखती है। बैकग्राउंड टर्मिनल में चल रहा लंबा काम भी रुक जाएगा — जब तक निष्क्रियता पर संसाधन वापस न चाहें, इसे बंद रखें।</string>
     <string name="settings_proot_idle_off_label">बंद</string>
-    <string name="settings_proot_idle_minutes">%1$d मिनट</string>
     <string name="settings_shizuku_title">Shizuku एकीकरण</string>
     <string name="settings_shizuku_enabled">सक्रिय — स्वचालित बैटरी छूट, Wayland सॉकेट शेयरिंग</string>
     <string name="settings_shizuku_available">Shizuku इंस्टॉल है — अनुमति देने के लिए टैप करें</string>
@@ -213,24 +212,24 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">सरल</string>
     <string name="settings_language_title">भाषा</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
-    <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_media_extensions_title">मीडिया फ़ाइल एक्सटेंशन</string>
+    <string name="settings_media_extensions_description">स्पेस से अलग किए गए फ़ाइल एक्सटेंशन, जिन्हें फ़ाइल ब्राउज़र में स्ट्रीम करने योग्य मीडिया माना जाएगा।</string>
+    <string name="settings_media_extensions_label">एक्सटेंशन</string>
+    <string name="settings_show_desktops_title">डेस्कटॉप कार्ड दिखाएँ</string>
+    <string name="settings_show_desktops_subtitle">कनेक्शन स्क्रीन पर डेस्कटॉप एनवायरनमेंट मैनेजर दिखाएँ</string>
+    <string name="settings_show_linux_vm_title">Linux VM कार्ड दिखाएँ</string>
+    <string name="settings_show_linux_vm_subtitle">कनेक्शन स्क्रीन पर Android Linux VM सेटअप दिखाएँ</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">टर्मिनल में स्क्रीन चालू रखें</string>
     <string name="settings_keep_screen_on_subtitle">टर्मिनल टैब खुले रहने पर डिस्प्ले चालू रहता है। बैटरी खर्च होती है; केवल लंबी आउटपुट देखते समय चालू रखना उचित है।</string>
 
     <!-- #135 -->
-    <string name="settings_keyboard_mode_title">Keyboard mode</string>
-    <string name="settings_dev_install_title">Dev Install</string>
+    <string name="settings_keyboard_mode_title">कीबोर्ड मोड</string>
+    <string name="settings_dev_install_title">डेव इंस्टॉल</string>
     <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
-    <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <string name="settings_font_install_title">URL से फ़ॉन्ट इंस्टॉल करें</string>
+    <string name="settings_ime_flags_title">IME फ़्लैग</string>
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">स्क्रॉलबैक पंक्तियाँ</string>
     <string name="settings_scrollback_rows_subtitle">प्रति टैब %1$,d पंक्तियाँ सुरक्षित — नए टैब पर लागू</string>
     <string name="settings_scrollback_rows_dialog_title">प्रति टैब स्क्रॉलबैक पंक्तियाँ</string>
@@ -260,17 +259,17 @@
     <!-- i18n sweep #210 -->
     <string name="settings_color_scheme_auto_switch_title">System theme के साथ auto-switch</string>
     <string name="settings_color_scheme_auto_switch_subtitle">light और dark mode के लिए अलग terminal color scheme उपयोग करें</string>
-    <string name="settings_color_scheme_light_title">Terminal color scheme (light)</string>
-    <string name="settings_color_scheme_dark_title">Terminal color scheme (dark)</string>
-    <string name="settings_color_scheme_light_dialog_title">Terminal color scheme — light</string>
-    <string name="settings_color_scheme_dark_dialog_title">Terminal color scheme — dark</string>
+    <string name="settings_color_scheme_light_title">टर्मिनल रंग योजना (हल्का)</string>
+    <string name="settings_color_scheme_dark_title">टर्मिनल रंग योजना (गहरा)</string>
+    <string name="settings_color_scheme_light_dialog_title">टर्मिनल रंग योजना — हल्का</string>
+    <string name="settings_color_scheme_dark_dialog_title">टर्मिनल रंग योजना — गहरा</string>
     <string name="settings_color_scheme_apply_palette_title">स्कीम का ANSI पैलेट लागू करें</string>
     <string name="settings_color_scheme_apply_palette_subtitle">स्कीम से मेल खाने के लिए 16 ANSI रंगों को फिर से रंगें। बंद रहने पर मानक रंग बने रहते हैं, ताकि mutt जैसे फ़ुल-स्क्रीन ऐप्स अपेक्षित रूप से दिखें।</string>
     <string name="settings_toolbar_min_key_width">न्यूनतम key चौड़ाई: %1$d dp</string>
     <string name="settings_toolbar_uniform_grid">एकसमान कुंजी ग्रिड</string>
     <string name="settings_toolbar_uniform_grid_desc">हर कुंजी Termux की तरह बराबर चौड़ाई की सेल लेती है; लंबे लेबल लिपट जाते हैं। साइड स्क्रॉल नहीं।</string>
     <string name="settings_terminal_font_title">Terminal font</string>
-    <string name="settings_terminal_font_default_label">Hack Nerd Font Mono (default)</string>
+    <string name="settings_terminal_font_default_label">Hack Nerd Font Mono (डिफ़ॉल्ट)</string>
     <string name="settings_terminal_font_custom_fmt">Custom: %1$s</string>
     <string name="settings_terminal_font_subtitle_fmt">%1$s — TTF/OTF चुनने के लिए टैप करें (Nerd Fonts काम करते हैं)</string>
     <string name="settings_recommended_fonts_title">अनुशंसित fonts</string>
@@ -313,7 +312,7 @@
     <string name="settings_logcat_saved_toast">Logcat सहेजा गया</string>
     <string name="settings_logcat_started_toast">Logcat capture शुरू हुआ</string>
     <string name="settings_logcat_start_failed_toast">Capture शुरू नहीं हो सका</string>
-    <string name="settings_agent_endpoint_title">Agent endpoint (MCP)</string>
+    <string name="settings_agent_endpoint_title">एजेंट एंडपॉइंट (MCP)</string>
     <string name="settings_agent_endpoint_subtitle_on">चालू — loopback पर local MCP server। Write tools consent माँगते हैं।</string>
     <string name="settings_agent_endpoint_subtitle_off">बंद — local AI agents को state पढ़ने और (consent के साथ) कार्य करने देने के लिए चालू करें</string>
     <string name="settings_agent_file_read_title">Agents को file contents पढ़ने दें</string>
@@ -374,7 +373,7 @@
     <string name="settings_agent_activity_clear_dialog_text">इस डिवाइस से सभी रिकॉर्ड किए गए MCP calls हटा दिए जाएँगे। इसे पूर्ववत नहीं किया जा सकता।</string>
     <string name="settings_agent_activity_unknown_client">अज्ञात client</string>
     <string name="settings_agent_activity_args_redacted">args (redacted)</string>
-    <string name="settings_proot_install_log_screen_title">PRoot install log</string>
+    <string name="settings_proot_install_log_screen_title">PRoot इंस्टॉल लॉग</string>
     <string name="settings_proot_install_log_cd_clear">Log साफ़ करें</string>
     <string name="settings_proot_install_log_empty">अभी कोई install event रिकॉर्ड नहीं। इस log को भरने के लिए Connections → Desktops से कोई distro इंस्टॉल करें।</string>
     <string name="settings_proot_install_log_clear_dialog_title">Install log साफ़ करें?</string>
@@ -385,7 +384,7 @@
     <string name="settings_ime_flag_visible_password_detail">TYPE_TEXT_VARIATION_VISIBLE_PASSWORD — सबसे मज़बूत hint; Gboard इसे मानता है। अधिकांश IMEs पर full editor के साथ mutually exclusive (कोई swipe / voice नहीं)।</string>
     <string name="settings_ime_flag_auto_correct_title">Autocorrect protocol चालू करें</string>
     <string name="settings_ime_flag_auto_correct_detail">TYPE_TEXT_FLAG_AUTO_CORRECT — Samsung Honeyboard के commit-text gate (#110) के लिए आवश्यक; Gboard पर autocorrect स्पष्ट रूप से चालू करता है।</string>
-    <string name="settings_ime_flag_full_editor_title">Voice &amp; swipe (full editor)</string>
+    <string name="settings_ime_flag_full_editor_title">आवाज़ और स्वाइप (पूर्ण संपादक)</string>
     <string name="settings_ime_flag_full_editor_detail">IME को वास्तविक Editable दें। Voice input, swipe typing और CJK composition के लिए आवश्यक। ऊपर के autocorrect-suppression hint से conflict करता है।</string>
     <string name="settings_ime_flag_no_extract_ui_title">Fullscreen IME दबाएँ</string>
     <string name="settings_ime_flag_no_extract_ui_detail">IME_FLAG_NO_EXTRACT_UI — landscape का fullscreen IME UI दिखने से रोकता है।</string>
@@ -457,4 +456,21 @@
     <string name="settings_backup_auto_pull_interval_6h">6 घंटे</string>
     <string name="settings_backup_auto_pull_interval_24h">24 घंटे</string>
     <string name="settings_backup_remember_password_label">यह पासवर्ड याद रखें</string>
+    <string name="common_apply">लागू करें</string>
+    <string name="settings_rdp_desktop_size_title">RDP डेस्कटॉप आकार</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — अपने सर्वर से मिलाएँ, वरना इस क्षेत्र के बाहर के अपडेट छोड़ दिए जाते हैं</string>
+    <string name="settings_rdp_desktop_size_hint">इसे उस रिज़ॉल्यूशन पर सेट करें जो रिमोट मशीन वास्तव में उपयोग करती है। VirtualBox में डिफ़ॉल्ट 2560 × 1600 है।</string>
+    <string name="settings_rdp_desktop_size_width">चौड़ाई</string>
+    <string name="settings_rdp_desktop_size_height">ऊँचाई</string>
+    <string name="settings_native_crash_title">ऐप क्रैश</string>
+    <string name="settings_native_crash_subtitle">Haven अप्रत्याशित रूप से बंद हो गया। नीचे दी गई रिपोर्ट बताती है कहाँ — कृपया इसे बग रिपोर्ट के साथ संलग्न करें।</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven अप्रत्याशित रूप से बंद हो गया। Android ने इनके लिए विस्तृत रिपोर्ट नहीं रखी, इसलिए केवल समय और सिग्नल ज्ञात हैं — फिर भी इन्हें बग रिपोर्ट में जोड़ें, सिग्नल कारण को सीमित कर देता है।</string>
+    <string name="settings_native_crash_no_trace">इस क्रैश के लिए कोई विस्तृत रिपोर्ट नहीं रखी गई।</string>
+    <string name="settings_native_crash_copy">रिपोर्ट कॉपी करें</string>
+    <string name="settings_native_crash_copied">क्रैश रिपोर्ट कॉपी हुई</string>
+    <string name="settings_native_crash_dismiss">खारिज करें</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d मिनट</item>
+        <item quantity="other">%1$d मिनट</item>
+    </plurals>
 </resources>

@@ -2595,7 +2595,7 @@ private fun FileListItem(
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
 
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "yMdjm"), Locale.getDefault()) }
 
     Box {
         ListItem(

@@ -60,19 +60,19 @@
     <string name="terminal_rename_session_title">Переименовать сессию</string>
     <string name="terminal_name">Имя</string>
     <string name="terminal_rename">Переименовать</string>
-    <string name="terminal_new_tab_no_active">No active session to clone</string>
-    <string name="terminal_new_tab_no_config">Connection config not found — try reconnecting first</string>
-    <string name="terminal_new_tab_host_key_changed">Host key changed for %s — connection refused for security</string>
-    <string name="terminal_new_tab_connection_failed">Could not connect: %s</string>
-    <string name="terminal_new_tab_shell_failed">Failed to open shell: %s</string>
-    <string name="terminal_new_tab_reticulum_no_session">No active Reticulum session to clone</string>
-    <string name="terminal_new_tab_connecting">Connecting…</string>
+    <string name="terminal_new_tab_no_active">Нет активного сеанса для клонирования</string>
+    <string name="terminal_new_tab_no_config">Конфигурация подключения не найдена — сначала переподключитесь</string>
+    <string name="terminal_new_tab_host_key_changed">Ключ хоста для %s изменился — подключение отклонено из соображений безопасности</string>
+    <string name="terminal_new_tab_connection_failed">Не удалось подключиться: %s</string>
+    <string name="terminal_new_tab_shell_failed">Не удалось открыть оболочку: %s</string>
+    <string name="terminal_new_tab_reticulum_no_session">Нет активного сеанса Reticulum для клонирования</string>
+    <string name="terminal_new_tab_connecting">Подключение…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="terminal_no_contact">Нет ответа от сервера %1$dс — повторная попытка</string>
     <string name="terminal_new_session_create">Создать</string>
-    <string name="terminal_vnc_username_label">Username (optional — VeNCrypt only)</string>
-    <string name="terminal_vnc_username_placeholder">Leave blank for classic VncAuth</string>
-    <string name="terminal_vnc_color_depth">Colour depth</string>
+    <string name="terminal_vnc_username_label">Имя пользователя (необязательно — только VeNCrypt)</string>
+    <string name="terminal_vnc_username_placeholder">Оставьте пустым для классического VncAuth</string>
+    <string name="terminal_vnc_color_depth">Глубина цвета</string>
     <string name="terminal_open_plain_shell">Открыть простой shell</string>
 
     <string name="terminal_enter_fullscreen">Полноэкранный режим</string>

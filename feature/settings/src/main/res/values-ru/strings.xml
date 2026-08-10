@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">Автоостановка простаивающего гостя Linux</string>
     <string name="settings_proot_idle_dialog_body">Когда Haven пробыл в фоне столько времени, остановить терминалы и рабочие столы гостя Linux, чтобы освободить память. Запущенная гостевая служба удерживает его. Долгая задача в фоновом терминале тоже будет остановлена — оставьте выключенным, если не нужна очистка при простое.</string>
     <string name="settings_proot_idle_off_label">Выключено</string>
-    <string name="settings_proot_idle_minutes">%1$d минут</string>
     <string name="settings_shizuku_title">Интеграция Shizuku</string>
     <string name="settings_shizuku_enabled">Включено — автоисключение батареи, общий сокет Wayland</string>
     <string name="settings_shizuku_available">Shizuku установлен — нажмите для предоставления доступа</string>
@@ -213,24 +212,24 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">Простой</string>
     <string name="settings_language_title">Язык</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
-    <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_media_extensions_title">Расширения медиафайлов</string>
+    <string name="settings_media_extensions_description">Расширения файлов через пробел, которые в файловом браузере считаются потоковым медиа.</string>
+    <string name="settings_media_extensions_label">Расширения</string>
+    <string name="settings_show_desktops_title">Показывать карточку рабочих столов</string>
+    <string name="settings_show_desktops_subtitle">Показывать менеджер окружений рабочего стола на экране подключений</string>
+    <string name="settings_show_linux_vm_title">Показывать карточку Linux VM</string>
+    <string name="settings_show_linux_vm_subtitle">Показывать настройку Android Linux VM на экране подключений</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">Не выключать экран в терминале</string>
     <string name="settings_keep_screen_on_subtitle">Дисплей остаётся включённым, пока открыта вкладка терминала. Расходует заряд; включайте только если следите за длительным выводом.</string>
 
     <!-- #135 -->
-    <string name="settings_keyboard_mode_title">Keyboard mode</string>
-    <string name="settings_dev_install_title">Dev Install</string>
-    <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
-    <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <string name="settings_keyboard_mode_title">Режим клавиатуры</string>
+    <string name="settings_dev_install_title">Установка для разработки</string>
+    <string name="settings_dev_install_apk_url">URL APK</string>
+    <string name="settings_font_install_title">Установить шрифт по URL</string>
+    <string name="settings_ime_flags_title">Флаги IME</string>
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">Строки истории</string>
     <string name="settings_scrollback_rows_subtitle">%1$,d строк на вкладку — применяется к новым вкладкам</string>
     <string name="settings_scrollback_rows_dialog_title">Строк истории на вкладку</string>
@@ -457,4 +456,23 @@
     <string name="settings_backup_auto_pull_interval_6h">6 часов</string>
     <string name="settings_backup_auto_pull_interval_24h">24 часа</string>
     <string name="settings_backup_remember_password_label">Запомнить этот пароль</string>
+    <string name="common_apply">Применить</string>
+    <string name="settings_rdp_desktop_size_title">Размер рабочего стола RDP</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — задайте как на сервере, иначе его обновления вне этой области отбрасываются</string>
+    <string name="settings_rdp_desktop_size_hint">Укажите разрешение, которое действительно использует удалённая машина. По умолчанию в VirtualBox — 2560 × 1600.</string>
+    <string name="settings_rdp_desktop_size_width">Ширина</string>
+    <string name="settings_rdp_desktop_size_height">Высота</string>
+    <string name="settings_native_crash_title">Сбои приложения</string>
+    <string name="settings_native_crash_subtitle">Haven неожиданно закрылся. Отчёт ниже показывает, где именно — приложите его к сообщению об ошибке.</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven неожиданно закрылся. Android не сохранил подробный отчёт для таких случаев, известны только время и сигнал — всё равно приложите их к сообщению об ошибке: сигнал сужает круг причин.</string>
+    <string name="settings_native_crash_no_trace">Подробный отчёт для этого сбоя не сохранён.</string>
+    <string name="settings_native_crash_copy">Скопировать отчёт</string>
+    <string name="settings_native_crash_copied">Отчёт о сбое скопирован</string>
+    <string name="settings_native_crash_dismiss">Скрыть</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d минута</item>
+        <item quantity="few">%1$d минуты</item>
+        <item quantity="many">%1$d минут</item>
+        <item quantity="other">%1$d минуты</item>
+    </plurals>
 </resources>

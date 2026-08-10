@@ -214,7 +214,7 @@ private fun TunnelRow(
     tunnel: TunnelConfig,
     onDelete: () -> Unit,
 ) {
-    val formatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    val formatter = remember { SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "yMd"), Locale.getDefault()) }
     // For Cloudflare Access rows, decode the blob to surface a stale-JWT
     // hint inline; for other types this is skipped entirely.
     val cfExpired = remember(tunnel.id, tunnel.configText) {

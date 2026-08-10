@@ -62,9 +62,9 @@
     <string name="workspace_launch_failed">विफल: %1$s</string>
     <string name="workspace_launch_cancel">रद्द करें</string>
     <string name="workspace_launch_dismiss">बंद करें</string>
-    <string name="biometric_screen_lock_icon">Screen lock</string>
-    <string name="desktop_screen_title">Desktop</string>
-    <string name="agent_deny">Deny</string>
+    <string name="biometric_screen_lock_icon">स्क्रीन लॉक</string>
+    <string name="desktop_screen_title">डेस्कटॉप</string>
+    <string name="agent_deny">अस्वीकार करें</string>
 
     <!-- i18n sweep #210 -->
     <string name="app_biometric_locked_title">Haven लॉक है</string>
@@ -101,10 +101,10 @@
     <string name="app_desktop_retry_wipe">मिटाएँ &amp; पुनः प्रयास करें</string>
     <string name="app_desktop_retry_step">यह चरण फिर से करें</string>
     <string name="app_desktop_experimental">प्रयोगात्मक</string>
-    <string name="app_desktop_vnc_running">VNC :%1$d (port %2$d)</string>
+    <string name="app_desktop_vnc_running">VNC :%1$d (पोर्ट %2$d)</string>
     <string name="app_desktop_error">त्रुटि</string>
     <string name="app_desktop_install_distro_first">" · पहले distro इंस्टॉल करें"</string>
-    <string name="app_desktop_vnc_port_stored">VNC port %1$d</string>
+    <string name="app_desktop_vnc_port_stored">VNC पोर्ट %1$d</string>
     <string name="app_desktop_custom_cmd_unset">पहले सेशन कमांड सेट करें</string>
     <string name="app_desktop_custom_cmd_edit">सेशन कमांड संपादित करें</string>
     <string name="app_desktop_custom_cmd_title">कस्टम सेशन कमांड</string>
@@ -130,7 +130,6 @@
     <string name="app_agent_action_requested">Agent की कार्रवाई अनुरोधित</string>
     <string name="app_agent_from_client">से: %1$s</string>
     <string name="app_agent_tool">Tool: %1$s</string>
-    <string name="app_agent_more_pending">＋इसके पीछे %1$d और अनुरोध प्रतीक्षारत — इसके बाद दिखेंगे</string>
     <string name="app_agent_bypass_label">Haven पुनः आरंभ होने तक \'%1$s\' के सभी MCP अनुरोधों की अनुमति दें</string>
     <string name="app_agent_bypass_description">इसमें विनाशकारी कार्रवाइयाँ शामिल हैं (terminal input, file write/delete, APK install)। ऐप बंद होने पर रीसेट।</string>
     <string name="app_agent_auto_allow_window">Auto-allow विंडो:</string>
@@ -199,9 +198,6 @@
 
     <!-- Agent Activity log — result summaries (#239) -->
     <string name="agent_summary_ok">हो गया</string>
-    <string name="agent_summary_connections">%1$d कनेक्शन</string>
-    <string name="agent_summary_sessions">%1$d सत्र</string>
-    <string name="agent_summary_remotes">%1$d रिमोट</string>
     <string name="agent_summary_entries_at">%2$s:%3$s में %1$d प्रविष्टियाँ</string>
     <string name="agent_summary_entries_via">%2$s के माध्यम से %3$s में %1$d प्रविष्टियाँ</string>
     <string name="agent_summary_version">संस्करण %1$s</string>
@@ -306,4 +302,22 @@
     <string name="backup_pull_notify_failure_title">बैकअप पुनर्स्थापना विफल</string>
     <string name="backup_pull_toast_success">बैकअप पुनर्स्थापित</string>
     <string name="backup_pull_toast_failure">बैकअप खींचना विफल: %1$s</string>
+    <string name="backup_pull_started">पृष्ठभूमि में बैकअप लाया जा रहा है…</string>
+    <string name="backup_pull_no_password">कोई पासवर्ड सहेजा नहीं है। Haven खोला जा रहा है…</string>
+    <plurals name="app_agent_more_pending">
+        <item quantity="one">＋%1$d और अनुरोध इसके पीछे प्रतीक्षा में — आप उसे इसके बाद देखेंगे</item>
+        <item quantity="other">＋%1$d और अनुरोध इसके पीछे प्रतीक्षा में — आप उन्हें इसके बाद देखेंगे</item>
+    </plurals>
+    <plurals name="agent_summary_connections">
+        <item quantity="one">%1$d कनेक्शन</item>
+        <item quantity="other">%1$d कनेक्शन</item>
+    </plurals>
+    <plurals name="agent_summary_sessions">
+        <item quantity="one">%1$d सत्र</item>
+        <item quantity="other">%1$d सत्र</item>
+    </plurals>
+    <plurals name="agent_summary_remotes">
+        <item quantity="one">%1$d रिमोट</item>
+        <item quantity="other">%1$d रिमोट</item>
+    </plurals>
 </resources>

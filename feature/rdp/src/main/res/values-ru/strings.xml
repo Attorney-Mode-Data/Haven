@@ -38,4 +38,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">Два пальца перемещают вид (нажмите, чтобы прокручивать удалённый экран)</string>
     <string name="rdp_cd_two_finger_scroll_on">Два пальца прокручивают удалённый экран (нажмите, чтобы перемещать вид)</string>
+    <string name="rdp_hint_nla_required_title">Сервер требует проверку подлинности на уровне сети (NLA)</string>
+    <string name="rdp_hint_nla_required_body">Сервер настроен принимать только клиентов, проходящих проверку по NLA, а в этом профиле подключения NLA не отмечен. Либо включите «Network Level Authentication (NLA)» в профиле, либо ослабьте требование на ПК: Параметры → Система → Удалённый рабочий стол → Дополнительные параметры → снимите флажок «Require devices to use Network Level Authentication».</string>
+    <string name="rdp_hint_mixed_username_title">NLA не поддерживает такой формат имени пользователя</string>
+    <string name="rdp_hint_mixed_username_body">NLA отклоняет имя пользователя, в котором префикс домена сочетается с адресом почты (например MicrosoftAccount\\you@example.com), а для обычного адреса обрезает всё после @ — это ограничение исходной библиотеки sspi для учётных записей Microsoft.\n\nДля ПК с учётной записью Microsoft: снимите флажок «Network Level Authentication (NLA)» в этом профиле, разрешите подключения без NLA на ПК (Удалённый рабочий стол → Дополнительные параметры) и используйте MicrosoftAccount\\you@example.com или просто you@example.com в качестве имени пользователя.</string>
+    <string name="rdp_hint_mixed_username_link">Трекер задач</string>
 </resources>

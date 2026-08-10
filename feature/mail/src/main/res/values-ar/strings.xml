@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">وُضعت في قائمة الانتظار بينما كان Haven في الخلفية. وافق للتنفيذ، أو ارفض للتجاهل.</string>
     <string name="mail_rules_approve">موافقة</string>
     <string name="mail_rules_reject">رفض</string>
+    <string name="mail_cd_back">رجوع</string>
+    <string name="mail_cd_has_attachments">يحتوي على مرفقات</string>
 </resources>

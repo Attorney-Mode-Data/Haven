@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">নিষ্ক্রিয় Linux গেস্ট স্বয়ংক্রিয়ভাবে বন্ধ করুন</string>
     <string name="settings_proot_idle_dialog_body">Haven এত সময় ব্যাকগ্রাউন্ডে থাকলে, মেমরি খালি করতে Linux গেস্টের টার্মিনাল ও ডেস্কটপ বন্ধ করুন। চালু থাকা কোনো গেস্ট সার্ভিস এটি চালু রাখে। ব্যাকগ্রাউন্ড টার্মিনালে চলা দীর্ঘ কাজও বন্ধ হবে — নিষ্ক্রিয় অবস্থায় রিসোর্স ফেরত না চাইলে এটি বন্ধ রাখুন।</string>
     <string name="settings_proot_idle_off_label">বন্ধ</string>
-    <string name="settings_proot_idle_minutes">%1$d মিনিট</string>
     <string name="settings_shizuku_title">Shizuku ইন্টিগ্রেশন</string>
     <string name="settings_shizuku_enabled">সক্রিয় — স্বয়ংক্রিয় ব্যাটারি ছাড়, Wayland সকেট শেয়ারিং</string>
     <string name="settings_shizuku_available">Shizuku ইনস্টল আছে — অনুমতি দিতে ট্যাপ করুন</string>
@@ -213,24 +212,24 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">সাধারণ</string>
     <string name="settings_language_title">ভাষা</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
-    <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_media_extensions_title">মিডিয়া ফাইল এক্সটেনশন</string>
+    <string name="settings_media_extensions_description">স্পেস দিয়ে আলাদা করা ফাইল এক্সটেনশন, যেগুলিকে ফাইল ব্রাউজারে স্ট্রিমযোগ্য মিডিয়া হিসেবে গণ্য করা হবে।</string>
+    <string name="settings_media_extensions_label">এক্সটেনশন</string>
+    <string name="settings_show_desktops_title">ডেস্কটপ কার্ড দেখান</string>
+    <string name="settings_show_desktops_subtitle">সংযোগ স্ক্রিনে ডেস্কটপ এনভায়রনমেন্ট ম্যানেজার দেখান</string>
+    <string name="settings_show_linux_vm_title">Linux VM কার্ড দেখান</string>
+    <string name="settings_show_linux_vm_subtitle">সংযোগ স্ক্রিনে Android Linux VM সেটআপ দেখান</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">টার্মিনালে স্ক্রিন চালু রাখুন</string>
     <string name="settings_keep_screen_on_subtitle">টার্মিনাল ট্যাব খোলা থাকলে ডিসপ্লে জাগ্রত থাকে। ব্যাটারি খরচ হয়; দীর্ঘ আউটপুট দেখার সময় শুধু কার্যকর।</string>
 
     <!-- #135 -->
-    <string name="settings_keyboard_mode_title">Keyboard mode</string>
-    <string name="settings_dev_install_title">Dev Install</string>
+    <string name="settings_keyboard_mode_title">কীবোর্ড মোড</string>
+    <string name="settings_dev_install_title">ডেভ ইনস্টল</string>
     <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
-    <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <string name="settings_font_install_title">URL থেকে ফন্ট ইনস্টল করুন</string>
+    <string name="settings_ime_flags_title">IME ফ্ল্যাগ</string>
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">স্ক্রলব্যাক সারি</string>
     <string name="settings_scrollback_rows_subtitle">প্রতি ট্যাবে %1$,d লাইন সংরক্ষিত — নতুন ট্যাবে প্রযোজ্য</string>
     <string name="settings_scrollback_rows_dialog_title">প্রতি ট্যাবের স্ক্রলব্যাক সারি</string>
@@ -313,7 +312,7 @@
     <string name="settings_logcat_saved_toast">Logcat সংরক্ষিত হয়েছে</string>
     <string name="settings_logcat_started_toast">Logcat ক্যাপচার শুরু হয়েছে</string>
     <string name="settings_logcat_start_failed_toast">ক্যাপচার শুরু করতে ব্যর্থ</string>
-    <string name="settings_agent_endpoint_title">Agent endpoint (MCP)</string>
+    <string name="settings_agent_endpoint_title">এজেন্ট এন্ডপয়েন্ট (MCP)</string>
     <string name="settings_agent_endpoint_subtitle_on">চালু — loopback-এ স্থানীয় MCP সার্ভার। Write টুল সম্মতি চায়।</string>
     <string name="settings_agent_endpoint_subtitle_off">বন্ধ — স্থানীয় AI agent-দের স্থিতি পড়তে ও (সম্মতিসহ) কার্য করতে দিতে চালু করুন</string>
     <string name="settings_agent_file_read_title">Agent-দের ফাইল বিষয়বস্তু পড়তে দিন</string>
@@ -457,4 +456,21 @@
     <string name="settings_backup_auto_pull_interval_6h">৬ ঘণ্টা</string>
     <string name="settings_backup_auto_pull_interval_24h">২৪ ঘণ্টা</string>
     <string name="settings_backup_remember_password_label">এই পাসওয়ার্ড মনে রাখুন</string>
+    <string name="common_apply">প্রয়োগ করুন</string>
+    <string name="settings_rdp_desktop_size_title">RDP ডেস্কটপের আকার</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — আপনার সার্ভারের সঙ্গে মেলান, নাহলে এই এলাকার বাইরের আপডেট বাদ পড়বে</string>
+    <string name="settings_rdp_desktop_size_hint">রিমোট মেশিন আসলে যে রেজোলিউশন ব্যবহার করে সেটি দিন। VirtualBox-এর ডিফল্ট 2560 × 1600।</string>
+    <string name="settings_rdp_desktop_size_width">প্রস্থ</string>
+    <string name="settings_rdp_desktop_size_height">উচ্চতা</string>
+    <string name="settings_native_crash_title">অ্যাপ ক্র্যাশ</string>
+    <string name="settings_native_crash_subtitle">Haven অপ্রত্যাশিতভাবে বন্ধ হয়ে গেছে। নিচের রিপোর্টে কোথায় হয়েছে তা রয়েছে — অনুগ্রহ করে বাগ রিপোর্টে এটি যুক্ত করুন।</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven অপ্রত্যাশিতভাবে বন্ধ হয়ে গেছে। এগুলির জন্য Android কোনো বিস্তারিত রিপোর্ট রাখেনি, তাই কেবল সময় ও সিগন্যাল জানা আছে — তবুও বাগ রিপোর্টে সেগুলি যুক্ত করুন, কারণ সিগন্যাল অনুসন্ধান সংকুচিত করে।</string>
+    <string name="settings_native_crash_no_trace">এই ক্র্যাশের জন্য কোনো বিস্তারিত রিপোর্ট রাখা হয়নি।</string>
+    <string name="settings_native_crash_copy">রিপোর্ট কপি করুন</string>
+    <string name="settings_native_crash_copied">ক্র্যাশ রিপোর্ট কপি হয়েছে</string>
+    <string name="settings_native_crash_dismiss">খারিজ করুন</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d মিনিট</item>
+        <item quantity="other">%1$d মিনিট</item>
+    </plurals>
 </resources>

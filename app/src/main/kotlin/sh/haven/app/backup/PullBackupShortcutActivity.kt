@@ -29,7 +29,7 @@ class PullBackupShortcutActivity : ComponentActivity() {
             val passphrase = preferencesRepository.backupSyncPassphrase()
             if (!passphrase.isNullOrEmpty()) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(applicationContext, "Pulling backup in background...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, getString(sh.haven.app.R.string.backup_pull_started), Toast.LENGTH_SHORT).show()
                 }
                 val request = OneTimeWorkRequestBuilder<BackupAutoPullWorker>()
                     .setInputData(workDataOf("is_manual" to true))
@@ -37,7 +37,7 @@ class PullBackupShortcutActivity : ComponentActivity() {
                 WorkManager.getInstance(applicationContext).enqueue(request)
             } else {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(applicationContext, "No password saved. Opening Haven...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, getString(sh.haven.app.R.string.backup_pull_no_password), Toast.LENGTH_SHORT).show()
                 }
                 val intent = Intent(applicationContext, MainActivity::class.java).apply {
                     action = ACTION_SHOW_BACKUP_PASSWORD_DIALOG

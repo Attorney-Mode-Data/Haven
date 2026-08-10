@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">Parar convidado Linux ocioso</string>
     <string name="settings_proot_idle_dialog_body">Depois que o Haven ficar em segundo plano por esse tempo, para os terminais e áreas de trabalho do convidado Linux para liberar memória. Um serviço do convidado em execução o mantém ativo. Uma tarefa longa em um terminal em segundo plano também seria parada — deixe desligado a menos que queira recuperar recursos por ociosidade.</string>
     <string name="settings_proot_idle_off_label">Desligado</string>
-    <string name="settings_proot_idle_minutes">%1$d minutos</string>
     <string name="settings_shizuku_title">Integração Shizuku</string>
     <string name="settings_shizuku_enabled">Ativado — isenção automática de bateria, compartilhamento de socket Wayland</string>
     <string name="settings_shizuku_available">Shizuku instalado — toque para conceder permissão</string>
@@ -213,13 +212,13 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">Simples</string>
     <string name="settings_language_title">Idioma</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
+    <string name="settings_media_extensions_title">Extensões de arquivos de mídia</string>
+    <string name="settings_media_extensions_description">Extensões de arquivo separadas por espaço a tratar como mídia transmissível no navegador de arquivos.</string>
     <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_show_desktops_title">Mostrar o cartão Desktops</string>
+    <string name="settings_show_desktops_subtitle">Mostrar o gerenciador de ambientes de desktop na tela de Conexões</string>
+    <string name="settings_show_linux_vm_title">Mostrar o cartão de VM Linux</string>
+    <string name="settings_show_linux_vm_subtitle">Mostrar a configuração da VM Linux do Android na tela de Conexões</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">Manter tela ligada no terminal</string>
     <string name="settings_keep_screen_on_subtitle">A tela permanece acordada enquanto uma aba do terminal está aberta. Consome bateria; só vale a pena se você acompanha saídas demoradas.</string>
@@ -228,9 +227,9 @@
     <string name="settings_keyboard_mode_title">Keyboard mode</string>
     <string name="settings_dev_install_title">Dev Install</string>
     <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
+    <string name="settings_font_install_title">Instalar fonte a partir de um URL</string>
     <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">Linhas de histórico</string>
     <string name="settings_scrollback_rows_subtitle">%1$,d linhas mantidas por aba — aplica-se a novas abas</string>
     <string name="settings_scrollback_rows_dialog_title">Linhas de histórico por aba</string>
@@ -246,7 +245,7 @@
     <string name="settings_section_appearance">Aparência</string>
     <string name="settings_section_backup">Backup</string>
     <string name="settings_section_connections_screen">Tela de conexões</string>
-    <string name="settings_section_desktop">Desktop (VNC &amp; RDP)</string>
+    <string name="settings_section_desktop">Área de trabalho (VNC e RDP)</string>
     <string name="settings_section_diagnostics">Diagnóstico</string>
     <string name="settings_section_keyboard_input">Teclado e entrada</string>
     <string name="settings_section_security_privacy">Segurança e privacidade</string>
@@ -457,4 +456,21 @@
     <string name="settings_backup_auto_pull_interval_6h">6 horas</string>
     <string name="settings_backup_auto_pull_interval_24h">24 horas</string>
     <string name="settings_backup_remember_password_label">Memorizar esta palavra-passe</string>
+    <string name="common_apply">Aplicar</string>
+    <string name="settings_rdp_desktop_size_title">Tamanho da área de trabalho RDP</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — corresponda ao seu servidor, ou as atualizações fora desta área serão descartadas</string>
+    <string name="settings_rdp_desktop_size_hint">Defina isto para a resolução que a máquina remota realmente usa. O padrão do VirtualBox é 2560 × 1600.</string>
+    <string name="settings_rdp_desktop_size_width">Largura</string>
+    <string name="settings_rdp_desktop_size_height">Altura</string>
+    <string name="settings_native_crash_title">Falhas do app</string>
+    <string name="settings_native_crash_subtitle">O Haven fechou inesperadamente. O relatório abaixo indica onde — anexe-o a um relatório de bug.</string>
+    <string name="settings_native_crash_subtitle_no_trace">O Haven fechou inesperadamente. O Android não guardou um relatório detalhado destes, então só se sabem o horário e o sinal — anexe-os mesmo assim a um relatório de bug, pois o sinal ajuda a restringir a causa.</string>
+    <string name="settings_native_crash_no_trace">Nenhum relatório detalhado foi guardado para esta falha.</string>
+    <string name="settings_native_crash_copy">Copiar relatório</string>
+    <string name="settings_native_crash_copied">Relatório de falha copiado</string>
+    <string name="settings_native_crash_dismiss">Dispensar</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
 </resources>

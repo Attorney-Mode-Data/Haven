@@ -39,4 +39,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">双指平移视图（点按切换为滚动远程端）</string>
     <string name="rdp_cd_two_finger_scroll_on">双指滚动远程端（点按切换为平移视图）</string>
+    <string name="rdp_hint_nla_required_title">服务器要求网络级别身份验证 (NLA)</string>
+    <string name="rdp_hint_nla_required_body">服务器配置为仅接受使用 NLA 认证的客户端，而此连接配置中未勾选 NLA。请在配置中勾选“Network Level Authentication (NLA)”，或在电脑上放宽此要求：设置 → 系统 → 远程桌面 → 高级设置 → 取消勾选“Require devices to use Network Level Authentication”。</string>
+    <string name="rdp_hint_mixed_username_title">NLA 无法使用这种格式的用户名</string>
+    <string name="rdp_hint_mixed_username_body">NLA 会拒绝把域前缀和电子邮件地址组合在一起的用户名（例如 MicrosoftAccount\\you@example.com），而对于纯电子邮件地址，它会截断 @ 之后的全部内容——这是上游 sspi 库针对 Microsoft 账户的限制。\n\n对于使用 Microsoft 账户的电脑：在此配置中取消勾选“Network Level Authentication (NLA)”，在电脑上允许非 NLA 连接（远程桌面 → 高级设置），并使用 MicrosoftAccount\\you@example.com 或直接使用 you@example.com 作为用户名。</string>
+    <string name="rdp_hint_mixed_username_link">问题追踪器</string>
 </resources>

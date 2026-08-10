@@ -1537,7 +1537,7 @@ private fun copyPublicKey(context: Context, sshKey: SshKey) {
 }
 
 private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val sdf = SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "yMd"), Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
 
@@ -1645,7 +1645,7 @@ private fun KeySelectionBar(
             )
         }
         Text(
-            text = stringResource(R.string.keys_selected_count, count),
+            text = pluralStringResource(R.plurals.keys_selected_count, count, count),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f),

@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">Detener el invitado Linux inactivo</string>
     <string name="settings_proot_idle_dialog_body">Cuando Haven haya estado en segundo plano este tiempo, detiene las terminales y escritorios del invitado Linux para liberar memoria. Un servicio del invitado en ejecución lo mantiene activo. Un trabajo largo en una terminal en segundo plano también se detendría; déjalo desactivado salvo que quieras liberar recursos por inactividad.</string>
     <string name="settings_proot_idle_off_label">Desactivado</string>
-    <string name="settings_proot_idle_minutes">%1$d minutos</string>
     <string name="settings_shizuku_title">Integración Shizuku</string>
     <string name="settings_shizuku_enabled">Activado — exención automática de batería, socket Wayland compartido</string>
     <string name="settings_shizuku_available">Shizuku instalado — toca para conceder permiso</string>
@@ -213,13 +212,13 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">Simple</string>
     <string name="settings_language_title">Idioma</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
+    <string name="settings_media_extensions_title">Extensiones de archivos multimedia</string>
+    <string name="settings_media_extensions_description">Extensiones de archivo separadas por espacios que se tratarán como medios reproducibles en el explorador de archivos.</string>
     <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_show_desktops_title">Mostrar la tarjeta Escritorios</string>
+    <string name="settings_show_desktops_subtitle">Mostrar el gestor de entornos de escritorio en la pantalla de Conexiones</string>
+    <string name="settings_show_linux_vm_title">Mostrar la tarjeta de VM Linux</string>
+    <string name="settings_show_linux_vm_subtitle">Mostrar la configuración de la VM Linux de Android en la pantalla de Conexiones</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">Mantener pantalla encendida en el terminal</string>
     <string name="settings_keep_screen_on_subtitle">La pantalla permanece encendida mientras una pestaña de terminal está abierta. Consume batería; solo conviene activarlo si vas a observar salidas prolongadas.</string>
@@ -228,9 +227,9 @@
     <string name="settings_keyboard_mode_title">Keyboard mode</string>
     <string name="settings_dev_install_title">Dev Install</string>
     <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
+    <string name="settings_font_install_title">Instalar fuente desde URL</string>
     <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">Líneas de historial</string>
     <string name="settings_scrollback_rows_subtitle">%1$,d líneas guardadas por pestaña — se aplica a pestañas nuevas</string>
     <string name="settings_scrollback_rows_dialog_title">Líneas de historial por pestaña</string>
@@ -457,4 +456,21 @@
     <string name="settings_backup_auto_pull_interval_6h">6 horas</string>
     <string name="settings_backup_auto_pull_interval_24h">24 horas</string>
     <string name="settings_backup_remember_password_label">Recordar esta contraseña</string>
+    <string name="common_apply">Aplicar</string>
+    <string name="settings_rdp_desktop_size_title">Tamaño del escritorio RDP</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — haz que coincida con tu servidor, o sus actualizaciones fuera de esta área se descartan</string>
+    <string name="settings_rdp_desktop_size_hint">Ajusta esto a la resolución que usa realmente la máquina remota. VirtualBox usa 2560 × 1600 por defecto.</string>
+    <string name="settings_rdp_desktop_size_width">Ancho</string>
+    <string name="settings_rdp_desktop_size_height">Alto</string>
+    <string name="settings_native_crash_title">Fallos de la app</string>
+    <string name="settings_native_crash_subtitle">Haven se cerró inesperadamente. El informe siguiente indica dónde: adjúntalo a un informe de error.</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven se cerró inesperadamente. Android no guardó un informe detallado de estos, así que solo se conocen la hora y la señal: adjúntalos igualmente a un informe de error, ya que la señal acota la causa.</string>
+    <string name="settings_native_crash_no_trace">No se guardó un informe detallado de este fallo.</string>
+    <string name="settings_native_crash_copy">Copiar informe</string>
+    <string name="settings_native_crash_copied">Informe de fallo copiado</string>
+    <string name="settings_native_crash_dismiss">Descartar</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
 </resources>

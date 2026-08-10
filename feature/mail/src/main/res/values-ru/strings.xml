@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">В очереди, пока Haven был в фоне. Подтвердите для выполнения или отклоните для отмены.</string>
     <string name="mail_rules_approve">Подтвердить</string>
     <string name="mail_rules_reject">Отклонить</string>
+    <string name="mail_cd_back">Назад</string>
+    <string name="mail_cd_has_attachments">Есть вложения</string>
 </resources>

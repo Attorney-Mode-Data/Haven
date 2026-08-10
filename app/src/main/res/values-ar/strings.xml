@@ -62,9 +62,9 @@
     <string name="workspace_launch_failed">فشل: %1$s</string>
     <string name="workspace_launch_cancel">إلغاء</string>
     <string name="workspace_launch_dismiss">إغلاق</string>
-    <string name="biometric_screen_lock_icon">Screen lock</string>
-    <string name="desktop_screen_title">Desktop</string>
-    <string name="agent_deny">Deny</string>
+    <string name="biometric_screen_lock_icon">قفل الشاشة</string>
+    <string name="desktop_screen_title">سطح المكتب</string>
+    <string name="agent_deny">رفض</string>
 
     <!-- i18n sweep #210 -->
     <string name="app_biometric_locked_title">Haven مقفل</string>
@@ -130,7 +130,6 @@
     <string name="app_agent_action_requested">إجراء وكيل مطلوب</string>
     <string name="app_agent_from_client">من: %1$s</string>
     <string name="app_agent_tool">الأداة: %1$s</string>
-    <string name="app_agent_more_pending">＋%1$d طلب في الانتظار خلف هذا الطلب — سترى الطلبات بعده</string>
     <string name="app_agent_bypass_label">السماح لجميع طلبات MCP من \'%1$s\' حتى إعادة تشغيل Haven</string>
     <string name="app_agent_bypass_description">يشمل العمليات التدميرية (إدخال الطرفية، كتابة/حذف الملفات، تثبيت APK). يُمسح عند إغلاق التطبيق.</string>
     <string name="app_agent_auto_allow_window">نافذة السماح التلقائي:</string>
@@ -199,9 +198,6 @@
 
     <!-- Agent Activity log — result summaries (#239) -->
     <string name="agent_summary_ok">تم</string>
-    <string name="agent_summary_connections">%1$d اتصالات</string>
-    <string name="agent_summary_sessions">%1$d جلسات</string>
-    <string name="agent_summary_remotes">%1$d مواقع بعيدة</string>
     <string name="agent_summary_entries_at">%1$d إدخالات في %2$s:%3$s</string>
     <string name="agent_summary_entries_via">%1$d إدخالات عبر %2$s في %3$s</string>
     <string name="agent_summary_version">الإصدار %1$s</string>
@@ -306,4 +302,38 @@
     <string name="backup_pull_notify_failure_title">فشلت استعادة النسخة الاحتياطية</string>
     <string name="backup_pull_toast_success">تمت استعادة النسخة الاحتياطية</string>
     <string name="backup_pull_toast_failure">فشل سحب النسخة الاحتياطية: %1$s</string>
+    <string name="backup_pull_started">جارٍ سحب النسخة الاحتياطية في الخلفية…</string>
+    <string name="backup_pull_no_password">لا توجد كلمة مرور محفوظة. يتم فتح Haven…</string>
+    <plurals name="app_agent_more_pending">
+        <item quantity="zero">＋لا توجد طلبات أخرى في الانتظار</item>
+        <item quantity="one">＋طلب واحد آخر في الانتظار خلف هذا — سيظهر بعده</item>
+        <item quantity="two">＋طلبان آخران في الانتظار خلف هذا — سيظهران بعده</item>
+        <item quantity="few">＋%1$d طلبات أخرى في الانتظار خلف هذا — ستظهر بعده</item>
+        <item quantity="many">＋%1$d طلبًا آخر في الانتظار خلف هذا — ستظهر بعده</item>
+        <item quantity="other">＋%1$d طلب آخر في الانتظار خلف هذا — ستظهر بعده</item>
+    </plurals>
+    <plurals name="agent_summary_connections">
+        <item quantity="zero">لا توجد اتصالات</item>
+        <item quantity="one">اتصال واحد</item>
+        <item quantity="two">اتصالان</item>
+        <item quantity="few">%1$d اتصالات</item>
+        <item quantity="many">%1$d اتصالًا</item>
+        <item quantity="other">%1$d اتصال</item>
+    </plurals>
+    <plurals name="agent_summary_sessions">
+        <item quantity="zero">لا توجد جلسات</item>
+        <item quantity="one">جلسة واحدة</item>
+        <item quantity="two">جلستان</item>
+        <item quantity="few">%1$d جلسات</item>
+        <item quantity="many">%1$d جلسة</item>
+        <item quantity="other">%1$d جلسة</item>
+    </plurals>
+    <plurals name="agent_summary_remotes">
+        <item quantity="zero">لا توجد مواقع بعيدة</item>
+        <item quantity="one">موقع بعيد واحد</item>
+        <item quantity="two">موقعان بعيدان</item>
+        <item quantity="few">%1$d مواقع بعيدة</item>
+        <item quantity="many">%1$d موقعًا بعيدًا</item>
+        <item quantity="other">%1$d موقع بعيد</item>
+    </plurals>
 </resources>

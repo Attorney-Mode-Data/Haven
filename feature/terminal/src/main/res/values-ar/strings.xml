@@ -60,19 +60,19 @@
     <string name="terminal_rename_session_title">إعادة تسمية الجلسة</string>
     <string name="terminal_name">الاسم</string>
     <string name="terminal_rename">إعادة تسمية</string>
-    <string name="terminal_new_tab_no_active">No active session to clone</string>
-    <string name="terminal_new_tab_no_config">Connection config not found — try reconnecting first</string>
-    <string name="terminal_new_tab_host_key_changed">Host key changed for %s — connection refused for security</string>
-    <string name="terminal_new_tab_connection_failed">Could not connect: %s</string>
-    <string name="terminal_new_tab_shell_failed">Failed to open shell: %s</string>
-    <string name="terminal_new_tab_reticulum_no_session">No active Reticulum session to clone</string>
-    <string name="terminal_new_tab_connecting">Connecting…</string>
+    <string name="terminal_new_tab_no_active">لا توجد جلسة نشطة لاستنساخها</string>
+    <string name="terminal_new_tab_no_config">لم يُعثر على إعدادات الاتصال — أعد الاتصال أولًا</string>
+    <string name="terminal_new_tab_host_key_changed">تغيّر مفتاح المضيف لـ %s — رُفض الاتصال لأسباب أمنية</string>
+    <string name="terminal_new_tab_connection_failed">تعذّر الاتصال: %s</string>
+    <string name="terminal_new_tab_shell_failed">تعذّر فتح الصدفة: %s</string>
+    <string name="terminal_new_tab_reticulum_no_session">لا توجد جلسة Reticulum نشطة لاستنساخها</string>
+    <string name="terminal_new_tab_connecting">جارٍ الاتصال…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="terminal_no_contact">لا استجابة من الخادم منذ %1$d ث — تجري إعادة المحاولة</string>
     <string name="terminal_new_session_create">إنشاء</string>
-    <string name="terminal_vnc_username_label">Username (optional — VeNCrypt only)</string>
-    <string name="terminal_vnc_username_placeholder">Leave blank for classic VncAuth</string>
-    <string name="terminal_vnc_color_depth">Colour depth</string>
+    <string name="terminal_vnc_username_label">اسم المستخدم (اختياري — VeNCrypt فقط)</string>
+    <string name="terminal_vnc_username_placeholder">اتركه فارغًا لاستخدام VncAuth التقليدي</string>
+    <string name="terminal_vnc_color_depth">عمق الألوان</string>
     <string name="terminal_open_plain_shell">فتح shell عادي</string>
 
     <string name="terminal_enter_fullscreen">الدخول إلى وضع ملء الشاشة</string>

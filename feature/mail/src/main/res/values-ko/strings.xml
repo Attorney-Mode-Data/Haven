@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">Haven이 백그라운드에 있는 동안 대기열에 추가되었습니다. 실행하려면 승인, 버리려면 거부하세요.</string>
     <string name="mail_rules_approve">승인</string>
     <string name="mail_rules_reject">거부</string>
+    <string name="mail_cd_back">뒤로</string>
+    <string name="mail_cd_has_attachments">첨부 파일 있음</string>
 </resources>

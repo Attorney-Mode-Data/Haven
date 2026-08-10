@@ -39,4 +39,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">দুই আঙুলে ভিউ প্যান হয় (রিমোট স্ক্রোল করতে ট্যাপ করুন)</string>
     <string name="rdp_cd_two_finger_scroll_on">দুই আঙুলে রিমোট স্ক্রোল হয় (ভিউ প্যান করতে ট্যাপ করুন)</string>
+    <string name="rdp_hint_nla_required_title">সার্ভারের নেটওয়ার্ক লেভেল অথেনটিকেশন প্রয়োজন</string>
+    <string name="rdp_hint_nla_required_body">সার্ভারটি কেবল NLA দিয়ে প্রমাণীকরণ করা ক্লায়েন্ট গ্রহণ করার জন্য কনফিগার করা, আর এই সংযোগ প্রোফাইলে NLA টিক দেওয়া নেই। হয় প্রোফাইলে “Network Level Authentication (NLA)” টিক দিন, নয়তো পিসিতে শর্তটি শিথিল করুন: Settings → System → Remote Desktop → Advanced settings → “Require devices to use Network Level Authentication” এর টিক তুলে দিন।</string>
+    <string name="rdp_hint_mixed_username_title">NLA এই ধরনের ইউজারনেম ব্যবহার করতে পারে না</string>
+    <string name="rdp_hint_mixed_username_body">NLA এমন ইউজারনেম প্রত্যাখ্যান করে যা ডোমেইন প্রিফিক্স ও ইমেইল ঠিকানা একসঙ্গে রাখে (যেমন MicrosoftAccount\\you@example.com), আর কেবল ইমেইল দিলে @ এর পরের সব কেটে ফেলে — Microsoft অ্যাকাউন্টের ক্ষেত্রে এটি upstream sspi লাইব্রেরির সীমাবদ্ধতা।\n\nMicrosoft অ্যাকাউন্টের পিসির জন্য: এই প্রোফাইলে “Network Level Authentication (NLA)” এর টিক তুলে দিন, পিসিতে NLA ছাড়া সংযোগ অনুমোদন করুন (Remote Desktop → Advanced settings), এবং ইউজারনেম হিসেবে MicrosoftAccount\\you@example.com বা শুধু you@example.com ব্যবহার করুন।</string>
+    <string name="rdp_hint_mixed_username_link">ইস্যু ট্র্যাকার</string>
 </resources>

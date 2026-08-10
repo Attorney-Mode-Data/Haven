@@ -128,70 +128,70 @@
     <string name="connections_desktop_stop">Stop</string>
     <string name="connections_desktop_native_running">Native compositor</string>
     <string name="connections_desktop_uninstall_title">Uninstall desktop?</string>
-    <string name="connections_desktop_uninstall_message">Uninstall %1$s? Packages will be removed from the PRoot environment.</string>
-    <string name="connections_use_android_shell">Use native Android shell</string>
+    <string name="connections_desktop_uninstall_message">%1$s deinstallieren? Die Pakete werden aus der PRoot-Umgebung entfernt.</string>
+    <string name="connections_use_android_shell">Native Android-Shell verwenden</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="connections_new_session_create">Erstellen</string>
 
     <!-- #135 -->
-    <string name="connections_field_vnc_host_via_ssh">VNC host (on SSH server)</string>
-    <string name="connections_field_rdp_host_via_ssh">RDP host (on SSH server)</string>
-    <string name="connections_toggle_run_before_session_manager">Run before session manager</string>
-    <string name="connections_toggle_disable_alt_screen">Disable alternate screen</string>
-    <string name="connections_helper_disable_alt_screen">Scrollback works in screen/vim. Program output stays in scrollback on exit.</string>
-    <string name="connections_toggle_forward_agent">Forward SSH agent</string>
-    <string name="connections_helper_forward_agent">Exposes non-encrypted stored SSH keys to the remote host (for git push etc.). Encrypted keys are skipped.</string>
+    <string name="connections_field_vnc_host_via_ssh">VNC-Host (auf dem SSH-Server)</string>
+    <string name="connections_field_rdp_host_via_ssh">RDP-Host (auf dem SSH-Server)</string>
+    <string name="connections_toggle_run_before_session_manager">Vor dem Sitzungsmanager ausführen</string>
+    <string name="connections_toggle_disable_alt_screen">Alternativen Bildschirm deaktivieren</string>
+    <string name="connections_helper_disable_alt_screen">Der Scrollback funktioniert in screen/vim. Die Programmausgabe bleibt beim Beenden im Scrollback.</string>
+    <string name="connections_toggle_forward_agent">SSH-Agent weiterleiten</string>
+    <string name="connections_helper_forward_agent">Macht gespeicherte, unverschlüsselte SSH-Schlüssel für den entfernten Host verfügbar (für git push usw.). Verschlüsselte Schlüssel werden übersprungen.</string>
     <string name="connections_field_ssh_key">SSH Key</string>
-    <string name="connections_ssh_key_any">Any (try all keys)</string>
+    <string name="connections_ssh_key_any">Beliebig (alle Schlüssel probieren)</string>
     <string name="connections_field_vnc_port">VNC port</string>
     <string name="connections_field_vnc_password">VNC password</string>
-    <string name="connections_field_vnc_color_depth">VNC colour depth</string>
-    <string name="connections_action_clear_vnc">Clear saved VNC settings</string>
+    <string name="connections_field_vnc_color_depth">VNC-Farbtiefe</string>
+    <string name="connections_action_clear_vnc">Gespeicherte VNC-Einstellungen löschen</string>
     <string name="connections_toggle_local_sideband">Local Sideband</string>
     <string name="connections_field_gateway_host">Gateway Host</string>
     <string name="connections_field_network_name">Network Name</string>
-    <string name="connections_helper_network_name">IFAC network name (optional)</string>
-    <string name="connections_action_scan_rnsh">Scan for rnsh nodes</string>
+    <string name="connections_helper_network_name">IFAC-Netzwerkname (optional)</string>
+    <string name="connections_action_scan_rnsh">Nach rnsh-Knoten suchen</string>
     <string name="connections_field_destination_hash">Destination Hash</string>
     <string name="connections_helper_destination_hash">32-character hex</string>
-    <string name="connections_field_color_scheme">Terminal colour scheme</string>
-    <string name="connections_color_scheme_inherit">Use default (global setting)</string>
+    <string name="connections_field_color_scheme">Farbschema des Terminals</string>
+    <string name="connections_color_scheme_inherit">Standard verwenden (globale Einstellung)</string>
 
     <string name="connections_tunnel_dropdown_label">Tunnel: %1$s</string>
     <string name="connections_session_default_with">Default (%1$s)</string>
     <string name="connections_discovered_count">Discovered (%1$d)</string>
-    <string name="connections_discovered_count_filtered">Discovered (%1$d of %2$d)</string>
+    <string name="connections_discovered_count_filtered">Gefunden (%1$d von %2$d)</string>
 
     <!-- #135 third pass -->
 
-    <string name="connections_pf_dialog_title_edit">Edit Port Forward</string>
-    <string name="connections_pf_dialog_title_new">New Port Forward</string>
-    <string name="connections_pf_dialog_title_list">Port Forwards for %1$s</string>
-    <string name="connections_pf_empty">No port forward rules configured.</string>
+    <string name="connections_pf_dialog_title_edit">Portweiterleitung bearbeiten</string>
+    <string name="connections_pf_dialog_title_new">Neue Portweiterleitung</string>
+    <string name="connections_pf_dialog_title_list">Portweiterleitungen für %1$s</string>
+    <string name="connections_pf_empty">Keine Portweiterleitungsregeln konfiguriert.</string>
     <string name="connections_pf_add_rule">Add Rule</string>
     <string name="connections_pf_local">Local (-L)</string>
     <string name="connections_pf_remote">Remote (-R)</string>
     <string name="connections_pf_dynamic">Dynamic (-D)</string>
     <string name="connections_pf_address">Address</string>
 
-    <string name="connections_hostkey_title_verify">Verify Host Key</string>
-    <string name="connections_hostkey_first_time">Connecting to %1$s for the first time.</string>
-    <string name="connections_hostkey_key_type">Key type: %1$s</string>
+    <string name="connections_hostkey_title_verify">Hostschlüssel prüfen</string>
+    <string name="connections_hostkey_first_time">Erste Verbindung zu %1$s.</string>
+    <string name="connections_hostkey_key_type">Schlüsseltyp: %1$s</string>
     <string name="connections_hostkey_fingerprint">Fingerprint:</string>
     <string name="connections_hostkey_trust">Trust</string>
     <string name="connections_hostkey_old_fingerprint">Old fingerprint:</string>
     <string name="connections_hostkey_new_fingerprint">New fingerprint:</string>
-    <string name="connections_hostkey_accept_new">Accept New Key</string>
+    <string name="connections_hostkey_accept_new">Neuen Schlüssel akzeptieren</string>
     <string name="connections_hostkey_disconnect">Disconnect</string>
 
-    <string name="connections_deploy_title">Deploy SSH Key</string>
+    <string name="connections_deploy_title">SSH-Schlüssel bereitstellen</string>
     <string name="connections_deploy_field_key">SSH key</string>
     <string name="connections_deploy_button">Deploy</string>
 
-    <string name="connections_password_title">Connect to %1$s</string>
+    <string name="connections_password_title">Mit %1$s verbinden</string>
     <string name="connections_password_button">Connect</string>
 
-    <string name="connections_fido_pin_title">Security key PIN</string>
+    <string name="connections_fido_pin_title">PIN des Sicherheitsschlüssels</string>
     <string name="connections_fido_pin_label">PIN</string>
 
     <string name="connections_ki_submit">Submit</string>
@@ -199,15 +199,15 @@
     <string name="connections_vm_title">Linux VM</string>
     <string name="connections_vm_detected_services">Detected services</string>
     <string name="connections_vm_quick_setup">Quick setup</string>
-    <string name="connections_vm_copy_install">Copy install command</string>
+    <string name="connections_vm_copy_install">Installationsbefehl kopieren</string>
     <string name="connections_vm_view_script">View script</string>
-    <string name="connections_vm_step_start">1. Start the Linux VM</string>
-    <string name="connections_vm_open_terminal">Open Terminal app</string>
-    <string name="connections_vm_step_open_port">2. Open port 8022</string>
-    <string name="connections_vm_step_password">3. Set password &amp; install SSH</string>
-    <string name="connections_vm_step_vnc">4. Install VNC server (optional)</string>
-    <string name="connections_vm_step_desktop">5. Install a desktop (optional)</string>
-    <string name="connections_vm_step_apps">6. Install desktop apps (optional)</string>
+    <string name="connections_vm_step_start">1. Die Linux-VM starten</string>
+    <string name="connections_vm_open_terminal">Terminal-App öffnen</string>
+    <string name="connections_vm_step_open_port">2. Port 8022 öffnen</string>
+    <string name="connections_vm_step_password">3. Passwort setzen &amp; SSH installieren</string>
+    <string name="connections_vm_step_vnc">4. VNC-Server installieren (optional)</string>
+    <string name="connections_vm_step_desktop">5. Einen Desktop installieren (optional)</string>
+    <string name="connections_vm_step_apps">6. Desktop-Apps installieren (optional)</string>
 
     <string name="connections_section_desktops">Desktops</string>
     <string name="connections_action_back">Back</string>
@@ -217,42 +217,42 @@
     <string name="connections_action_reauthenticate">Re-authenticate</string>
     <string name="connections_action_cancel_oauth">Cancel OAuth</string>
 
-    <string name="connections_hostkey_verify_hint">Verify this fingerprint matches the server\'s key before trusting.</string>
-    <string name="connections_hostkey_changed_title">Host Key Changed</string>
-    <string name="connections_hostkey_changed_body">The host key for %1$s has changed. This could indicate a server reinstall or a man-in-the-middle attack.</string>
+    <string name="connections_hostkey_verify_hint">Prüfe, ob dieser Fingerabdruck mit dem Schlüssel des Servers übereinstimmt, bevor du ihm vertraust.</string>
+    <string name="connections_hostkey_changed_title">Hostschlüssel geändert</string>
+    <string name="connections_hostkey_changed_body">Der Hostschlüssel für %1$s hat sich geändert. Das kann auf eine Neuinstallation des Servers oder einen Man-in-the-Middle-Angriff hindeuten.</string>
     <string name="connections_password_field_passphrase">Key passphrase</string>
-    <string name="connections_password_keyboard_warning">Your keyboard has internet access and may transmit what you type. Consider using a privacy keyboard (e.g. HeliBoard, Simple Keyboard).</string>
+    <string name="connections_password_keyboard_warning">Deine Tastatur hat Internetzugriff und könnte übertragen, was du tippst. Erwäge eine datenschutzfreundliche Tastatur (z. B. HeliBoard, Simple Keyboard).</string>
     <string name="connections_password_domain">Domain: %1$s</string>
-    <string name="connections_password_passphrase_for_key">Enter the passphrase for SSH key \"%1$s\".</string>
+    <string name="connections_password_passphrase_for_key">Gib die Passphrase für den SSH-Schlüssel \"%1$s\" ein.</string>
     <string name="connections_password_remember_password">Remember password</string>
-    <string name="connections_password_remember_passphrase">Remember key passphrase</string>
-    <string name="connections_password_leave_empty_for_key">Leave empty to connect with SSH key</string>
-    <string name="connections_fido_pin_help">This SSH key was registered with verify-required. Enter the PIN configured on your security key to continue.</string>
-    <string name="connections_fido_pin_wrong">Wrong PIN. %1$d attempts remaining before the key locks.</string>
-    <string name="connections_fido_waiting_title">Security key required</string>
-    <string name="connections_fido_waiting_body">Plug in your security key over USB, or tap it on the back of the device for NFC. Haven will continue automatically once it is detected.</string>
-    <string name="connections_fido_touch_usb_title">Touch your security key</string>
-    <string name="connections_fido_touch_usb_body">Press the button on your security key now to authorise the SSH signature. The key may blink to indicate it is waiting.</string>
-    <string name="connections_fido_touch_nfc_title">Hold your security key</string>
-    <string name="connections_fido_touch_nfc_body">Keep the security key against the back of the device for two seconds while it signs. Moving it away early aborts the exchange and you\'ll need to tap it again.</string>
-    <string name="connections_fido_cancel_hint">Cancel by disconnecting from the connections list.</string>
+    <string name="connections_password_remember_passphrase">Schlüssel-Passphrase merken</string>
+    <string name="connections_password_leave_empty_for_key">Leer lassen, um mit SSH-Schlüssel zu verbinden</string>
+    <string name="connections_fido_pin_help">Dieser SSH-Schlüssel wurde mit verify-required registriert. Gib zum Fortfahren die auf deinem Sicherheitsschlüssel eingerichtete PIN ein.</string>
+    <string name="connections_fido_pin_wrong">Falsche PIN. Noch %1$d Versuche, bevor der Schlüssel gesperrt wird.</string>
+    <string name="connections_fido_waiting_title">Sicherheitsschlüssel erforderlich</string>
+    <string name="connections_fido_waiting_body">Schließe deinen Sicherheitsschlüssel per USB an oder halte ihn für NFC an die Rückseite des Geräts. Haven fährt automatisch fort, sobald er erkannt wird.</string>
+    <string name="connections_fido_touch_usb_title">Sicherheitsschlüssel berühren</string>
+    <string name="connections_fido_touch_usb_body">Drücke jetzt die Taste auf deinem Sicherheitsschlüssel, um die SSH-Signatur zu bestätigen. Der Schlüssel blinkt möglicherweise, während er wartet.</string>
+    <string name="connections_fido_touch_nfc_title">Sicherheitsschlüssel auflegen</string>
+    <string name="connections_fido_touch_nfc_body">Halte den Sicherheitsschlüssel während des Signierens zwei Sekunden an die Rückseite des Geräts. Wird er zu früh entfernt, bricht der Vorgang ab und du musst ihn erneut auflegen.</string>
+    <string name="connections_fido_cancel_hint">Zum Abbrechen in der Verbindungsliste die Verbindung trennen.</string>
     <string name="connections_ki_response_fallback">Response</string>
-    <string name="connections_ki_title_additional">Additional authentication required</string>
+    <string name="connections_ki_title_additional">Zusätzliche Authentifizierung erforderlich</string>
     <string name="connections_ki_title_server">Server prompt</string>
-    <string name="connections_vm_install_blurb">Installs SSH, VNC, Xfce4 desktop, and apps (browser, editor, file manager):</string>
-    <string name="connections_vm_copied">Copied to clipboard</string>
-    <string name="connections_vm_show_steps">Show setup steps</string>
-    <string name="connections_vm_hide_steps">Hide setup steps</string>
-    <string name="connections_vm_step_start_body">Open the Android Terminal app to boot the VM.</string>
-    <string name="connections_vm_step_open_port_body">In the Terminal app settings, add port 8022 to the listening ports list.</string>
-    <string name="connections_vm_step_password_body">Run in the Terminal app. You\'ll be prompted to set a password for the droid user.</string>
-    <string name="connections_vm_step_password_hint">Then connect with: droid@localhost:8022</string>
-    <string name="connections_vm_step_vnc_body">For remote desktop access via Haven\'s Desktop tab.</string>
-    <string name="connections_vm_step_desktop_body">Xfce4 is lightweight and works well over VNC.</string>
-    <string name="connections_vm_step_apps_body">File manager, text editor, image viewer, browser, calculator.</string>
+    <string name="connections_vm_install_blurb">Installiert SSH, VNC, den Xfce4-Desktop und Apps (Browser, Editor, Dateimanager):</string>
+    <string name="connections_vm_copied">In die Zwischenablage kopiert</string>
+    <string name="connections_vm_show_steps">Einrichtungsschritte anzeigen</string>
+    <string name="connections_vm_hide_steps">Einrichtungsschritte ausblenden</string>
+    <string name="connections_vm_step_start_body">Öffne die Android-Terminal-App, um die VM zu starten.</string>
+    <string name="connections_vm_step_open_port_body">Füge in den Einstellungen der Terminal-App Port 8022 zur Liste der überwachten Ports hinzu.</string>
+    <string name="connections_vm_step_password_body">In der Terminal-App ausführen. Du wirst aufgefordert, ein Passwort für den Benutzer droid zu setzen.</string>
+    <string name="connections_vm_step_password_hint">Dann verbinden mit: droid@localhost:8022</string>
+    <string name="connections_vm_step_vnc_body">Für den Fernzugriff auf den Desktop über Havens Desktop-Tab.</string>
+    <string name="connections_vm_step_desktop_body">Xfce4 ist ressourcenschonend und funktioniert gut über VNC.</string>
+    <string name="connections_vm_step_apps_body">Dateimanager, Texteditor, Bildbetrachter, Browser, Taschenrechner.</string>
 
-    <!-- #133 phase 2b: cert renewal status banner --> (en fallback)
-    <string name="connections_renewing_cert">Renewing %1$s\'s cert via %2$s…</string>
+    <!-- #133 phase 2b: cert renewal status banner (en fallback) -->
+    <string name="connections_renewing_cert">Zertifikat von %1$s wird über %2$s erneuert…</string>
     <string name="connections_open_plain_shell">Plain Shell öffnen</string>
 
     <!-- Port knocking -->

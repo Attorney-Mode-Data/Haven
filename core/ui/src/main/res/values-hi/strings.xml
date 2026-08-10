@@ -35,4 +35,10 @@
     <string name="common_github">GitHub</string>
     <string name="common_support">सहायता</string>
     <string name="common_unlock">अनलॉक करें</string>
+    <string name="wayland_cd_session_menu">सत्र मेनू</string>
+    <string name="wayland_cd_reset_zoom">ज़ूम रीसेट करें</string>
+    <string name="wayland_cd_exit_fullscreen">पूर्णस्क्रीन से बाहर निकलें</string>
+    <string name="wayland_cd_toggle_keyboard">कीबोर्ड दिखाएँ/छिपाएँ</string>
+    <string name="wayland_cd_fullscreen">पूर्णस्क्रीन</string>
+    <string name="wayland_cd_desktop_resolution">डेस्कटॉप रिज़ॉल्यूशन</string>
 </resources>

@@ -38,4 +38,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">두 손가락으로 화면 이동 (원격 스크롤로 전환하려면 탭)</string>
     <string name="rdp_cd_two_finger_scroll_on">두 손가락으로 원격 스크롤 (화면 이동으로 전환하려면 탭)</string>
+    <string name="rdp_hint_nla_required_title">서버가 네트워크 수준 인증(NLA)을 요구합니다</string>
+    <string name="rdp_hint_nla_required_body">서버는 NLA로 인증하는 클라이언트만 허용하도록 설정되어 있지만, 이 연결 프로필에서는 NLA가 꺼져 있습니다. 프로필에서 “Network Level Authentication (NLA)”을 켜거나, PC에서 요구 사항을 완화하세요: 설정 → 시스템 → 원격 데스크톱 → 고급 설정 → “Require devices to use Network Level Authentication” 체크 해제.</string>
+    <string name="rdp_hint_mixed_username_title">NLA는 이 형식의 사용자 이름을 사용할 수 없습니다</string>
+    <string name="rdp_hint_mixed_username_body">NLA는 도메인 접두사와 이메일 주소를 결합한 사용자 이름(예: MicrosoftAccount\\you@example.com)을 거부하며, 이메일만 입력하면 @ 뒤를 모두 잘라냅니다 — Microsoft 계정에 대한 상위 sspi 라이브러리의 제약입니다.\n\nMicrosoft 계정 PC의 경우: 이 프로필에서 “Network Level Authentication (NLA)” 체크를 해제하고, PC에서 NLA 없는 연결을 허용한 뒤(원격 데스크톱 → 고급 설정), 사용자 이름으로 MicrosoftAccount\\you@example.com 또는 you@example.com을 사용하세요.</string>
+    <string name="rdp_hint_mixed_username_link">이슈 트래커</string>
 </resources>

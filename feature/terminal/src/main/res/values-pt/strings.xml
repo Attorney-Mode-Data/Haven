@@ -60,18 +60,18 @@
     <string name="terminal_rename_session_title">Renomear sessão</string>
     <string name="terminal_name">Nome</string>
     <string name="terminal_rename">Renomear</string>
-    <string name="terminal_new_tab_no_active">No active session to clone</string>
-    <string name="terminal_new_tab_no_config">Connection config not found — try reconnecting first</string>
-    <string name="terminal_new_tab_host_key_changed">Host key changed for %s — connection refused for security</string>
-    <string name="terminal_new_tab_connection_failed">Could not connect: %s</string>
-    <string name="terminal_new_tab_shell_failed">Failed to open shell: %s</string>
-    <string name="terminal_new_tab_reticulum_no_session">No active Reticulum session to clone</string>
+    <string name="terminal_new_tab_no_active">Nenhuma sessão ativa para clonar</string>
+    <string name="terminal_new_tab_no_config">Configuração da conexão não encontrada — reconecte primeiro</string>
+    <string name="terminal_new_tab_host_key_changed">A chave de host de %s mudou — conexão recusada por segurança</string>
+    <string name="terminal_new_tab_connection_failed">Não foi possível conectar: %s</string>
+    <string name="terminal_new_tab_shell_failed">Não foi possível abrir o shell: %s</string>
+    <string name="terminal_new_tab_reticulum_no_session">Nenhuma sessão Reticulum ativa para clonar</string>
     <string name="terminal_new_tab_connecting">Connecting…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="terminal_no_contact">Sem resposta do servidor há %1$ds — tentando novamente</string>
     <string name="terminal_new_session_create">Criar</string>
-    <string name="terminal_vnc_username_label">Username (optional — VeNCrypt only)</string>
-    <string name="terminal_vnc_username_placeholder">Leave blank for classic VncAuth</string>
+    <string name="terminal_vnc_username_label">Nome de usuário (opcional — apenas VeNCrypt)</string>
+    <string name="terminal_vnc_username_placeholder">Deixe em branco para o VncAuth clássico</string>
     <string name="terminal_vnc_color_depth">Colour depth</string>
     <string name="terminal_open_plain_shell">Abrir shell simples</string>
 

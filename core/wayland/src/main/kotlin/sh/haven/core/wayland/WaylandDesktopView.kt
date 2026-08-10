@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
@@ -415,7 +416,7 @@ fun WaylandDesktopView(
                 ) {
                     Icon(
                         Icons.Default.Menu,
-                        contentDescription = "Session menu",
+                        contentDescription = stringResource(sh.haven.core.ui.R.string.wayland_cd_session_menu),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(8.dp).size(20.dp),
                     )
@@ -438,7 +439,7 @@ fun WaylandDesktopView(
                     ) {
                         if (zoom != 1f || panX != 0f || panY != 0f) {
                             IconButton(onClick = { zoom = 1f; panX = 0f; panY = 0f }) {
-                                Icon(Icons.Default.FullscreenExit, contentDescription = "Reset zoom")
+                                Icon(Icons.Default.FullscreenExit, contentDescription = stringResource(sh.haven.core.ui.R.string.wayland_cd_reset_zoom))
                             }
                         }
                         ResolutionScaleButton(
@@ -471,7 +472,7 @@ fun WaylandDesktopView(
                             fullscreen = false
                             onFullscreenChanged(false)
                         }) {
-                            Icon(Icons.Default.FullscreenExit, contentDescription = "Exit fullscreen")
+                            Icon(Icons.Default.FullscreenExit, contentDescription = stringResource(sh.haven.core.ui.R.string.wayland_cd_exit_fullscreen))
                         }
                     }
                 }
@@ -505,7 +506,7 @@ fun WaylandDesktopView(
                     },
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Icon(Icons.Default.Keyboard, contentDescription = "Toggle keyboard", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Keyboard, contentDescription = stringResource(sh.haven.core.ui.R.string.wayland_cd_toggle_keyboard), modifier = Modifier.size(18.dp))
                 }
                 ResolutionScaleButton(
                     currentPermille = displayScalePermille,
@@ -542,7 +543,7 @@ fun WaylandDesktopView(
                     },
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Icon(Icons.Default.Fullscreen, contentDescription = "Fullscreen", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Fullscreen, contentDescription = stringResource(sh.haven.core.ui.R.string.wayland_cd_fullscreen), modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -600,7 +601,7 @@ private fun ResolutionScaleButton(
         IconButton(onClick = { onExpandedChange(true) }, modifier = Modifier.size(buttonSizeDp.dp)) {
             Icon(
                 Icons.Default.AspectRatio,
-                contentDescription = "Desktop resolution",
+                contentDescription = stringResource(sh.haven.core.ui.R.string.wayland_cd_desktop_resolution),
                 modifier = Modifier.size(iconSizeDp.dp),
             )
         }

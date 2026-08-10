@@ -254,7 +254,7 @@ fun MailScreen(
                                 else -> {}
                             }
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.mail_cd_back))
                         }
                     }
                 },
@@ -574,7 +574,7 @@ private fun MessageList(
                 if (msg.numAttachments > 0) {
                     Icon(
                         Icons.Filled.AttachFile,
-                        contentDescription = "Has attachments",
+                        contentDescription = stringResource(R.string.mail_cd_has_attachments),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 4.dp).size(fontSize.dp),
                     )
@@ -982,10 +982,40 @@ private fun CenterText(text: String) {
  * (non-thread-safe) formatters and the single `Calendar` are safe to share.
  */
 private object MailDateFormats {
-    val time = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val dayMonth = SimpleDateFormat("d MMM", Locale.getDefault())
-    val dayMonthYear = SimpleDateFormat("d/MM/yy", Locale.getDefault())
-    val full = SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault())
+    // Skeletons, not literal patterns: getBestDateTimePattern reorders the fields
+    // per locale (ja/zh/ko put the year first) and 'j' resolves to the locale's
+    // preferred 12- or 24-hour form. A literal "d/MM/yy HH:mm" got all of that
+    // wrong even though Locale.getDefault() was passed — the locale only ever
+    // localized the month *names*.
+    private fun of(skeleton: String, locale: Locale) =
+        SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton), locale)
+
+    // This is a process-lifetime singleton but the in-app language picker can
+    // change the locale under it, so the formatters are rebuilt when it moves.
+    private var locale: Locale = Locale.getDefault()
+    private var fmts = Formats(locale)
+
+    private class Formats(l: Locale) {
+        val time = of("jm", l)
+        val dayMonth = of("MMMd", l)
+        val dayMonthYear = of("yMd", l)
+        val full = of("yMMMdjm", l)
+    }
+
+    private fun current(): Formats {
+        val now = Locale.getDefault()
+        if (now != locale) {
+            locale = now
+            fmts = Formats(now)
+        }
+        return fmts
+    }
+
+    val time: SimpleDateFormat get() = current().time
+    val dayMonth: SimpleDateFormat get() = current().dayMonth
+    val dayMonthYear: SimpleDateFormat get() = current().dayMonthYear
+    val full: SimpleDateFormat get() = current().full
+
     private val cal: Calendar = Calendar.getInstance()
 
     /** (sameDayAsNow, sameYearAsNow) for [millis], using one reused Calendar. */

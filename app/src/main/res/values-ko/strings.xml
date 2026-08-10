@@ -138,7 +138,6 @@
     <string name="app_agent_action_requested">에이전트 작업 요청됨</string>
     <string name="app_agent_from_client">보낸 곳: %1$s</string>
     <string name="app_agent_tool">도구: %1$s</string>
-    <string name="app_agent_more_pending">＋뒤에 %1$d개의 요청이 대기 중 — 이 요청 후에 표시됩니다</string>
     <string name="app_agent_bypass_label">Haven 재시작 전까지 \'%1$s\'의 모든 MCP 요청 허용</string>
     <string name="app_agent_bypass_description">파괴적 작업 포함(터미널 입력, 파일 쓰기/삭제, APK 설치). 앱 종료 시 초기화됩니다.</string>
     <string name="app_agent_auto_allow_window">자동 허용 기간:</string>
@@ -209,9 +208,6 @@
 
     <!-- Agent Activity log — result summaries (#239) -->
     <string name="agent_summary_ok">완료</string>
-    <string name="agent_summary_connections">연결 %1$d개</string>
-    <string name="agent_summary_sessions">세션 %1$d개</string>
-    <string name="agent_summary_remotes">원격 %1$d개</string>
     <string name="agent_summary_entries_at">%2$s:%3$s에 %1$d개 항목</string>
     <string name="agent_summary_entries_via">%2$s을(를) 통해 %3$s에 %1$d개 항목</string>
     <string name="agent_summary_version">버전 %1$s</string>
@@ -316,4 +312,18 @@
     <string name="backup_pull_notify_failure_title">백업 복원 실패</string>
     <string name="backup_pull_toast_success">백업이 복원됨</string>
     <string name="backup_pull_toast_failure">백업 가져오기 실패: %1$s</string>
+    <string name="backup_pull_started">백그라운드에서 백업을 가져오는 중…</string>
+    <string name="backup_pull_no_password">저장된 비밀번호가 없습니다. Haven을 여는 중…</string>
+    <plurals name="app_agent_more_pending">
+        <item quantity="other">＋이 뒤에 %1$d개의 요청이 대기 중입니다 — 이후에 표시됩니다</item>
+    </plurals>
+    <plurals name="agent_summary_connections">
+        <item quantity="other">연결 %1$d개</item>
+    </plurals>
+    <plurals name="agent_summary_sessions">
+        <item quantity="other">세션 %1$d개</item>
+    </plurals>
+    <plurals name="agent_summary_remotes">
+        <item quantity="other">리모트 %1$d개</item>
+    </plurals>
 </resources>

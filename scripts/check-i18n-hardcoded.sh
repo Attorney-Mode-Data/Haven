@@ -51,6 +51,34 @@ if [ -n "$positional" ]; then
   fail=1
 fi
 
+# Rule 3 — contentDescription = "Prose". Screen-reader text is user-facing too,
+# and rules 1 and 2 both miss it because it is neither a title= nor a Text().
+cdesc=$(grep -rEn 'contentDescription[[:space:]]*=[[:space:]]*"[A-Z]' \
+    --include='*.kt' app core feature 2>/dev/null \
+    | grep -vE '/(test|androidTest)/' \
+    | grep -vE 'contentDescription[[:space:]]*=[[:space:]]*"[A-Z][A-Z0-9_]*"' \
+    | grep -vE 'contentDescription[[:space:]]*=[[:space:]]*"[^"]*\$\{' || true)
+
+if [ -n "$cdesc" ]; then
+  echo "✖ Hardcoded contentDescription strings (accessibility text needs localizing):"
+  echo "$cdesc"
+  echo
+  fail=1
+fi
+
+# Rule 4 — Toast.makeText(ctx, "Prose", …). Same class of miss as rule 3.
+toast=$(grep -rEn 'Toast\.makeText\([^,]*,[[:space:]]*"[A-Z]' \
+    --include='*.kt' app core feature 2>/dev/null \
+    | grep -vE '/(test|androidTest)/' \
+    | grep -vE 'Toast\.makeText\([^,]*,[[:space:]]*"[^"]*\$\{' || true)
+
+if [ -n "$toast" ]; then
+  echo "✖ Hardcoded Toast strings (localize them):"
+  echo "$toast"
+  echo
+  fail=1
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo "Move each literal into <module>/src/main/res/values/strings.xml and reference it"
   echo "with stringResource(R.string.<key>) (or context.getString outside a @Composable)."
@@ -59,4 +87,4 @@ if [ "$fail" -ne 0 ]; then
   exit 1
 fi
 
-echo "✓ No hardcoded title=/subtitle= or Text(\"…\") UI strings."
+echo "✓ No hardcoded title=/subtitle=/Text(…)/contentDescription/Toast UI strings."

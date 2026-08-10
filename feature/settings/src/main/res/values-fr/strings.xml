@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">Arrêter l\'invité Linux inactif</string>
     <string name="settings_proot_idle_dialog_body">Lorsque Haven est resté en arrière-plan aussi longtemps, arrête les terminaux et bureaux de l\'invité Linux pour libérer de la mémoire. Un service invité en cours le maintient actif. Une tâche longue dans un terminal en arrière-plan serait aussi arrêtée — laissez ceci désactivé sauf si vous voulez récupérer les ressources en cas d\'inactivité.</string>
     <string name="settings_proot_idle_off_label">Désactivé</string>
-    <string name="settings_proot_idle_minutes">%1$d minutes</string>
     <string name="settings_shizuku_title">Intégration Shizuku</string>
     <string name="settings_shizuku_enabled">Activé — exemption batterie auto, partage socket Wayland</string>
     <string name="settings_shizuku_available">Shizuku installé -- appuyez pour accorder la permission</string>
@@ -213,13 +212,13 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">Simple</string>
     <string name="settings_language_title">Langue</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
+    <string name="settings_media_extensions_title">Extensions de fichiers multimédias</string>
+    <string name="settings_media_extensions_description">Extensions de fichiers séparées par des espaces à traiter comme des médias diffusables dans l’explorateur de fichiers.</string>
     <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_show_desktops_title">Afficher la carte Bureaux</string>
+    <string name="settings_show_desktops_subtitle">Afficher le gestionnaire d’environnements de bureau sur l’écran Connexions</string>
+    <string name="settings_show_linux_vm_title">Afficher la carte VM Linux</string>
+    <string name="settings_show_linux_vm_subtitle">Afficher la configuration de la VM Linux d’Android sur l’écran Connexions</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">Garder l’écran allumé dans le terminal</string>
     <string name="settings_keep_screen_on_subtitle">L’écran reste allumé tant qu’un onglet de terminal est ouvert. Cela consomme la batterie ; n’activez que si vous surveillez de longues sorties.</string>
@@ -228,9 +227,9 @@
     <string name="settings_keyboard_mode_title">Keyboard mode</string>
     <string name="settings_dev_install_title">Dev Install</string>
     <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
+    <string name="settings_font_install_title">Installer une police depuis une URL</string>
     <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">Lignes d\'historique</string>
     <string name="settings_scrollback_rows_subtitle">%1$,d lignes conservées par onglet — s\'applique aux nouveaux onglets</string>
     <string name="settings_scrollback_rows_dialog_title">Lignes d\'historique par onglet</string>
@@ -457,4 +456,21 @@
     <string name="settings_backup_auto_pull_interval_6h">6 heures</string>
     <string name="settings_backup_auto_pull_interval_24h">24 heures</string>
     <string name="settings_backup_remember_password_label">Mémoriser ce mot de passe</string>
+    <string name="common_apply">Appliquer</string>
+    <string name="settings_rdp_desktop_size_title">Taille du bureau RDP</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — faites correspondre à votre serveur, sinon ses mises à jour hors de cette zone sont ignorées</string>
+    <string name="settings_rdp_desktop_size_hint">Réglez ceci sur la résolution réellement utilisée par la machine distante. VirtualBox utilise 2560 × 1600 par défaut.</string>
+    <string name="settings_rdp_desktop_size_width">Largeur</string>
+    <string name="settings_rdp_desktop_size_height">Hauteur</string>
+    <string name="settings_native_crash_title">Plantages de l’application</string>
+    <string name="settings_native_crash_subtitle">Haven s’est fermé de façon inattendue. Le rapport ci-dessous indique où — joignez-le à un rapport de bug.</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven s’est fermé de façon inattendue. Android n’a conservé aucun rapport détaillé pour ceux-ci : seuls l’heure et le signal sont connus — joignez-les tout de même à un rapport de bug, le signal aide à cibler la cause.</string>
+    <string name="settings_native_crash_no_trace">Aucun rapport détaillé n’a été conservé pour ce plantage.</string>
+    <string name="settings_native_crash_copy">Copier le rapport</string>
+    <string name="settings_native_crash_copied">Rapport de plantage copié</string>
+    <string name="settings_native_crash_dismiss">Ignorer</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
 </resources>

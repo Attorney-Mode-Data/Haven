@@ -92,58 +92,58 @@
     <string name="sftp_replace_all">सभी बदलें</string>
     <string name="sftp_skip">छोड़ें</string>
     <string name="sftp_skip_all">सभी छोड़ें</string>
-    <string name="sftp_play">Play</string>
-    <string name="sftp_play_folder">Play folder</string>
-    <string name="sftp_sync">Sync</string>
-    <string name="sftp_folder_sync">Folder Sync</string>
-    <string name="sftp_source">Source</string>
-    <string name="sftp_destination">Destination</string>
-    <string name="sftp_destination_path">Path</string>
-    <string name="sftp_mode_copy">Copy</string>
-    <string name="sftp_mode_sync">Mirror</string>
-    <string name="sftp_mode_move">Move</string>
-    <string name="sftp_mode_copy_desc">Copy new and updated files. No deletions.</string>
-    <string name="sftp_mode_sync_desc">Make destination identical to source. Deletes extras.</string>
-    <string name="sftp_mode_move_desc">Move files to destination. Deletes from source.</string>
-    <string name="sftp_advanced_filters">Advanced filters</string>
-    <string name="sftp_include_patterns">Include patterns (one per line)</string>
-    <string name="sftp_exclude_patterns">Exclude patterns (one per line)</string>
-    <string name="sftp_min_size">Min size</string>
-    <string name="sftp_max_size">Max size</string>
-    <string name="sftp_bandwidth_limit">Bandwidth limit</string>
-    <string name="sftp_dry_run">Dry run (preview only)</string>
-    <string name="sftp_start_sync">Start</string>
-    <string name="sftp_preview">Preview</string>
-    <string name="sftp_dry_run_results">Dry Run Results</string>
-    <string name="sftp_start_for_real">Start for real</string>
-    <string name="sftp_sync_cancelled">Sync cancelled</string>
+    <string name="sftp_play">चलाएँ</string>
+    <string name="sftp_play_folder">फ़ोल्डर चलाएँ</string>
+    <string name="sftp_sync">सिंक</string>
+    <string name="sftp_folder_sync">फ़ोल्डर सिंक</string>
+    <string name="sftp_source">स्रोत</string>
+    <string name="sftp_destination">गंतव्य</string>
+    <string name="sftp_destination_path">पथ</string>
+    <string name="sftp_mode_copy">कॉपी</string>
+    <string name="sftp_mode_sync">मिरर</string>
+    <string name="sftp_mode_move">स्थानांतरित करें</string>
+    <string name="sftp_mode_copy_desc">नई और अपडेट हुई फ़ाइलें कॉपी करता है। कुछ नहीं हटाता।</string>
+    <string name="sftp_mode_sync_desc">गंतव्य को स्रोत के समान बनाता है। अतिरिक्त हटा देता है।</string>
+    <string name="sftp_mode_move_desc">फ़ाइलें गंतव्य में ले जाता है। स्रोत से हटा देता है।</string>
+    <string name="sftp_advanced_filters">उन्नत फ़िल्टर</string>
+    <string name="sftp_include_patterns">समावेशन पैटर्न (हर पंक्ति में एक)</string>
+    <string name="sftp_exclude_patterns">बहिष्करण पैटर्न (हर पंक्ति में एक)</string>
+    <string name="sftp_min_size">न्यूनतम आकार</string>
+    <string name="sftp_max_size">अधिकतम आकार</string>
+    <string name="sftp_bandwidth_limit">बैंडविड्थ सीमा</string>
+    <string name="sftp_dry_run">ड्राई रन (केवल पूर्वावलोकन)</string>
+    <string name="sftp_start_sync">शुरू करें</string>
+    <string name="sftp_preview">पूर्वावलोकन</string>
+    <string name="sftp_dry_run_results">ड्राई रन परिणाम</string>
+    <string name="sftp_start_for_real">वास्तव में शुरू करें</string>
+    <string name="sftp_sync_cancelled">सिंक रद्द किया गया</string>
     <!-- Rename dialog -->
-    <string name="sftp_rename_title">Rename</string>
-    <string name="sftp_new_name">New name</string>
+    <string name="sftp_rename_title">नाम बदलें</string>
+    <string name="sftp_new_name">नया नाम</string>
 
     <!-- Share link -->
-    <string name="sftp_share_link">Share link</string>
-    <string name="sftp_link_copied">Link copied</string>
+    <string name="sftp_share_link">लिंक साझा करें</string>
+    <string name="sftp_link_copied">लिंक कॉपी हुआ</string>
 
     <!-- Folder size -->
-    <string name="sftp_folder_size">Folder size</string>
-    <string name="sftp_folder_size_title">Folder Size</string>
-    <string name="sftp_calculating_size">Calculating…</string>
+    <string name="sftp_folder_size">फ़ोल्डर आकार</string>
+    <string name="sftp_folder_size_title">फ़ोल्डर आकार</string>
+    <string name="sftp_calculating_size">गणना हो रही है…</string>
 
     <!-- DLNA -->
-    <string name="sftp_start_dlna">Start DLNA server</string>
-    <string name="sftp_stop_dlna">Stop DLNA server</string>
+    <string name="sftp_start_dlna">DLNA सर्वर शुरू करें</string>
+    <string name="sftp_stop_dlna">DLNA सर्वर रोकें</string>
     <!-- Convert -->
-    <string name="sftp_convert">Convert</string>
-    <string name="sftp_convert_title">Convert media</string>
-    <string name="sftp_convert_format">Output format</string>
-    <string name="sftp_converting">Converting %s</string>
-    <string name="sftp_convert_done">Saved to %s</string>
+    <string name="sftp_convert">बदलें</string>
+    <string name="sftp_convert_title">मीडिया बदलें</string>
+    <string name="sftp_convert_format">आउटपुट प्रारूप</string>
+    <string name="sftp_converting">%s बदला जा रहा है</string>
+    <string name="sftp_convert_done">%s में सहेजा गया</string>
     <!-- Stream -->
-    <string name="sftp_stream">Stream</string>
-    <string name="sftp_streaming">Streaming on %s</string>
-    <string name="sftp_stream_stop">Stop</string>
-    <string name="sftp_downloading_for_convert">Downloading for conversion…</string>
+    <string name="sftp_stream">स्ट्रीम</string>
+    <string name="sftp_streaming">%s पर स्ट्रीम हो रहा है</string>
+    <string name="sftp_stream_stop">रोकें</string>
+    <string name="sftp_downloading_for_convert">बदलने के लिए डाउनलोड हो रहा है…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="sftp_play_in_browser">ब्राउज़र में चलाएँ</string>
     <string name="sftp_stream_to_network">नेटवर्क पर स्ट्रीम करें</string>
@@ -216,32 +216,32 @@
     <string name="sftp_contact_sheet_action">शीट बनाएँ</string>
 
     <!-- #135 third pass -->
-    <string name="sftp_attach_use_folder">Use this folder</string>
-    <string name="sftp_paste_discard">Discard</string>
-    <string name="sftp_paste_resume">Resume</string>
-    <string name="sftp_paste_discard_title">Discard unfinished paste?</string>
-    <string name="sftp_paste_discard_body">Pending files will be removed from the queue. This cannot be undone.</string>
-    <string name="sftp_paste_keep">Keep</string>
-    <string name="sftp_preview_frame_desc">Preview frame — tap for fullscreen</string>
-        <string name="sftp_convert_container">Container</string>
-    <string name="sftp_convert_video_encoder">Video encoder</string>
-    <string name="sftp_convert_audio_encoder">Audio encoder</string>
-    <string name="sftp_convert_save_to">Save to</string>
-    <string name="sftp_preview_stop">Stop</string>
-    <string name="sftp_preview_preparing">Preparing…</string>
-    <string name="sftp_preview_play5s">Play 5s preview</string>
-    <string name="sftp_fullscreen_preview">Fullscreen preview</string>
-    <string name="sftp_conflict_title">File already exists</string>
-    <string name="sftp_conflict_overwrite">Overwrite</string>
-    <string name="sftp_conflict_keep_both">Keep both (rename)</string>
-    <string name="sftp_conflict_skip">Skip</string>
-    <string name="sftp_compression_quick_presets">Quick presets</string>
-    <string name="sftp_compression_resolution">Resolution</string>
-    <string name="sftp_compression_quality">Quality (CRF %1$d)</string>
-    <string name="sftp_compression_speed">Encode speed</string>
-    <string name="sftp_compression_audio_bitrate">Audio bitrate</string>
-    <string name="sftp_filter_title">Filters</string>
-    <string name="sftp_filter_rotation">Rotation</string>
+    <string name="sftp_attach_use_folder">यह फ़ोल्डर उपयोग करें</string>
+    <string name="sftp_paste_discard">छोड़ें</string>
+    <string name="sftp_paste_resume">फिर से शुरू करें</string>
+    <string name="sftp_paste_discard_title">अधूरा पेस्ट छोड़ें?</string>
+    <string name="sftp_paste_discard_body">लंबित फ़ाइलें कतार से हटा दी जाएँगी। इसे पूर्ववत नहीं किया जा सकता।</string>
+    <string name="sftp_paste_keep">रखें</string>
+    <string name="sftp_preview_frame_desc">पूर्वावलोकन फ़्रेम — पूर्णस्क्रीन के लिए टैप करें</string>
+        <string name="sftp_convert_container">कंटेनर</string>
+    <string name="sftp_convert_video_encoder">वीडियो एन्कोडर</string>
+    <string name="sftp_convert_audio_encoder">ऑडियो एन्कोडर</string>
+    <string name="sftp_convert_save_to">यहाँ सहेजें</string>
+    <string name="sftp_preview_stop">रोकें</string>
+    <string name="sftp_preview_preparing">तैयार हो रहा है…</string>
+    <string name="sftp_preview_play5s">5 सेकंड का पूर्वावलोकन चलाएँ</string>
+    <string name="sftp_fullscreen_preview">पूर्णस्क्रीन पूर्वावलोकन</string>
+    <string name="sftp_conflict_title">फ़ाइल पहले से मौजूद है</string>
+    <string name="sftp_conflict_overwrite">अधिलेखित करें</string>
+    <string name="sftp_conflict_keep_both">दोनों रखें (नाम बदलें)</string>
+    <string name="sftp_conflict_skip">छोड़ें</string>
+    <string name="sftp_compression_quick_presets">त्वरित प्रीसेट</string>
+    <string name="sftp_compression_resolution">रिज़ॉल्यूशन</string>
+    <string name="sftp_compression_quality">गुणवत्ता (CRF %1$d)</string>
+    <string name="sftp_compression_speed">एन्कोड गति</string>
+    <string name="sftp_compression_audio_bitrate">ऑडियो बिटरेट</string>
+    <string name="sftp_filter_title">फ़िल्टर</string>
+    <string name="sftp_filter_rotation">घुमाव</string>
 
     <!-- i18n sweep #210 -->
     <string name="sftp_open_with">इससे खोलें…</string>

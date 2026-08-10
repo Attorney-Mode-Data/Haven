@@ -35,4 +35,10 @@
     <string name="common_github">GitHub</string>
     <string name="common_support">الدعم</string>
     <string name="common_unlock">فتح القفل</string>
+    <string name="wayland_cd_session_menu">قائمة الجلسة</string>
+    <string name="wayland_cd_reset_zoom">إعادة تعيين التكبير</string>
+    <string name="wayland_cd_exit_fullscreen">إنهاء ملء الشاشة</string>
+    <string name="wayland_cd_toggle_keyboard">إظهار/إخفاء لوحة المفاتيح</string>
+    <string name="wayland_cd_fullscreen">ملء الشاشة</string>
+    <string name="wayland_cd_desktop_resolution">دقة سطح المكتب</string>
 </resources>

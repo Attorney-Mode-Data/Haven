@@ -162,9 +162,9 @@ private fun redactValue(v: Any?): Any? = when (v) {
 private fun summariseResult(toolName: String?, result: JSONObject?, ctx: Context): String? {
     if (result == null) return null
     return when (toolName) {
-        "list_connections" -> result.optInt("count", -1).takeIf { it >= 0 }?.let { ctx.getString(R.string.agent_summary_connections, it) }
-        "list_sessions" -> result.optInt("count", -1).takeIf { it >= 0 }?.let { ctx.getString(R.string.agent_summary_sessions, it) }
-        "list_rclone_remotes" -> result.optInt("count", -1).takeIf { it >= 0 }?.let { ctx.getString(R.string.agent_summary_remotes, it) }
+        "list_connections" -> result.optInt("count", -1).takeIf { it >= 0 }?.let { ctx.resources.getQuantityString(R.plurals.agent_summary_connections, it, it) }
+        "list_sessions" -> result.optInt("count", -1).takeIf { it >= 0 }?.let { ctx.resources.getQuantityString(R.plurals.agent_summary_sessions, it, it) }
+        "list_rclone_remotes" -> result.optInt("count", -1).takeIf { it >= 0 }?.let { ctx.resources.getQuantityString(R.plurals.agent_summary_remotes, it, it) }
         "list_rclone_directory" -> {
             val n = result.optInt("count", -1)
             val remote = result.optString("remote", "")

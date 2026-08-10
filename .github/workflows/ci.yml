@@ -160,6 +160,12 @@ jobs:
         run: ./scripts/check-changelog.sh
       - name: Check for hardcoded UI strings (#210)
         run: ./scripts/check-i18n-hardcoded.sh
+      - name: Check every English key exists in all 11 locales
+        # Android's MissingTranslation lint is downgraded to a warning in
+        # build.gradle.kts and lintDebug only runs on PRs, so direct pushes to
+        # main used to ship untranslated keys silently — 37 keys had drifted out
+        # of all 11 locales at once. This runs per-push instead.
+        run: python3 scripts/check-i18n-coverage.py
       # check-native-libs.sh is NOT here: this job does not build, and since
       # #493 stopped committing the wayland .so there is nothing for it to read
       # at this point. It printed "does not exist; nothing to check" on every

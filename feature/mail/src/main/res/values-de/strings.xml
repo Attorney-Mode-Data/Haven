@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">In die Warteschlange gestellt, während Haven im Hintergrund war. Genehmigen zum Ausführen oder ablehnen zum Verwerfen.</string>
     <string name="mail_rules_approve">Genehmigen</string>
     <string name="mail_rules_reject">Ablehnen</string>
+    <string name="mail_cd_back">Zurück</string>
+    <string name="mail_cd_has_attachments">Enthält Anhänge</string>
 </resources>

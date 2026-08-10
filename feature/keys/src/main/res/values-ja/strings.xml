@@ -66,57 +66,57 @@
     <string name="keys_ssh_public_key_clip_label">SSH公開鍵</string>
 
     <!-- #133 phase 2: step-ca generate-via-OIDC (en fallback) -->
-    <string name="keys_generate_via_stepca">Generate via step-ca</string>
-    <string name="keys_generate_via_stepca_hint">OIDC sign-in mints a fresh keypair + signed cert</string>
-    <string name="keys_generate_via_stepca_no_ca">Tap Certificate authorities above to add one</string>
-    <string name="keys_stepca_dialog_title">Generate via step-ca</string>
-    <string name="keys_stepca_pick_ca">Certificate authority</string>
-    <string name="keys_stepca_principals_override_label">Override principals (optional, comma-separated)</string>
-    <string name="keys_stepca_label">Key label</string>
-    <string name="keys_stepca_generate">Generate</string>
-    <string name="keys_chip_certificate_minted">Minted %1$s</string>
+    <string name="keys_generate_via_stepca">step-ca で生成</string>
+    <string name="keys_generate_via_stepca_hint">OIDC サインインで新しい鍵ペアと署名済み証明書を発行します</string>
+    <string name="keys_generate_via_stepca_no_ca">追加するには上の「証明機関」をタップしてください</string>
+    <string name="keys_stepca_dialog_title">step-ca で生成</string>
+    <string name="keys_stepca_pick_ca">証明機関</string>
+    <string name="keys_stepca_principals_override_label">プリンシパルを上書き (任意、カンマ区切り)</string>
+    <string name="keys_stepca_label">鍵のラベル</string>
+    <string name="keys_stepca_generate">生成</string>
+    <string name="keys_chip_certificate_minted">%1$s に発行</string>
 
-    <!-- #133 phase 2b: regenerate menu --> (en fallback)
-    <string name="keys_regenerate_via_stepca">Regenerate via step-ca</string>
+    <!-- #133 phase 2b: regenerate menu (en fallback) -->
+    <string name="keys_regenerate_via_stepca">step-ca で再生成</string>
 
     <!-- #133 phase 2b: step-ca CA registration (moved from Settings) -->
-    <string name="stepca_add_title">Add certificate authority</string>
-    <string name="stepca_edit_title">Edit certificate authority</string>
+    <string name="stepca_add_title">証明機関を追加</string>
+    <string name="stepca_edit_title">証明機関を編集</string>
     <string name="stepca_add">Add</string>
-    <string name="stepca_save">Save</string>
-    <string name="stepca_cancel">Cancel</string>
-    <string name="stepca_delete">Delete</string>
-    <string name="stepca_test_connection">Test connection</string>
-    <string name="stepca_field_name">Display name</string>
-    <string name="stepca_field_ca_url">CA URL</string>
+    <string name="stepca_save">保存</string>
+    <string name="stepca_cancel">キャンセル</string>
+    <string name="stepca_delete">削除</string>
+    <string name="stepca_test_connection">接続をテスト</string>
+    <string name="stepca_field_name">表示名</string>
+    <string name="stepca_field_ca_url">CA の URL</string>
     <string name="stepca_field_ca_url_hint">https://ca.example.com</string>
-    <string name="stepca_field_oidc_issuer">OIDC issuer URL</string>
-    <string name="stepca_field_oidc_auth_url">OIDC authorize URL</string>
-    <string name="stepca_field_oidc_token_url">OIDC token URL</string>
-    <string name="stepca_field_oidc_client_id">OIDC client ID</string>
-    <string name="stepca_field_provisioner">step-ca provisioner</string>
-    <string name="stepca_field_principals">Default principals (comma-separated)</string>
-    <string name="stepca_field_root_cert">Root certificate (PEM)</string>
+    <string name="stepca_field_oidc_issuer">OIDC 発行者 URL</string>
+    <string name="stepca_field_oidc_auth_url">OIDC 認可 URL</string>
+    <string name="stepca_field_oidc_token_url">OIDC トークン URL</string>
+    <string name="stepca_field_oidc_client_id">OIDC クライアント ID</string>
+    <string name="stepca_field_provisioner">step-ca プロビジョナー</string>
+    <string name="stepca_field_principals">既定のプリンシパル (カンマ区切り)</string>
+    <string name="stepca_field_root_cert">ルート証明書 (PEM)</string>
     <string name="stepca_field_root_cert_hint">-----BEGIN CERTIFICATE-----…</string>
-    <string name="stepca_test_ok">Reachable</string>
-    <string name="stepca_test_bad_root_cert">Invalid root cert: %1$s</string>
+    <string name="stepca_test_ok">到達可能</string>
+    <string name="stepca_test_bad_root_cert">ルート証明書が無効です: %1$s</string>
     <string name="stepca_test_http_error">HTTP %1$d: %2$s</string>
-    <string name="stepca_test_network_error">Network error: %1$s</string>
-    <string name="stepca_empty_state">No certificate authorities configured.\nTap + to add one.</string>
-    <string name="stepca_validation_required">%1$s is required</string>
-    <string name="stepca_validation_url">%1$s must start with https://</string>
-    <string name="stepca_validation_pem">Root certificate must be PEM-encoded</string>
+    <string name="stepca_test_network_error">ネットワーク エラー: %1$s</string>
+    <string name="stepca_empty_state">証明機関が設定されていません。\n+ をタップして追加してください。</string>
+    <string name="stepca_validation_required">%1$s は必須です</string>
+    <string name="stepca_validation_url">%1$s は https:// で始まる必要があります</string>
+    <string name="stepca_validation_pem">ルート証明書は PEM 形式である必要があります</string>
     <string name="stepca_validation_host_ca_or_signing">ホスト CA 公開鍵を入力するか、署名フィールドを入力してください。</string>
     <string name="stepca_validation_host_ca">有効な SSH ホスト CA 公開鍵ではありません。</string>
-    <string name="stepca_delete_confirm_title">Delete %1$s?</string>
-    <string name="stepca_delete_confirm_body">Existing keys minted via this CA will keep working until their certificates expire, but you won\'t be able to renew or generate new ones.</string>
-    <string name="stepca_field_ssh_host_ca">SSH host CA public key (optional)</string>
+    <string name="stepca_delete_confirm_title">%1$s を削除しますか？</string>
+    <string name="stepca_delete_confirm_body">この CA で発行済みの鍵は証明書の有効期限まで動作しますが、更新や新規発行はできなくなります。</string>
+    <string name="stepca_field_ssh_host_ca">SSH ホスト CA 公開鍵 (任意)</string>
     <string name="stepca_field_ssh_host_ca_hint">ssh-ed25519 AAAAC3…</string>
-    <string name="stepca_discover_host_ca">Discover from /1.0/ssh/config</string>
-    <string name="stepca_discovering">Discovering…</string>
-    <string name="stepca_import_from_file">Import from file</string>
-    <string name="stepca_import_failed">Import failed: %1$s</string>
-    <string name="keys_section_certificate_authorities">Certificate authorities (%1$d)</string>
+    <string name="stepca_discover_host_ca">/1.0/ssh/config から検出</string>
+    <string name="stepca_discovering">検出中…</string>
+    <string name="stepca_import_from_file">ファイルからインポート</string>
+    <string name="stepca_import_failed">インポートに失敗しました: %1$s</string>
+    <string name="keys_section_certificate_authorities">証明機関 (%1$d)</string>
     <string name="keys_section_ssh">SSH鍵 (%1$d)</string>
     <string name="keys_section_passwords">保存済みパスワード (%1$d)</string>
     <string name="keys_chip_hardware_backed">ハードウェア保護</string>
@@ -220,4 +220,27 @@
     <string name="keys_identity_key_none">なし</string>
     <string name="keys_identity_no_username">ユーザー名なし</string>
     <string name="keys_identity_has_password">パスワード</string>
+    <string name="keys_sort">鍵を並べ替える</string>
+    <string name="keys_sort_manual">自分の並び順</string>
+    <string name="keys_sort_label_asc">名前 (A–Z)</string>
+    <string name="keys_sort_label_desc">名前 (Z–A)</string>
+    <string name="keys_sort_newest">新しい順</string>
+    <string name="keys_sort_oldest">古い順</string>
+    <string name="keys_select">選択…</string>
+    <string name="keys_select_all">すべて選択</string>
+    <string name="keys_selection_cancel">選択モードを終了</string>
+    <string name="keys_selection_delete">選択した鍵を削除</string>
+    <plurals name="keys_bulk_delete_title">
+        <item quantity="other">%1$d 個の鍵を削除しますか？</item>
+    </plurals>
+    <string name="keys_bulk_delete_body">この操作は元に戻せません。秘密鍵のデータはキーストアから消去されます。</string>
+    <string name="keys_bulk_delete_in_use">保存済みの接続で使用中: %1$s。これらの接続では鍵による認証ができなくなります。</string>
+    <string name="keys_section_collapse">%1$s を折りたたむ</string>
+    <string name="keys_section_expand">%1$s を展開する</string>
+    <string name="keys_from_provider">%1$s の鍵を使う</string>
+    <string name="keys_from_provider_hint">そのアプリが保持している鍵を選びます。Haven の代わりに署名し、秘密鍵はハードウェアトークン上も含めて元の場所に留まります。</string>
+    <string name="keys_totp_code_copied">コードをコピーしました</string>
+    <plurals name="keys_selected_count">
+        <item quantity="other">%1$d 件選択中</item>
+    </plurals>
 </resources>

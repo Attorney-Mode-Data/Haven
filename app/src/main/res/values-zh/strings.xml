@@ -130,7 +130,6 @@
     <string name="app_agent_action_requested">代理操作请求</string>
     <string name="app_agent_from_client">来自：%1$s</string>
     <string name="app_agent_tool">工具：%1$s</string>
-    <string name="app_agent_more_pending">＋后面还有 %1$d 个请求在等待——处理完这个后会显示</string>
     <string name="app_agent_bypass_label">在 Haven 重启前允许来自 \'%1$s\' 的所有 MCP 请求</string>
     <string name="app_agent_bypass_description">包括破坏性操作（终端输入、文件写入/删除、APK 安装）。应用退出后清除。</string>
     <string name="app_agent_auto_allow_window">自动允许窗口：</string>
@@ -199,9 +198,6 @@
 
     <!-- Agent Activity log — result summaries (#239) -->
     <string name="agent_summary_ok">成功</string>
-    <string name="agent_summary_connections">%1$d 个连接</string>
-    <string name="agent_summary_sessions">%1$d 个会话</string>
-    <string name="agent_summary_remotes">%1$d 个远程</string>
     <string name="agent_summary_entries_at">%2$s:%3$s 中有 %1$d 项</string>
     <string name="agent_summary_entries_via">经 %2$s 在 %3$s 中有 %1$d 项</string>
     <string name="agent_summary_version">版本 %1$s</string>
@@ -306,4 +302,18 @@
     <string name="backup_pull_notify_failure_title">备份恢复失败</string>
     <string name="backup_pull_toast_success">备份已恢复</string>
     <string name="backup_pull_toast_failure">拉取备份失败：%1$s</string>
+    <string name="backup_pull_started">正在后台拉取备份…</string>
+    <string name="backup_pull_no_password">未保存密码。正在打开 Haven…</string>
+    <plurals name="app_agent_more_pending">
+        <item quantity="other">＋此请求后面还有 %1$d 个请求在等待——稍后会显示</item>
+    </plurals>
+    <plurals name="agent_summary_connections">
+        <item quantity="other">%1$d 个连接</item>
+    </plurals>
+    <plurals name="agent_summary_sessions">
+        <item quantity="other">%1$d 个会话</item>
+    </plurals>
+    <plurals name="agent_summary_remotes">
+        <item quantity="other">%1$d 个远程存储</item>
+    </plurals>
 </resources>

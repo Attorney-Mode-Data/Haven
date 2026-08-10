@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">Na fila enquanto o Haven estava em segundo plano. Aprove para executar ou rejeite para descartar.</string>
     <string name="mail_rules_approve">Aprovar</string>
     <string name="mail_rules_reject">Rejeitar</string>
+    <string name="mail_cd_back">Voltar</string>
+    <string name="mail_cd_has_attachments">Tem anexos</string>
 </resources>

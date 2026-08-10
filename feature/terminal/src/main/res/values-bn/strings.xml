@@ -60,19 +60,19 @@
     <string name="terminal_rename_session_title">সেশনের নাম পরিবর্তন</string>
     <string name="terminal_name">নাম</string>
     <string name="terminal_rename">নাম পরিবর্তন</string>
-    <string name="terminal_new_tab_no_active">No active session to clone</string>
-    <string name="terminal_new_tab_no_config">Connection config not found — try reconnecting first</string>
-    <string name="terminal_new_tab_host_key_changed">Host key changed for %s — connection refused for security</string>
-    <string name="terminal_new_tab_connection_failed">Could not connect: %s</string>
-    <string name="terminal_new_tab_shell_failed">Failed to open shell: %s</string>
-    <string name="terminal_new_tab_reticulum_no_session">No active Reticulum session to clone</string>
-    <string name="terminal_new_tab_connecting">Connecting…</string>
+    <string name="terminal_new_tab_no_active">ক্লোন করার মতো সক্রিয় সেশন নেই</string>
+    <string name="terminal_new_tab_no_config">সংযোগ কনফিগ পাওয়া যায়নি — আগে আবার সংযোগ করুন</string>
+    <string name="terminal_new_tab_host_key_changed">%s এর হোস্ট কী পরিবর্তিত হয়েছে — নিরাপত্তার কারণে সংযোগ প্রত্যাখ্যাত</string>
+    <string name="terminal_new_tab_connection_failed">সংযোগ করা যায়নি: %s</string>
+    <string name="terminal_new_tab_shell_failed">শেল খোলা যায়নি: %s</string>
+    <string name="terminal_new_tab_reticulum_no_session">ক্লোন করার মতো সক্রিয় Reticulum সেশন নেই</string>
+    <string name="terminal_new_tab_connecting">সংযোগ করা হচ্ছে…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="terminal_no_contact">সার্ভার থেকে %1$d সেকেন্ড ধরে সাড়া নেই — পুনরায় চেষ্টা চলছে</string>
     <string name="terminal_new_session_create">তৈরি করুন</string>
-    <string name="terminal_vnc_username_label">Username (optional — VeNCrypt only)</string>
-    <string name="terminal_vnc_username_placeholder">Leave blank for classic VncAuth</string>
-    <string name="terminal_vnc_color_depth">Colour depth</string>
+    <string name="terminal_vnc_username_label">ইউজারনেম (ঐচ্ছিক — শুধু VeNCrypt)</string>
+    <string name="terminal_vnc_username_placeholder">ক্লাসিক VncAuth এর জন্য ফাঁকা রাখুন</string>
+    <string name="terminal_vnc_color_depth">রঙের গভীরতা</string>
     <string name="terminal_open_plain_shell">সাধারণ শেল খুলুন</string>
 
     <string name="terminal_enter_fullscreen">ফুলস্ক্রিনে প্রবেশ করুন</string>

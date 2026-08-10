@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">Haven পটভূমিতে থাকাকালীন সারিতে রাখা হয়েছে। চালাতে অনুমোদন করুন, বা বাতিল করতে প্রত্যাখ্যান করুন।</string>
     <string name="mail_rules_approve">অনুমোদন করুন</string>
     <string name="mail_rules_reject">প্রত্যাখ্যান করুন</string>
+    <string name="mail_cd_back">পেছনে</string>
+    <string name="mail_cd_has_attachments">সংযুক্তি আছে</string>
 </resources>

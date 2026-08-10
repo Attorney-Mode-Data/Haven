@@ -10,7 +10,7 @@
     <string name="vnc_action_dismiss">बंद करें</string>
     <string name="vnc_cd_disconnect">डिस्कनेक्ट करें</string>
     <string name="vnc_cd_toggle_keyboard">कीबोर्ड टॉगल करें</string>
-    <string name="vnc_cd_background_to_edge">Background to edge icon</string>
+    <string name="vnc_cd_background_to_edge">किनारे तक पृष्ठभूमि आइकन</string>
     <string name="vnc_cd_picture_in_picture">Picture-in-picture</string>
     <string name="vnc_cd_reset_zoom">ज़ूम रीसेट करें</string>
     <string name="vnc_cd_fullscreen">फ़ुलस्क्रीन</string>

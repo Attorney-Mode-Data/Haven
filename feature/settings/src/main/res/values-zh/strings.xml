@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">自动停止空闲的 Linux 客户机</string>
     <string name="settings_proot_idle_dialog_body">当 Haven 在后台达到该时长后，停止 Linux 客户机的终端和桌面以释放内存。正在运行的客户机服务会使其保持运行。后台终端中的长时间任务也会被停止——除非你需要在空闲时回收资源，否则请保持关闭。</string>
     <string name="settings_proot_idle_off_label">关闭</string>
-    <string name="settings_proot_idle_minutes">%1$d 分钟</string>
     <string name="settings_shizuku_title">Shizuku 集成</string>
     <string name="settings_shizuku_enabled">已启用 — 自动电池豁免、Wayland 套接字共享</string>
     <string name="settings_shizuku_available">Shizuku 已安装——点击授予权限</string>
@@ -456,4 +455,20 @@
     <string name="settings_backup_auto_pull_interval_6h">6 小时</string>
     <string name="settings_backup_auto_pull_interval_24h">24 小时</string>
     <string name="settings_backup_remember_password_label">记住此密码</string>
+    <string name="common_apply">应用</string>
+    <string name="settings_rdp_desktop_size_title">RDP 桌面尺寸</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — 与服务器保持一致，否则该区域外的更新会被丢弃</string>
+    <string name="settings_rdp_desktop_size_hint">请设为远程计算机实际使用的分辨率。VirtualBox 默认为 2560 × 1600。</string>
+    <string name="settings_rdp_desktop_size_width">宽度</string>
+    <string name="settings_rdp_desktop_size_height">高度</string>
+    <string name="settings_native_crash_title">应用崩溃</string>
+    <string name="settings_native_crash_subtitle">Haven 意外关闭。下面的报告指出了发生位置——请将其附到错误报告中。</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven 意外关闭。Android 未对此类崩溃保留详细报告，因此只知道时间和信号——请仍将它们附到错误报告中，信号有助于缩小排查范围。</string>
+    <string name="settings_native_crash_no_trace">此次崩溃没有保留详细报告。</string>
+    <string name="settings_native_crash_copy">复制报告</string>
+    <string name="settings_native_crash_copied">已复制崩溃报告</string>
+    <string name="settings_native_crash_dismiss">忽略</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="other">%1$d 分钟</item>
+    </plurals>
 </resources>

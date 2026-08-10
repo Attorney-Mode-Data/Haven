@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">إيقاف ضيف Linux الخامل تلقائيًا</string>
     <string name="settings_proot_idle_dialog_body">بعد بقاء Haven في الخلفية هذه المدة، أوقِف طرفيات وأسطح مكتب ضيف Linux لتحرير الذاكرة. خدمة ضيف قيد التشغيل تُبقيه نشطًا. المهمة الطويلة في طرفية بالخلفية ستتوقف أيضًا — اترك هذا مُعطّلًا إلا إذا كنت تريد استعادة الموارد عند الخمول.</string>
     <string name="settings_proot_idle_off_label">مُعطّل</string>
-    <string name="settings_proot_idle_minutes">%1$d دقيقة</string>
     <string name="settings_shizuku_title">تكامل Shizuku</string>
     <string name="settings_shizuku_enabled">مفعّل — إعفاء تلقائي من البطارية، مشاركة مقبس Wayland</string>
     <string name="settings_shizuku_available">Shizuku مثبّت — اضغط لمنح الإذن</string>
@@ -213,24 +212,24 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">بسيط</string>
     <string name="settings_language_title">اللغة</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
-    <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_media_extensions_title">امتدادات ملفات الوسائط</string>
+    <string name="settings_media_extensions_description">امتدادات ملفات مفصولة بمسافات تُعامَل كوسائط قابلة للبث في متصفح الملفات.</string>
+    <string name="settings_media_extensions_label">الامتدادات</string>
+    <string name="settings_show_desktops_title">إظهار بطاقة أسطح المكتب</string>
+    <string name="settings_show_desktops_subtitle">إظهار مدير بيئات سطح المكتب في شاشة الاتصالات</string>
+    <string name="settings_show_linux_vm_title">إظهار بطاقة Linux VM</string>
+    <string name="settings_show_linux_vm_subtitle">إظهار إعداد جهاز Linux الافتراضي في شاشة الاتصالات</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">إبقاء الشاشة مضاءة في الطرفية</string>
     <string name="settings_keep_screen_on_subtitle">تبقى الشاشة مضاءة طالما توجد علامة تبويب طرفية مفتوحة. يستهلك ذلك البطارية؛ يستحق التفعيل فقط إذا كنت تراقب مخرجات طويلة.</string>
 
     <!-- #135 -->
-    <string name="settings_keyboard_mode_title">Keyboard mode</string>
-    <string name="settings_dev_install_title">Dev Install</string>
-    <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
-    <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <string name="settings_keyboard_mode_title">وضع لوحة المفاتيح</string>
+    <string name="settings_dev_install_title">تثبيت تطويري</string>
+    <string name="settings_dev_install_apk_url">رابط APK</string>
+    <string name="settings_font_install_title">تثبيت خط من رابط</string>
+    <string name="settings_ime_flags_title">أعلام IME</string>
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">صفوف السجل</string>
     <string name="settings_scrollback_rows_subtitle">%1$,d سطر محفوظ لكل علامة تبويب — يُطبَّق على العلامات الجديدة</string>
     <string name="settings_scrollback_rows_dialog_title">عدد صفوف السجل لكل علامة تبويب</string>
@@ -457,4 +456,25 @@
     <string name="settings_backup_auto_pull_interval_6h">6 ساعات</string>
     <string name="settings_backup_auto_pull_interval_24h">24 ساعة</string>
     <string name="settings_backup_remember_password_label">تذكّر كلمة المرور هذه</string>
+    <string name="common_apply">تطبيق</string>
+    <string name="settings_rdp_desktop_size_title">حجم سطح مكتب RDP</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — طابِق خادمك، وإلا فستُهمَل تحديثاته خارج هذه المساحة</string>
+    <string name="settings_rdp_desktop_size_hint">اضبط هذا على الدقة التي يستخدمها الجهاز البعيد فعليًا. القيمة الافتراضية في VirtualBox هي 2560 × 1600.</string>
+    <string name="settings_rdp_desktop_size_width">العرض</string>
+    <string name="settings_rdp_desktop_size_height">الارتفاع</string>
+    <string name="settings_native_crash_title">أعطال التطبيق</string>
+    <string name="settings_native_crash_subtitle">أُغلق Haven بشكل غير متوقع. يوضّح التقرير أدناه أين حدث ذلك — يُرجى إرفاقه ببلاغ الخطأ.</string>
+    <string name="settings_native_crash_subtitle_no_trace">أُغلق Haven بشكل غير متوقع. لم يحتفظ Android بتقرير مفصّل لهذه الأعطال، لذا لا يُعرف سوى الوقت والإشارة — يُرجى إرفاقهما ببلاغ الخطأ على أي حال، فالإشارة تضيّق نطاق البحث.</string>
+    <string name="settings_native_crash_no_trace">لم يُحفظ تقرير مفصّل لهذا العطل.</string>
+    <string name="settings_native_crash_copy">نسخ التقرير</string>
+    <string name="settings_native_crash_copied">تم نسخ تقرير العطل</string>
+    <string name="settings_native_crash_dismiss">تجاهل</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="zero">0 دقيقة</item>
+        <item quantity="one">دقيقة واحدة</item>
+        <item quantity="two">دقيقتان</item>
+        <item quantity="few">%1$d دقائق</item>
+        <item quantity="many">%1$d دقيقة</item>
+        <item quantity="other">%1$d دقيقة</item>
+    </plurals>
 </resources>

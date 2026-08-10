@@ -35,4 +35,10 @@
     <string name="common_support">Поддержка</string>
     <string name="common_unlock">Разблокировать</string>
     <string name="nav_mail">Почта</string>
+    <string name="wayland_cd_session_menu">Меню сеанса</string>
+    <string name="wayland_cd_reset_zoom">Сбросить масштаб</string>
+    <string name="wayland_cd_exit_fullscreen">Выйти из полноэкранного режима</string>
+    <string name="wayland_cd_toggle_keyboard">Показать/скрыть клавиатуру</string>
+    <string name="wayland_cd_fullscreen">Полный экран</string>
+    <string name="wayland_cd_desktop_resolution">Разрешение рабочего стола</string>
 </resources>

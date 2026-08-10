@@ -139,4 +139,6 @@
     <string name="mail_rules_pending_desc">Queued while Haven was in the background. Approve to run, or reject to discard.</string>
     <string name="mail_rules_approve">Approve</string>
     <string name="mail_rules_reject">Reject</string>
+    <string name="mail_cd_back">Back</string>
+    <string name="mail_cd_has_attachments">Has attachments</string>
 </resources>

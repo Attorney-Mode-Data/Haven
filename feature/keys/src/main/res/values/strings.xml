@@ -244,7 +244,6 @@
     <string name="keys_sort_newest">Newest first</string>
     <string name="keys_sort_oldest">Oldest first</string>
     <string name="keys_select">Select…</string>
-    <string name="keys_selected_count">%1$d selected</string>
     <string name="keys_select_all">Select all</string>
     <string name="keys_selection_cancel">Leave selection mode</string>
     <string name="keys_selection_delete">Delete selected keys</string>
@@ -256,4 +255,8 @@
     </plurals>
     <string name="keys_bulk_delete_body">This cannot be undone. The private key material is erased from the keystore.</string>
     <string name="keys_bulk_delete_in_use">In use by a saved connection: %1$s. Those connections will stop authenticating with a key.</string>
+    <plurals name="keys_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
 </resources>

@@ -3,23 +3,23 @@
     <!-- #135 third pass: keyboard toolbar accessibility / dialog labels.
          The core/toolbar module previously had no res/values at all —
          every string was hardcoded. -->
-    <string name="toolbar_add_custom_key">Add custom key</string>
-    <string name="toolbar_toggle_keyboard">Toggle keyboard</string>
-    <string name="toolbar_reorder_keys">Reorder toolbar keys</string>
-    <string name="toolbar_done_reordering">Done reordering</string>
-    <string name="toolbar_vnc_desktop">VNC Desktop</string>
-    <string name="toolbar_settings">Toolbar settings</string>
-    <string name="toolbar_custom_key_dialog_title">Add custom key</string>
-    <string name="toolbar_custom_key_label">Label</string>
-    <string name="toolbar_custom_key_sequence">Sequence</string>
+    <string name="toolbar_add_custom_key">कस्टम कुंजी जोड़ें</string>
+    <string name="toolbar_toggle_keyboard">कीबोर्ड दिखाएँ/छिपाएँ</string>
+    <string name="toolbar_reorder_keys">टूलबार कुंजियाँ पुनः क्रमित करें</string>
+    <string name="toolbar_done_reordering">क्रम बदलना पूर्ण</string>
+    <string name="toolbar_vnc_desktop">VNC डेस्कटॉप</string>
+    <string name="toolbar_settings">टूलबार सेटिंग्स</string>
+    <string name="toolbar_custom_key_dialog_title">कस्टम कुंजी जोड़ें</string>
+    <string name="toolbar_custom_key_label">लेबल</string>
+    <string name="toolbar_custom_key_sequence">अनुक्रम</string>
     <string name="toolbar_custom_key_add">Add</string>
-    <string name="toolbar_custom_key_cancel">Cancel</string>
-    <string name="toolbar_snippet_add">Add snippet</string>
-    <string name="toolbar_snippet_search">Search snippets…</string>
-    <string name="toolbar_snippet_delete">Delete</string>
-    <string name="toolbar_snippet_dialog_title">Add snippet</string>
-    <string name="toolbar_snippet_label">Label</string>
-    <string name="toolbar_snippet_command">Command</string>
+    <string name="toolbar_custom_key_cancel">रद्द करें</string>
+    <string name="toolbar_snippet_add">स्निपेट जोड़ें</string>
+    <string name="toolbar_snippet_search">स्निपेट खोजें…</string>
+    <string name="toolbar_snippet_delete">हटाएँ</string>
+    <string name="toolbar_snippet_dialog_title">स्निपेट जोड़ें</string>
+    <string name="toolbar_snippet_label">लेबल</string>
+    <string name="toolbar_snippet_command">कमांड</string>
 
     <!-- i18n sweep #210 -->
     <string name="toolbar_snippet_title">Snippets</string>

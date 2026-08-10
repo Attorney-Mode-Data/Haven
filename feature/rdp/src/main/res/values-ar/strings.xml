@@ -39,4 +39,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">إصبعان يحرّكان العرض (اضغط لتمرير الشاشة البعيدة)</string>
     <string name="rdp_cd_two_finger_scroll_on">إصبعان يمرّران الشاشة البعيدة (اضغط لتحريك العرض)</string>
+    <string name="rdp_hint_nla_required_title">الخادم يتطلب مصادقة على مستوى الشبكة (NLA)</string>
+    <string name="rdp_hint_nla_required_body">تم إعداد الخادم لقبول العملاء الذين يصادقون عبر NLA فقط، وخيار NLA غير مُفعّل في ملف الاتصال هذا. فعّل “Network Level Authentication (NLA)” في الملف، أو خفّف الشرط على الحاسوب: الإعدادات ← النظام ← سطح المكتب البعيد ← الإعدادات المتقدمة ← أزل تحديد “Require devices to use Network Level Authentication”.</string>
+    <string name="rdp_hint_mixed_username_title">لا يمكن لـ NLA استخدام هذا الشكل من اسم المستخدم</string>
+    <string name="rdp_hint_mixed_username_body">يرفض NLA اسم مستخدم يجمع بين بادئة نطاق وعنوان بريد إلكتروني (مثل MicrosoftAccount\\you@example.com)، وفي حالة البريد الإلكتروني وحده يقتطع كل ما بعد الـ @ — وهو قيد في مكتبة sspi الأصلية بالنسبة لحسابات Microsoft.\n\nلحاسوب يستخدم حساب Microsoft: أزل تحديد “Network Level Authentication (NLA)” في هذا الملف، واسمح بالاتصالات بدون NLA على الحاسوب (سطح المكتب البعيد ← الإعدادات المتقدمة)، واستخدم MicrosoftAccount\\you@example.com أو you@example.com فقط كاسم مستخدم.</string>
+    <string name="rdp_hint_mixed_username_link">متتبّع المشكلات</string>
 </resources>

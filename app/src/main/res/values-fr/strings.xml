@@ -130,7 +130,6 @@
     <string name="app_agent_action_requested">Action agent demandée</string>
     <string name="app_agent_from_client">De : %1$s</string>
     <string name="app_agent_tool">Outil : %1$s</string>
-    <string name="app_agent_more_pending">＋%1$d autre(s) demande(s) en attente derrière celle-ci — vous les verrez ensuite</string>
     <string name="app_agent_bypass_label">Autoriser toutes les requêtes MCP de \'%1$s\' jusqu\'au redémarrage de Haven</string>
     <string name="app_agent_bypass_description">Inclut les opérations destructives (saisie terminal, écriture/suppression de fichiers, installation d\'APK). Effacé à la fermeture de l\'app.</string>
     <string name="app_agent_auto_allow_window">Fenêtre d\'autorisation automatique :</string>
@@ -199,9 +198,6 @@
 
     <!-- Agent Activity log — result summaries (#239) -->
     <string name="agent_summary_ok">réussi</string>
-    <string name="agent_summary_connections">%1$d connexions</string>
-    <string name="agent_summary_sessions">%1$d sessions</string>
-    <string name="agent_summary_remotes">%1$d distants</string>
     <string name="agent_summary_entries_at">%1$d entrées dans %2$s:%3$s</string>
     <string name="agent_summary_entries_via">%1$d entrées via %2$s dans %3$s</string>
     <string name="agent_summary_version">version %1$s</string>
@@ -306,4 +302,22 @@
     <string name="backup_pull_notify_failure_title">Échec de la restauration</string>
     <string name="backup_pull_toast_success">Sauvegarde restaurée</string>
     <string name="backup_pull_toast_failure">Échec de la récupération : %1$s</string>
+    <string name="backup_pull_started">Récupération de la sauvegarde en arrière-plan…</string>
+    <string name="backup_pull_no_password">Aucun mot de passe enregistré. Ouverture de Haven…</string>
+    <plurals name="app_agent_more_pending">
+        <item quantity="one">＋%1$d autre demande en attente derrière celle-ci — vous la verrez ensuite</item>
+        <item quantity="other">＋%1$d autres demandes en attente derrière celle-ci — vous les verrez ensuite</item>
+    </plurals>
+    <plurals name="agent_summary_connections">
+        <item quantity="one">%1$d connexion</item>
+        <item quantity="other">%1$d connexions</item>
+    </plurals>
+    <plurals name="agent_summary_sessions">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+    <plurals name="agent_summary_remotes">
+        <item quantity="one">%1$d remote</item>
+        <item quantity="other">%1$d remotes</item>
+    </plurals>
 </resources>

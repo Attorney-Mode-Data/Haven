@@ -66,22 +66,22 @@
     <string name="keys_ssh_public_key_clip_label">Clé publique SSH</string>
 
     <!-- #133 phase 2: step-ca generate-via-OIDC (en fallback) -->
-    <string name="keys_generate_via_stepca">Generate via step-ca</string>
-    <string name="keys_generate_via_stepca_hint">OIDC sign-in mints a fresh keypair + signed cert</string>
-    <string name="keys_generate_via_stepca_no_ca">Tap Certificate authorities above to add one</string>
-    <string name="keys_stepca_dialog_title">Generate via step-ca</string>
+    <string name="keys_generate_via_stepca">Générer via step-ca</string>
+    <string name="keys_generate_via_stepca_hint">La connexion OIDC génère une nouvelle paire de clés et un certificat signé</string>
+    <string name="keys_generate_via_stepca_no_ca">Appuyez sur « Autorités de certification » ci-dessus pour en ajouter une</string>
+    <string name="keys_stepca_dialog_title">Générer via step-ca</string>
     <string name="keys_stepca_pick_ca">Certificate authority</string>
-    <string name="keys_stepca_principals_override_label">Override principals (optional, comma-separated)</string>
+    <string name="keys_stepca_principals_override_label">Remplacer les principals (facultatif, séparés par des virgules)</string>
     <string name="keys_stepca_label">Key label</string>
     <string name="keys_stepca_generate">Generate</string>
     <string name="keys_chip_certificate_minted">Minted %1$s</string>
 
-    <!-- #133 phase 2b: regenerate menu --> (en fallback)
-    <string name="keys_regenerate_via_stepca">Regenerate via step-ca</string>
+    <!-- #133 phase 2b: regenerate menu (en fallback) -->
+    <string name="keys_regenerate_via_stepca">Régénérer via step-ca</string>
 
     <!-- #133 phase 2b: step-ca CA registration (moved from Settings) -->
-    <string name="stepca_add_title">Add certificate authority</string>
-    <string name="stepca_edit_title">Edit certificate authority</string>
+    <string name="stepca_add_title">Ajouter une autorité de certification</string>
+    <string name="stepca_edit_title">Modifier l’autorité de certification</string>
     <string name="stepca_add">Add</string>
     <string name="stepca_save">Save</string>
     <string name="stepca_cancel">Cancel</string>
@@ -90,33 +90,33 @@
     <string name="stepca_field_name">Display name</string>
     <string name="stepca_field_ca_url">CA URL</string>
     <string name="stepca_field_ca_url_hint">https://ca.example.com</string>
-    <string name="stepca_field_oidc_issuer">OIDC issuer URL</string>
-    <string name="stepca_field_oidc_auth_url">OIDC authorize URL</string>
-    <string name="stepca_field_oidc_token_url">OIDC token URL</string>
-    <string name="stepca_field_oidc_client_id">OIDC client ID</string>
+    <string name="stepca_field_oidc_issuer">URL de l’émetteur OIDC</string>
+    <string name="stepca_field_oidc_auth_url">URL d’autorisation OIDC</string>
+    <string name="stepca_field_oidc_token_url">URL du jeton OIDC</string>
+    <string name="stepca_field_oidc_client_id">ID client OIDC</string>
     <string name="stepca_field_provisioner">step-ca provisioner</string>
-    <string name="stepca_field_principals">Default principals (comma-separated)</string>
-    <string name="stepca_field_root_cert">Root certificate (PEM)</string>
+    <string name="stepca_field_principals">Principals par défaut (séparés par des virgules)</string>
+    <string name="stepca_field_root_cert">Certificat racine (PEM)</string>
     <string name="stepca_field_root_cert_hint">-----BEGIN CERTIFICATE-----…</string>
     <string name="stepca_test_ok">Reachable</string>
-    <string name="stepca_test_bad_root_cert">Invalid root cert: %1$s</string>
+    <string name="stepca_test_bad_root_cert">Certificat racine non valide : %1$s</string>
     <string name="stepca_test_http_error">HTTP %1$d: %2$s</string>
-    <string name="stepca_test_network_error">Network error: %1$s</string>
-    <string name="stepca_empty_state">No certificate authorities configured.\nTap + to add one.</string>
-    <string name="stepca_validation_required">%1$s is required</string>
+    <string name="stepca_test_network_error">Erreur réseau : %1$s</string>
+    <string name="stepca_empty_state">Aucune autorité de certification configurée.\nAppuyez sur + pour en ajouter une.</string>
+    <string name="stepca_validation_required">%1$s est obligatoire</string>
     <string name="stepca_validation_url">%1$s must start with https://</string>
-    <string name="stepca_validation_pem">Root certificate must be PEM-encoded</string>
+    <string name="stepca_validation_pem">Le certificat racine doit être encodé en PEM</string>
     <string name="stepca_validation_host_ca_or_signing">Saisissez une clé publique d\'autorité d\'hôte, ou remplissez les champs de signature.</string>
     <string name="stepca_validation_host_ca">Clé publique d\'autorité d\'hôte SSH non valide.</string>
     <string name="stepca_delete_confirm_title">Delete %1$s?</string>
-    <string name="stepca_delete_confirm_body">Existing keys minted via this CA will keep working until their certificates expire, but you won\'t be able to renew or generate new ones.</string>
-    <string name="stepca_field_ssh_host_ca">SSH host CA public key (optional)</string>
+    <string name="stepca_delete_confirm_body">Les clés déjà émises par cette autorité continueront de fonctionner jusqu’à l’expiration de leurs certificats, mais vous ne pourrez ni les renouveler ni en générer de nouvelles.</string>
+    <string name="stepca_field_ssh_host_ca">Clé publique de l’autorité d’hôte SSH (facultatif)</string>
     <string name="stepca_field_ssh_host_ca_hint">ssh-ed25519 AAAAC3…</string>
-    <string name="stepca_discover_host_ca">Discover from /1.0/ssh/config</string>
+    <string name="stepca_discover_host_ca">Détecter depuis /1.0/ssh/config</string>
     <string name="stepca_discovering">Discovering…</string>
-    <string name="stepca_import_from_file">Import from file</string>
-    <string name="stepca_import_failed">Import failed: %1$s</string>
-    <string name="keys_section_certificate_authorities">Certificate authorities (%1$d)</string>
+    <string name="stepca_import_from_file">Importer depuis un fichier</string>
+    <string name="stepca_import_failed">Échec de l’import : %1$s</string>
+    <string name="keys_section_certificate_authorities">Autorités de certification (%1$d)</string>
     <string name="keys_section_ssh">Clés SSH (%1$d)</string>
     <string name="keys_section_passwords">Mots de passe enregistrés (%1$d)</string>
     <string name="keys_chip_hardware_backed">Protégé par le matériel</string>
@@ -220,4 +220,29 @@
     <string name="keys_identity_key_none">Aucune</string>
     <string name="keys_identity_no_username">Aucun nom d\'utilisateur</string>
     <string name="keys_identity_has_password">mot de passe</string>
+    <string name="keys_sort">Trier les clés</string>
+    <string name="keys_sort_manual">Mon ordre</string>
+    <string name="keys_sort_label_asc">Nom (A–Z)</string>
+    <string name="keys_sort_label_desc">Nom (Z–A)</string>
+    <string name="keys_sort_newest">Plus récentes d’abord</string>
+    <string name="keys_sort_oldest">Plus anciennes d’abord</string>
+    <string name="keys_select">Sélectionner…</string>
+    <string name="keys_select_all">Tout sélectionner</string>
+    <string name="keys_selection_cancel">Quitter le mode sélection</string>
+    <string name="keys_selection_delete">Supprimer les clés sélectionnées</string>
+    <plurals name="keys_bulk_delete_title">
+        <item quantity="one">Supprimer cette clé ?</item>
+        <item quantity="other">Supprimer %1$d clés ?</item>
+    </plurals>
+    <string name="keys_bulk_delete_body">Cette action est irréversible. Le matériel de clé privée est effacé du keystore.</string>
+    <string name="keys_bulk_delete_in_use">Utilisée par une connexion enregistrée : %1$s. Ces connexions ne s’authentifieront plus avec une clé.</string>
+    <string name="keys_section_collapse">Réduire %1$s</string>
+    <string name="keys_section_expand">Développer %1$s</string>
+    <string name="keys_from_provider">Utiliser une clé de %1$s</string>
+    <string name="keys_from_provider_hint">Choisissez une clé détenue par cette application. Elle signe pour le compte de Haven — la clé privée reste où elle est, y compris sur un jeton matériel.</string>
+    <string name="keys_totp_code_copied">Code copié</string>
+    <plurals name="keys_selected_count">
+        <item quantity="one">%1$d sélectionnée</item>
+        <item quantity="other">%1$d sélectionnées</item>
+    </plurals>
 </resources>

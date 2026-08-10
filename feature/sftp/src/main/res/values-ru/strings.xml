@@ -92,58 +92,58 @@
     <string name="sftp_replace_all">Заменить все</string>
     <string name="sftp_skip">Пропустить</string>
     <string name="sftp_skip_all">Пропустить все</string>
-    <string name="sftp_play">Play</string>
-    <string name="sftp_play_folder">Play folder</string>
-    <string name="sftp_sync">Sync</string>
-    <string name="sftp_folder_sync">Folder Sync</string>
-    <string name="sftp_source">Source</string>
-    <string name="sftp_destination">Destination</string>
-    <string name="sftp_destination_path">Path</string>
-    <string name="sftp_mode_copy">Copy</string>
-    <string name="sftp_mode_sync">Mirror</string>
-    <string name="sftp_mode_move">Move</string>
-    <string name="sftp_mode_copy_desc">Copy new and updated files. No deletions.</string>
-    <string name="sftp_mode_sync_desc">Make destination identical to source. Deletes extras.</string>
-    <string name="sftp_mode_move_desc">Move files to destination. Deletes from source.</string>
-    <string name="sftp_advanced_filters">Advanced filters</string>
-    <string name="sftp_include_patterns">Include patterns (one per line)</string>
-    <string name="sftp_exclude_patterns">Exclude patterns (one per line)</string>
-    <string name="sftp_min_size">Min size</string>
-    <string name="sftp_max_size">Max size</string>
-    <string name="sftp_bandwidth_limit">Bandwidth limit</string>
-    <string name="sftp_dry_run">Dry run (preview only)</string>
-    <string name="sftp_start_sync">Start</string>
-    <string name="sftp_preview">Preview</string>
-    <string name="sftp_dry_run_results">Dry Run Results</string>
-    <string name="sftp_start_for_real">Start for real</string>
-    <string name="sftp_sync_cancelled">Sync cancelled</string>
+    <string name="sftp_play">Воспроизвести</string>
+    <string name="sftp_play_folder">Воспроизвести папку</string>
+    <string name="sftp_sync">Синхронизация</string>
+    <string name="sftp_folder_sync">Синхронизация папок</string>
+    <string name="sftp_source">Источник</string>
+    <string name="sftp_destination">Назначение</string>
+    <string name="sftp_destination_path">Путь</string>
+    <string name="sftp_mode_copy">Копировать</string>
+    <string name="sftp_mode_sync">Зеркало</string>
+    <string name="sftp_mode_move">Переместить</string>
+    <string name="sftp_mode_copy_desc">Копирует новые и изменённые файлы. Ничего не удаляет.</string>
+    <string name="sftp_mode_sync_desc">Делает назначение идентичным источнику. Удаляет лишнее.</string>
+    <string name="sftp_mode_move_desc">Переносит файлы в назначение. Удаляет их из источника.</string>
+    <string name="sftp_advanced_filters">Расширенные фильтры</string>
+    <string name="sftp_include_patterns">Шаблоны включения (по одному в строке)</string>
+    <string name="sftp_exclude_patterns">Шаблоны исключения (по одному в строке)</string>
+    <string name="sftp_min_size">Мин. размер</string>
+    <string name="sftp_max_size">Макс. размер</string>
+    <string name="sftp_bandwidth_limit">Ограничение скорости</string>
+    <string name="sftp_dry_run">Пробный запуск (только просмотр)</string>
+    <string name="sftp_start_sync">Начать</string>
+    <string name="sftp_preview">Предпросмотр</string>
+    <string name="sftp_dry_run_results">Результаты пробного запуска</string>
+    <string name="sftp_start_for_real">Запустить по-настоящему</string>
+    <string name="sftp_sync_cancelled">Синхронизация отменена</string>
     <!-- Rename dialog -->
-    <string name="sftp_rename_title">Rename</string>
-    <string name="sftp_new_name">New name</string>
+    <string name="sftp_rename_title">Переименовать</string>
+    <string name="sftp_new_name">Новое имя</string>
 
     <!-- Share link -->
-    <string name="sftp_share_link">Share link</string>
-    <string name="sftp_link_copied">Link copied</string>
+    <string name="sftp_share_link">Поделиться ссылкой</string>
+    <string name="sftp_link_copied">Ссылка скопирована</string>
 
     <!-- Folder size -->
-    <string name="sftp_folder_size">Folder size</string>
-    <string name="sftp_folder_size_title">Folder Size</string>
-    <string name="sftp_calculating_size">Calculating…</string>
+    <string name="sftp_folder_size">Размер папки</string>
+    <string name="sftp_folder_size_title">Размер папки</string>
+    <string name="sftp_calculating_size">Подсчёт…</string>
 
     <!-- DLNA -->
-    <string name="sftp_start_dlna">Start DLNA server</string>
-    <string name="sftp_stop_dlna">Stop DLNA server</string>
+    <string name="sftp_start_dlna">Запустить сервер DLNA</string>
+    <string name="sftp_stop_dlna">Остановить сервер DLNA</string>
     <!-- Convert -->
-    <string name="sftp_convert">Convert</string>
-    <string name="sftp_convert_title">Convert media</string>
-    <string name="sftp_convert_format">Output format</string>
-    <string name="sftp_converting">Converting %s</string>
-    <string name="sftp_convert_done">Saved to %s</string>
+    <string name="sftp_convert">Преобразовать</string>
+    <string name="sftp_convert_title">Преобразовать медиа</string>
+    <string name="sftp_convert_format">Формат вывода</string>
+    <string name="sftp_converting">Преобразование %s</string>
+    <string name="sftp_convert_done">Сохранено в %s</string>
     <!-- Stream -->
-    <string name="sftp_stream">Stream</string>
-    <string name="sftp_streaming">Streaming on %s</string>
-    <string name="sftp_stream_stop">Stop</string>
-    <string name="sftp_downloading_for_convert">Downloading for conversion…</string>
+    <string name="sftp_stream">Трансляция</string>
+    <string name="sftp_streaming">Трансляция на %s</string>
+    <string name="sftp_stream_stop">Остановить</string>
+    <string name="sftp_downloading_for_convert">Загрузка для преобразования…</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="sftp_play_in_browser">Открыть в браузере</string>
     <string name="sftp_stream_to_network">Транслировать в сеть</string>
@@ -216,32 +216,32 @@
     <string name="sftp_contact_sheet_action">Создать лист</string>
 
     <!-- #135 third pass -->
-    <string name="sftp_attach_use_folder">Use this folder</string>
-    <string name="sftp_paste_discard">Discard</string>
-    <string name="sftp_paste_resume">Resume</string>
-    <string name="sftp_paste_discard_title">Discard unfinished paste?</string>
-    <string name="sftp_paste_discard_body">Pending files will be removed from the queue. This cannot be undone.</string>
-    <string name="sftp_paste_keep">Keep</string>
-    <string name="sftp_preview_frame_desc">Preview frame — tap for fullscreen</string>
-        <string name="sftp_convert_container">Container</string>
-    <string name="sftp_convert_video_encoder">Video encoder</string>
-    <string name="sftp_convert_audio_encoder">Audio encoder</string>
-    <string name="sftp_convert_save_to">Save to</string>
-    <string name="sftp_preview_stop">Stop</string>
-    <string name="sftp_preview_preparing">Preparing…</string>
-    <string name="sftp_preview_play5s">Play 5s preview</string>
-    <string name="sftp_fullscreen_preview">Fullscreen preview</string>
-    <string name="sftp_conflict_title">File already exists</string>
-    <string name="sftp_conflict_overwrite">Overwrite</string>
-    <string name="sftp_conflict_keep_both">Keep both (rename)</string>
-    <string name="sftp_conflict_skip">Skip</string>
-    <string name="sftp_compression_quick_presets">Quick presets</string>
-    <string name="sftp_compression_resolution">Resolution</string>
-    <string name="sftp_compression_quality">Quality (CRF %1$d)</string>
-    <string name="sftp_compression_speed">Encode speed</string>
-    <string name="sftp_compression_audio_bitrate">Audio bitrate</string>
-    <string name="sftp_filter_title">Filters</string>
-    <string name="sftp_filter_rotation">Rotation</string>
+    <string name="sftp_attach_use_folder">Использовать эту папку</string>
+    <string name="sftp_paste_discard">Отменить</string>
+    <string name="sftp_paste_resume">Продолжить</string>
+    <string name="sftp_paste_discard_title">Отменить незавершённую вставку?</string>
+    <string name="sftp_paste_discard_body">Ожидающие файлы будут удалены из очереди. Это действие необратимо.</string>
+    <string name="sftp_paste_keep">Оставить</string>
+    <string name="sftp_preview_frame_desc">Кадр предпросмотра — нажмите для полного экрана</string>
+        <string name="sftp_convert_container">Контейнер</string>
+    <string name="sftp_convert_video_encoder">Видеокодек</string>
+    <string name="sftp_convert_audio_encoder">Аудиокодек</string>
+    <string name="sftp_convert_save_to">Сохранить в</string>
+    <string name="sftp_preview_stop">Остановить</string>
+    <string name="sftp_preview_preparing">Подготовка…</string>
+    <string name="sftp_preview_play5s">Просмотр 5 секунд</string>
+    <string name="sftp_fullscreen_preview">Полноэкранный просмотр</string>
+    <string name="sftp_conflict_title">Файл уже существует</string>
+    <string name="sftp_conflict_overwrite">Заменить</string>
+    <string name="sftp_conflict_keep_both">Оставить оба (переименовать)</string>
+    <string name="sftp_conflict_skip">Пропустить</string>
+    <string name="sftp_compression_quick_presets">Быстрые пресеты</string>
+    <string name="sftp_compression_resolution">Разрешение</string>
+    <string name="sftp_compression_quality">Качество (CRF %1$d)</string>
+    <string name="sftp_compression_speed">Скорость кодирования</string>
+    <string name="sftp_compression_audio_bitrate">Битрейт звука</string>
+    <string name="sftp_filter_title">Фильтры</string>
+    <string name="sftp_filter_rotation">Поворот</string>
 
     <!-- #210 i18n sweep -->
     <string name="sftp_open_with">Открыть в…</string>

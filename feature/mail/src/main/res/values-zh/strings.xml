@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">在 Haven 处于后台时已排队。批准以运行，或拒绝以丢弃。</string>
     <string name="mail_rules_approve">批准</string>
     <string name="mail_rules_reject">拒绝</string>
+    <string name="mail_cd_back">返回</string>
+    <string name="mail_cd_has_attachments">有附件</string>
 </resources>

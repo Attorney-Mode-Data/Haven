@@ -80,7 +80,6 @@
     <string name="settings_proot_idle_dialog_title">アイドル状態の Linux ゲストを自動停止</string>
     <string name="settings_proot_idle_dialog_body">Haven がこの時間バックグラウンドにあったら、メモリを解放するために Linux ゲストのターミナルとデスクトップを停止します。実行中のゲストサービスがあれば維持されます。バックグラウンドのターミナルで実行中の長いジョブも停止されるため、アイドル時のリソース回収が不要ならオフのままにしてください。</string>
     <string name="settings_proot_idle_off_label">オフ</string>
-    <string name="settings_proot_idle_minutes">%1$d 分</string>
     <string name="settings_shizuku_title">Shizuku連携</string>
     <string name="settings_shizuku_enabled">有効 — バッテリー最適化の自動除外、Waylandソケット共有</string>
     <string name="settings_shizuku_available">Shizukuインストール済み -- タップして権限を付与</string>
@@ -213,24 +212,24 @@
     <string name="common_github">GitHub</string>
     <string name="common_simple">シンプル</string>
     <string name="settings_language_title">言語</string>
-    <string name="settings_media_extensions_title">Media file extensions</string>
-    <string name="settings_media_extensions_description">Space-separated file extensions to treat as streamable media in the file browser.</string>
-    <string name="settings_media_extensions_label">Extensions</string>
-    <string name="settings_show_desktops_title">Show Desktops card</string>
-    <string name="settings_show_desktops_subtitle">Show desktop environment manager on the Connections screen</string>
-    <string name="settings_show_linux_vm_title">Show Linux VM card</string>
-    <string name="settings_show_linux_vm_subtitle">Show Android Linux VM setup on the Connections screen</string>
+    <string name="settings_media_extensions_title">メディア ファイルの拡張子</string>
+    <string name="settings_media_extensions_description">ファイル ブラウザーでストリーミング可能なメディアとして扱う拡張子を、スペース区切りで指定します。</string>
+    <string name="settings_media_extensions_label">拡張子</string>
+    <string name="settings_show_desktops_title">デスクトップ カードを表示</string>
+    <string name="settings_show_desktops_subtitle">接続画面にデスクトップ環境マネージャーを表示する</string>
+    <string name="settings_show_linux_vm_title">Linux VM カードを表示</string>
+    <string name="settings_show_linux_vm_subtitle">接続画面に Android Linux VM のセットアップを表示する</string>
     <!-- Backfilled translations (i18n drift fix) -->
     <string name="settings_keep_screen_on_title">ターミナルで画面をオンに保つ</string>
     <string name="settings_keep_screen_on_subtitle">ターミナルのタブが開いている間、画面はスリープしません。バッテリーを消費するため、長時間の出力を見守るときのみ有効です。</string>
 
     <!-- #135 -->
-    <string name="settings_keyboard_mode_title">Keyboard mode</string>
-    <string name="settings_dev_install_title">Dev Install</string>
-    <string name="settings_dev_install_apk_url">APK URL</string>
-    <string name="settings_font_install_title">Install font from URL</string>
-    <string name="settings_ime_flags_title">IME flags</string>
-    <!-- #133 phase 2b: SSH host CA pubkey field --> (en fallback)
+    <string name="settings_keyboard_mode_title">キーボードモード</string>
+    <string name="settings_dev_install_title">開発用インストール</string>
+    <string name="settings_dev_install_apk_url">APK の URL</string>
+    <string name="settings_font_install_title">URL からフォントをインストール</string>
+    <string name="settings_ime_flags_title">IME フラグ</string>
+    <!-- #133 phase 2b: SSH host CA pubkey field (en fallback) -->
     <string name="settings_scrollback_rows_title">スクロールバック行数</string>
     <string name="settings_scrollback_rows_subtitle">タブごとに%1$,d行保持 — 新しいタブに適用</string>
     <string name="settings_scrollback_rows_dialog_title">タブごとのスクロールバック行数</string>
@@ -457,4 +456,20 @@
     <string name="settings_backup_auto_pull_interval_6h">6時間</string>
     <string name="settings_backup_auto_pull_interval_24h">24時間</string>
     <string name="settings_backup_remember_password_label">このパスワードを保存する</string>
+    <string name="common_apply">適用</string>
+    <string name="settings_rdp_desktop_size_title">RDP デスクトップのサイズ</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — サーバーに合わせてください。この範囲外の更新は破棄されます</string>
+    <string name="settings_rdp_desktop_size_hint">リモート マシンが実際に使用している解像度を設定します。VirtualBox の既定は 2560 × 1600 です。</string>
+    <string name="settings_rdp_desktop_size_width">幅</string>
+    <string name="settings_rdp_desktop_size_height">高さ</string>
+    <string name="settings_native_crash_title">アプリのクラッシュ</string>
+    <string name="settings_native_crash_subtitle">Haven が予期せず終了しました。下のレポートに発生箇所が記録されています。バグ報告に添付してください。</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven が予期せず終了しました。これらについて Android は詳細なレポートを残しておらず、時刻とシグナルのみが分かります。シグナルだけでも原因を絞り込めるため、バグ報告に添付してください。</string>
+    <string name="settings_native_crash_no_trace">このクラッシュの詳細なレポートは保存されていません。</string>
+    <string name="settings_native_crash_copy">レポートをコピー</string>
+    <string name="settings_native_crash_copied">クラッシュレポートをコピーしました</string>
+    <string name="settings_native_crash_dismiss">閉じる</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="other">%1$d 分</item>
+    </plurals>
 </resources>

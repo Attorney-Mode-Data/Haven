@@ -133,6 +133,7 @@ import androidx.compose.ui.text.input.PlatformImeOptions
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -2858,7 +2859,7 @@ private fun ProotIdleTimeoutDialog(
                     val label = if (preset <= 0) {
                         stringResource(R.string.settings_proot_idle_off_label)
                     } else {
-                        stringResource(R.string.settings_proot_idle_minutes, preset)
+                        pluralStringResource(R.plurals.settings_proot_idle_minutes, preset, preset)
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

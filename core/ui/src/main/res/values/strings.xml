@@ -38,4 +38,10 @@
     <string name="common_github">GitHub</string>
     <string name="common_support">Support</string>
     <string name="common_unlock">Unlock</string>
+    <string name="wayland_cd_session_menu">Session menu</string>
+    <string name="wayland_cd_reset_zoom">Reset zoom</string>
+    <string name="wayland_cd_exit_fullscreen">Exit fullscreen</string>
+    <string name="wayland_cd_toggle_keyboard">Toggle keyboard</string>
+    <string name="wayland_cd_fullscreen">Fullscreen</string>
+    <string name="wayland_cd_desktop_resolution">Desktop resolution</string>
 </resources>

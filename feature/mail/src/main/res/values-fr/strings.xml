@@ -131,4 +131,6 @@
     <string name="mail_rules_pending_desc">Mis en file d\'attente pendant que Haven était en arrière-plan. Approuvez pour exécuter, ou rejetez pour ignorer.</string>
     <string name="mail_rules_approve">Approuver</string>
     <string name="mail_rules_reject">Rejeter</string>
+    <string name="mail_cd_back">Retour</string>
+    <string name="mail_cd_has_attachments">Contient des pièces jointes</string>
 </resources>

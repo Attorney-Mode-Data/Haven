@@ -66,57 +66,57 @@
     <string name="keys_ssh_public_key_clip_label">SSH सार्वजनिक कुंजी</string>
 
     <!-- #133 phase 2: step-ca generate-via-OIDC (en fallback) -->
-    <string name="keys_generate_via_stepca">Generate via step-ca</string>
-    <string name="keys_generate_via_stepca_hint">OIDC sign-in mints a fresh keypair + signed cert</string>
-    <string name="keys_generate_via_stepca_no_ca">Tap Certificate authorities above to add one</string>
-    <string name="keys_stepca_dialog_title">Generate via step-ca</string>
-    <string name="keys_stepca_pick_ca">Certificate authority</string>
-    <string name="keys_stepca_principals_override_label">Override principals (optional, comma-separated)</string>
-    <string name="keys_stepca_label">Key label</string>
-    <string name="keys_stepca_generate">Generate</string>
-    <string name="keys_chip_certificate_minted">Minted %1$s</string>
+    <string name="keys_generate_via_stepca">step-ca से जनरेट करें</string>
+    <string name="keys_generate_via_stepca_hint">OIDC साइन-इन एक नई कुंजी-जोड़ी और हस्ताक्षरित प्रमाणपत्र बनाता है</string>
+    <string name="keys_generate_via_stepca_no_ca">एक जोड़ने के लिए ऊपर प्रमाणपत्र प्राधिकरण पर टैप करें</string>
+    <string name="keys_stepca_dialog_title">step-ca से जनरेट करें</string>
+    <string name="keys_stepca_pick_ca">प्रमाणपत्र प्राधिकरण</string>
+    <string name="keys_stepca_principals_override_label">प्रिंसिपल ओवरराइड करें (वैकल्पिक, कॉमा से अलग)</string>
+    <string name="keys_stepca_label">कुंजी लेबल</string>
+    <string name="keys_stepca_generate">जनरेट करें</string>
+    <string name="keys_chip_certificate_minted">%1$s को जारी</string>
 
-    <!-- #133 phase 2b: regenerate menu --> (en fallback)
-    <string name="keys_regenerate_via_stepca">Regenerate via step-ca</string>
+    <!-- #133 phase 2b: regenerate menu (en fallback) -->
+    <string name="keys_regenerate_via_stepca">step-ca से फिर से जनरेट करें</string>
 
     <!-- #133 phase 2b: step-ca CA registration (moved from Settings) -->
-    <string name="stepca_add_title">Add certificate authority</string>
-    <string name="stepca_edit_title">Edit certificate authority</string>
+    <string name="stepca_add_title">प्रमाणपत्र प्राधिकरण जोड़ें</string>
+    <string name="stepca_edit_title">प्रमाणपत्र प्राधिकरण संपादित करें</string>
     <string name="stepca_add">Add</string>
-    <string name="stepca_save">Save</string>
-    <string name="stepca_cancel">Cancel</string>
-    <string name="stepca_delete">Delete</string>
-    <string name="stepca_test_connection">Test connection</string>
-    <string name="stepca_field_name">Display name</string>
+    <string name="stepca_save">सहेजें</string>
+    <string name="stepca_cancel">रद्द करें</string>
+    <string name="stepca_delete">हटाएँ</string>
+    <string name="stepca_test_connection">कनेक्शन जाँचें</string>
+    <string name="stepca_field_name">प्रदर्शित नाम</string>
     <string name="stepca_field_ca_url">CA URL</string>
     <string name="stepca_field_ca_url_hint">https://ca.example.com</string>
-    <string name="stepca_field_oidc_issuer">OIDC issuer URL</string>
-    <string name="stepca_field_oidc_auth_url">OIDC authorize URL</string>
-    <string name="stepca_field_oidc_token_url">OIDC token URL</string>
-    <string name="stepca_field_oidc_client_id">OIDC client ID</string>
-    <string name="stepca_field_provisioner">step-ca provisioner</string>
-    <string name="stepca_field_principals">Default principals (comma-separated)</string>
-    <string name="stepca_field_root_cert">Root certificate (PEM)</string>
+    <string name="stepca_field_oidc_issuer">OIDC इशूअर URL</string>
+    <string name="stepca_field_oidc_auth_url">OIDC ऑथराइज़ URL</string>
+    <string name="stepca_field_oidc_token_url">OIDC टोकन URL</string>
+    <string name="stepca_field_oidc_client_id">OIDC क्लाइंट ID</string>
+    <string name="stepca_field_provisioner">step-ca प्रोविज़नर</string>
+    <string name="stepca_field_principals">डिफ़ॉल्ट प्रिंसिपल (कॉमा से अलग)</string>
+    <string name="stepca_field_root_cert">रूट प्रमाणपत्र (PEM)</string>
     <string name="stepca_field_root_cert_hint">-----BEGIN CERTIFICATE-----…</string>
-    <string name="stepca_test_ok">Reachable</string>
-    <string name="stepca_test_bad_root_cert">Invalid root cert: %1$s</string>
+    <string name="stepca_test_ok">पहुँच योग्य</string>
+    <string name="stepca_test_bad_root_cert">अमान्य रूट प्रमाणपत्र: %1$s</string>
     <string name="stepca_test_http_error">HTTP %1$d: %2$s</string>
-    <string name="stepca_test_network_error">Network error: %1$s</string>
-    <string name="stepca_empty_state">No certificate authorities configured.\nTap + to add one.</string>
-    <string name="stepca_validation_required">%1$s is required</string>
-    <string name="stepca_validation_url">%1$s must start with https://</string>
-    <string name="stepca_validation_pem">Root certificate must be PEM-encoded</string>
+    <string name="stepca_test_network_error">नेटवर्क त्रुटि: %1$s</string>
+    <string name="stepca_empty_state">कोई प्रमाणपत्र प्राधिकरण कॉन्फ़िगर नहीं है।\nएक जोड़ने के लिए + टैप करें।</string>
+    <string name="stepca_validation_required">%1$s आवश्यक है</string>
+    <string name="stepca_validation_url">%1$s https:// से शुरू होना चाहिए</string>
+    <string name="stepca_validation_pem">रूट प्रमाणपत्र PEM-एन्कोडेड होना चाहिए</string>
     <string name="stepca_validation_host_ca_or_signing">एक होस्ट CA सार्वजनिक कुंजी दर्ज करें, या signing फ़ील्ड भरें।</string>
     <string name="stepca_validation_host_ca">मान्य SSH होस्ट CA सार्वजनिक कुंजी नहीं है।</string>
-    <string name="stepca_delete_confirm_title">Delete %1$s?</string>
-    <string name="stepca_delete_confirm_body">Existing keys minted via this CA will keep working until their certificates expire, but you won\'t be able to renew or generate new ones.</string>
-    <string name="stepca_field_ssh_host_ca">SSH host CA public key (optional)</string>
+    <string name="stepca_delete_confirm_title">%1$s हटाएँ?</string>
+    <string name="stepca_delete_confirm_body">इस CA से जारी मौजूदा कुंजियाँ उनके प्रमाणपत्र समाप्त होने तक काम करती रहेंगी, लेकिन आप उन्हें नवीनीकृत या नई नहीं बना सकेंगे।</string>
+    <string name="stepca_field_ssh_host_ca">SSH होस्ट CA सार्वजनिक कुंजी (वैकल्पिक)</string>
     <string name="stepca_field_ssh_host_ca_hint">ssh-ed25519 AAAAC3…</string>
-    <string name="stepca_discover_host_ca">Discover from /1.0/ssh/config</string>
-    <string name="stepca_discovering">Discovering…</string>
-    <string name="stepca_import_from_file">Import from file</string>
-    <string name="stepca_import_failed">Import failed: %1$s</string>
-    <string name="keys_section_certificate_authorities">Certificate authorities (%1$d)</string>
+    <string name="stepca_discover_host_ca">/1.0/ssh/config से खोजें</string>
+    <string name="stepca_discovering">खोजा जा रहा है…</string>
+    <string name="stepca_import_from_file">फ़ाइल से आयात करें</string>
+    <string name="stepca_import_failed">आयात विफल: %1$s</string>
+    <string name="keys_section_certificate_authorities">प्रमाणपत्र प्राधिकरण (%1$d)</string>
     <string name="keys_section_ssh">SSH कुंजियाँ (%1$d)</string>
     <string name="keys_section_passwords">सहेजे गए पासवर्ड (%1$d)</string>
     <string name="keys_chip_hardware_backed">हार्डवेयर-समर्थित</string>
@@ -159,7 +159,7 @@
 
     <!-- i18n sweep #210 -->
     <string name="keys_export_certificate">प्रमाणपत्र निर्यात करें</string>
-    <string name="keys_totp_section_header">Authenticator (TOTP) · %1$d</string>
+    <string name="keys_totp_section_header">प्रमाणक (TOTP) · %1$d</string>
     <string name="keys_totp_delete_desc">Authenticator हटाएँ</string>
     <string name="keys_totp_scan_qr">Authenticator QR स्कैन करें (TOTP)</string>
     <string name="keys_totp_scan_qr_hint">otpauth:// QR code वाली छवि चुनें</string>
@@ -220,4 +220,29 @@
     <string name="keys_identity_key_none">कोई नहीं</string>
     <string name="keys_identity_no_username">कोई उपयोगकर्ता नाम नहीं</string>
     <string name="keys_identity_has_password">पासवर्ड</string>
+    <string name="keys_sort">कुंजियाँ क्रमबद्ध करें</string>
+    <string name="keys_sort_manual">मेरा क्रम</string>
+    <string name="keys_sort_label_asc">नाम (A–Z)</string>
+    <string name="keys_sort_label_desc">नाम (Z–A)</string>
+    <string name="keys_sort_newest">नई पहले</string>
+    <string name="keys_sort_oldest">पुरानी पहले</string>
+    <string name="keys_select">चुनें…</string>
+    <string name="keys_select_all">सभी चुनें</string>
+    <string name="keys_selection_cancel">चयन मोड से बाहर निकलें</string>
+    <string name="keys_selection_delete">चयनित कुंजियाँ हटाएँ</string>
+    <plurals name="keys_bulk_delete_title">
+        <item quantity="one">इस कुंजी को हटाएँ?</item>
+        <item quantity="other">%1$d कुंजियाँ हटाएँ?</item>
+    </plurals>
+    <string name="keys_bulk_delete_body">इसे पूर्ववत नहीं किया जा सकता। निजी कुंजी सामग्री कीस्टोर से मिटा दी जाती है।</string>
+    <string name="keys_bulk_delete_in_use">एक सहेजे गए कनेक्शन द्वारा उपयोग में: %1$s। वे कनेक्शन कुंजी से प्रमाणीकरण करना बंद कर देंगे।</string>
+    <string name="keys_section_collapse">%1$s संक्षिप्त करें</string>
+    <string name="keys_section_expand">%1$s विस्तृत करें</string>
+    <string name="keys_from_provider">%1$s से एक कुंजी उपयोग करें</string>
+    <string name="keys_from_provider_hint">उस ऐप के पास मौजूद कोई कुंजी चुनें। वह Haven की ओर से हस्ताक्षर करती है — निजी कुंजी जहाँ है वहीं रहती है, हार्डवेयर टोकन पर भी।</string>
+    <string name="keys_totp_code_copied">कोड कॉपी हुआ</string>
+    <plurals name="keys_selected_count">
+        <item quantity="one">%1$d चयनित</item>
+        <item quantity="other">%1$d चयनित</item>
+    </plurals>
 </resources>

@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import sh.haven.app.R
 import androidx.compose.ui.unit.dp
@@ -191,7 +192,7 @@ internal fun ConsentHost(viewModel: ConsentHostViewModel = hiltViewModel()) {
             val othersWaiting = pending.size - 1
             if (othersWaiting > 0) {
                 Text(
-                    text = stringResource(R.string.app_agent_more_pending, othersWaiting),
+                    text = pluralStringResource(R.plurals.app_agent_more_pending, othersWaiting, othersWaiting),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

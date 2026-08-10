@@ -39,4 +39,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">2 本指でビューをパン（タップでリモート側のスクロールに切替）</string>
     <string name="rdp_cd_two_finger_scroll_on">2 本指でリモート側をスクロール（タップでビューのパンに切替）</string>
+    <string name="rdp_hint_nla_required_title">サーバーがネットワーク レベル認証 (NLA) を要求しています</string>
+    <string name="rdp_hint_nla_required_body">サーバーは NLA で認証するクライアントのみを受け入れる設定ですが、この接続プロファイルでは NLA がオフです。プロファイルで「Network Level Authentication (NLA)」をオンにするか、PC 側で要件を緩めてください: 設定 → システム → リモート デスクトップ → 詳細設定 →「Require devices to use Network Level Authentication」のチェックを外します。</string>
+    <string name="rdp_hint_mixed_username_title">NLA はこの形式のユーザー名を使えません</string>
+    <string name="rdp_hint_mixed_username_body">NLA は、ドメイン接頭辞とメールアドレスを組み合わせたユーザー名 (MicrosoftAccount\\you@example.com など) を拒否し、メールアドレスだけの場合は @ 以降をすべて切り捨てます。これは Microsoft アカウントに関する上流 sspi ライブラリの制限です。\n\nMicrosoft アカウントの PC では: このプロファイルで「Network Level Authentication (NLA)」をオフにし、PC 側で NLA なしの接続を許可し (リモート デスクトップ → 詳細設定)、ユーザー名に MicrosoftAccount\\you@example.com または you@example.com を使ってください。</string>
+    <string name="rdp_hint_mixed_username_link">課題トラッカー</string>
 </resources>

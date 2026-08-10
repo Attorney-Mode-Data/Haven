@@ -39,4 +39,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">दो उँगलियाँ व्यू पैन करती हैं (रिमोट स्क्रॉल करने के लिए टैप करें)</string>
     <string name="rdp_cd_two_finger_scroll_on">दो उँगलियाँ रिमोट स्क्रॉल करती हैं (व्यू पैन करने के लिए टैप करें)</string>
+    <string name="rdp_hint_nla_required_title">सर्वर को नेटवर्क लेवल ऑथेंटिकेशन चाहिए</string>
+    <string name="rdp_hint_nla_required_body">सर्वर केवल उन क्लाइंट को स्वीकार करने के लिए कॉन्फ़िगर है जो NLA से प्रमाणीकरण करते हैं, और इस कनेक्शन प्रोफ़ाइल में NLA अनटिक है। या तो प्रोफ़ाइल में “Network Level Authentication (NLA)” टिक करें, या PC पर आवश्यकता ढीली करें: Settings → System → Remote Desktop → Advanced settings → “Require devices to use Network Level Authentication” अनटिक करें।</string>
+    <string name="rdp_hint_mixed_username_title">NLA इस रूप का उपयोगकर्ता नाम नहीं ले सकता</string>
+    <string name="rdp_hint_mixed_username_body">NLA ऐसा उपयोगकर्ता नाम अस्वीकार करता है जो डोमेन उपसर्ग और ईमेल पते को जोड़ता हो (जैसे MicrosoftAccount\\you@example.com), और सादे ईमेल के लिए वह @ के बाद सब कुछ काट देता है — Microsoft खातों के लिए यह अपस्ट्रीम sspi लाइब्रेरी की सीमा है।\n\nMicrosoft खाते वाले PC के लिए: इस प्रोफ़ाइल में “Network Level Authentication (NLA)” अनटिक करें, PC पर बिना NLA के कनेक्शन की अनुमति दें (Remote Desktop → Advanced settings), और उपयोगकर्ता नाम के रूप में MicrosoftAccount\\you@example.com या केवल you@example.com उपयोग करें।</string>
+    <string name="rdp_hint_mixed_username_link">इश्यू ट्रैकर</string>
 </resources>

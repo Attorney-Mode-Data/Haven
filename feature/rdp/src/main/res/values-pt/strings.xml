@@ -39,4 +39,9 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="rdp_cd_two_finger_viewport">Dois dedos deslocam a visualização (toque para rolar o remoto)</string>
     <string name="rdp_cd_two_finger_scroll_on">Dois dedos rolam o remoto (toque para deslocar a visualização)</string>
+    <string name="rdp_hint_nla_required_title">O servidor exige Autenticação em Nível de Rede (NLA)</string>
+    <string name="rdp_hint_nla_required_body">O servidor está configurado para aceitar apenas clientes que autenticam com NLA, e o NLA está desmarcado neste perfil de conexão. Marque “Network Level Authentication (NLA)” no perfil ou relaxe a exigência no PC: Configurações → Sistema → Área de Trabalho Remota → Configurações avançadas → desmarque “Require devices to use Network Level Authentication”.</string>
+    <string name="rdp_hint_mixed_username_title">O NLA não aceita este formato de nome de usuário</string>
+    <string name="rdp_hint_mixed_username_body">O NLA rejeita um nome de usuário que combina um prefixo de domínio com um endereço de e-mail (como MicrosoftAccount\\you@example.com) e, para um e-mail simples, trunca tudo depois do @ — uma limitação da biblioteca sspi upstream para contas Microsoft.\n\nPara um PC com conta Microsoft: desmarque “Network Level Authentication (NLA)” neste perfil, permita conexões sem NLA no PC (Área de Trabalho Remota → Configurações avançadas) e use MicrosoftAccount\\you@example.com ou apenas you@example.com como nome de usuário.</string>
+    <string name="rdp_hint_mixed_username_link">Rastreador de problemas</string>
 </resources>

@@ -87,7 +87,6 @@
     <string name="settings_proot_idle_dialog_title">유휴 Linux 게스트 자동 종료</string>
     <string name="settings_proot_idle_dialog_body">Haven이 이 시간 동안 백그라운드에 있으면 메모리를 확보하기 위해 Linux 게스트의 터미널과 데스크톱을 종료합니다. 실행 중인 게스트 서비스가 있으면 유지됩니다. 백그라운드 터미널의 장시간 작업도 종료되므로, 유휴 시 리소스 회수를 원하지 않으면 꺼 두세요.</string>
     <string name="settings_proot_idle_off_label">꺼짐</string>
-    <string name="settings_proot_idle_minutes">%1$d분</string>
     <string name="settings_shizuku_title">Shizuku 통합</string>
     <string name="settings_shizuku_enabled">활성화됨 — 자동 배터리 예외, Wayland 소켓 공유</string>
     <string name="settings_shizuku_available">Shizuku 실행 중 — 탭하여 권한 부여</string>
@@ -457,4 +456,20 @@
     <string name="settings_backup_auto_pull_interval_6h">6시간</string>
     <string name="settings_backup_auto_pull_interval_24h">24시간</string>
     <string name="settings_backup_remember_password_label">이 비밀번호 기억하기</string>
+    <string name="common_apply">적용</string>
+    <string name="settings_rdp_desktop_size_title">RDP 데스크톱 크기</string>
+    <string name="settings_rdp_desktop_size_subtitle">%1$d × %2$d — 서버와 맞추세요. 이 영역 밖의 업데이트는 버려집니다</string>
+    <string name="settings_rdp_desktop_size_hint">원격 컴퓨터가 실제로 사용하는 해상도로 설정하세요. VirtualBox 기본값은 2560 × 1600입니다.</string>
+    <string name="settings_rdp_desktop_size_width">너비</string>
+    <string name="settings_rdp_desktop_size_height">높이</string>
+    <string name="settings_native_crash_title">앱 비정상 종료</string>
+    <string name="settings_native_crash_subtitle">Haven이 예기치 않게 종료되었습니다. 아래 보고서에 발생 위치가 있습니다 — 버그 신고에 첨부해 주세요.</string>
+    <string name="settings_native_crash_subtitle_no_trace">Haven이 예기치 않게 종료되었습니다. 이런 경우 Android가 상세 보고서를 남기지 않아 시각과 시그널만 알 수 있습니다 — 시그널만으로도 원인을 좁힐 수 있으니 버그 신고에 함께 첨부해 주세요.</string>
+    <string name="settings_native_crash_no_trace">이 비정상 종료에 대한 상세 보고서가 없습니다.</string>
+    <string name="settings_native_crash_copy">보고서 복사</string>
+    <string name="settings_native_crash_copied">비정상 종료 보고서가 복사됨</string>
+    <string name="settings_native_crash_dismiss">닫기</string>
+    <plurals name="settings_proot_idle_minutes">
+        <item quantity="other">%1$d분</item>
+    </plurals>
 </resources>
