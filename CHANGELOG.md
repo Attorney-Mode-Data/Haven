@@ -5,6 +5,21 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.7
+
+- Fixed the crash where Haven closes itself a second or two after connecting, or when a full-screen program starts.
+- Your keystrokes are no longer written to the system log — including anything typed into a `sudo` prompt.
+- Clipboard contents are no longer written to the system log either.
+- Crash reports now say what actually went wrong, instead of arriving empty or corrupted.
+
+💥 **Haven closing itself.** Two reports, one cause. The terminal library Haven is built on calls `abort()` when it cannot work out where the cursor should go while re-laying out the screen — and `abort()` ends the app instantly, with no error and nothing to catch. It happens during a resize, which is why it struck about a second after connecting, or as a full-screen program laid out its interface, and why it looked like one particular machine was to blame when it was really the size the terminal settled at. (#517 and #526, diagnosed from @Test-Account666's crash dump and @Bearmancer's logcat)
+
+🛡️ **Five more of those, and worse.** The same library aborts on unexpected text, control characters, malformed escape sequences and nonsensical scroll regions — all of it data the *server* sends. Any server, malicious or merely buggy, could have ended your session by emitting the wrong bytes. All six now recover and carry on.
+
+🔑 **Keystrokes and clipboard in the system log.** Every character typed was written to the device log, so a password typed at a `sudo` prompt was captured in plain text; the same went for 50 characters of anything copied in a remote desktop session, the text queued for the AI agent to type, and the arguments of guest commands. All fixed. Logs that people paste into bug reports were the exposure. (#518, found by @skeezmoe)
+
+🔍 **Crash reports that say something.** One reporter's showed ten crashes with no detail at all; another's arrived with a third of it destroyed, because Haven read the system's binary crash record as if it were text. Both fixed: reports now name the signal, and carry the abort message, the app version and the device. (#526, #517)
+
 ## v5.87.6
 
 - The status bar now matches the terminal instead of clashing with it — no more white strip above a dark terminal.
