@@ -84,6 +84,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -585,34 +586,62 @@ fun TerminalScreen(
     val currentImeVisible by rememberUpdatedState(imeVisible)
     val currentImeHiddenAtMs by rememberUpdatedState(imeHiddenAtMs)
     var imeVisibleBeforeBackground by rememberSaveable { mutableStateOf(false) }
+    // Handed to the active tab's HavenTerminal: a bump asks termlib to re-run
+    // its own ImeInputView.showIme(), the only show that works here.
+    var imeRestoreTick by remember { mutableIntStateOf(0) }
+    // A consumed tick must not replay: the inactive call sites pass 0, so a
+    // later tab switch would step a page's value 0 -> stale-N and pop the
+    // keyboard. Discard on any tab change.
+    LaunchedEffect(activeTabIndex) { imeRestoreTick = 0 }
     androidx.lifecycle.compose.LifecycleResumeEffect(isActive, physicalKeyboardAttached) {
         val willRestore = imeVisibleBeforeBackground && isActive && !physicalKeyboardAttached
-        // @paour confirmed on v5.87.4 that the restore above still does not work,
-        // and the code reads as correct — which means one of its assumptions is
-        // false and reasoning has already picked the wrong one once. This says
-        // which, rather than inviting a second guess:
+        // Device-verified on v5.87.8 (adb-driven app-switcher round trip,
+        // ImeTracker): any show issued from this layer — at ON_RESUME or even
+        // deferred to window-focus-gain — dies in the IMM with "Ignoring
+        // showSoftInput() as view android:id/content is not served", because
+        // ImeInputView deliberately drops focus and focusability while its
+        // window is invisible (its Android 16 warm-return crash guard), so at
+        // restore time the window holds no servable editor. Only the view's
+        // own showIme() can recover: it re-arms its focusability first. So
+        // this block decides WHETHER to restore and bumps imeRestoreTick once
+        // the window has focus; termlib does the actual show.
         //
         //  recorded=false  the insets had already dropped the IME by the time we
-        //                  were paused, so there was never anything to restore —
-        //                  the "insets are still intact at ON_PAUSE" assumption
-        //                  in this block is simply wrong.
-        //  recorded=true   we did ask and Android declined, most likely because
-        //                  the input field has not regained focus this early in
-        //                  the return. A different fix entirely.
+        //                  were paused, so there was never anything to restore.
+        //  recorded=true   the restore path ran; await-focus below says how.
         //
         // Booleans only — this line is meant for logs users attach to issues (#518).
+        var awaitingFocus: android.view.ViewTreeObserver.OnWindowFocusChangeListener? = null
+        val action = when {
+            !willRestore -> "skip"
+            view.hasWindowFocus() -> "show"
+            else -> "await-focus"
+        }
         android.util.Log.i(
             "TerminalIme",
             "ime restore: recorded=$imeVisibleBeforeBackground active=$isActive " +
-                "physicalKeyboard=$physicalKeyboardAttached action=${if (willRestore) "show" else "skip"}",
+                "physicalKeyboard=$physicalKeyboardAttached action=$action",
         )
         if (willRestore) {
-            (view.context as? Activity)?.window?.let { window ->
-                WindowCompat.getInsetsController(window, view)
-                    .show(WindowInsetsCompat.Type.ime())
+            if (view.hasWindowFocus()) {
+                imeRestoreTick++
+            } else {
+                val listener = object : android.view.ViewTreeObserver.OnWindowFocusChangeListener {
+                    override fun onWindowFocusChanged(hasFocus: Boolean) {
+                        if (!hasFocus) return
+                        view.viewTreeObserver.removeOnWindowFocusChangeListener(this)
+                        awaitingFocus = null
+                        android.util.Log.i("TerminalIme", "ime restore: window focused -> tick")
+                        imeRestoreTick++
+                    }
+                }
+                awaitingFocus = listener
+                view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
             }
         }
         onPauseOrDispose {
+            awaitingFocus?.let { view.viewTreeObserver.removeOnWindowFocusChangeListener(it) }
+            awaitingFocus = null
             // Up now, or taken away so recently that the backgrounding is the
             // only plausible cause.
             val hiddenAgoMs = android.os.SystemClock.elapsedRealtime() - currentImeHiddenAtMs
@@ -1441,6 +1470,10 @@ fun TerminalScreen(
                                 initialFontSize = fontSize.sp,
                                 typeface = hackTypeface,
                                 keyboardEnabled = true,
+                                // Only the active tab restores; adjacent pager
+                                // pages stay composed and must not fight over
+                                // the IME (#515).
+                                imeRestoreTick = if (isActive) imeRestoreTick else 0,
                                 // Reflow (resize) the PTY on a keyboard toggle
                                 // when a full-screen TUI is running, so its top
                                 // status/header row isn't shifted off the top
