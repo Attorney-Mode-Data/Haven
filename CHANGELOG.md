@@ -5,6 +5,15 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.8
+
+- The on-screen keyboard comes back when you return to Haven, instead of staying away and leaving the arrow buttons doing nothing.
+- The address of the machine you connect to over RDP no longer reaches the system log.
+
+⌨️ **The keyboard that didn't come back.** Switch away from Haven and switch back, and the keyboard stayed down — and with it the arrow and control buttons above it, which is how this was first reported. The fix shipped in v5.87.2 asked "is the keyboard up?" at the moment Haven was moved to the background, on the assumption that the answer was still intact there. It isn't: Android takes the keyboard away *as part of* moving the app out, so the answer was always "no" and there was never anything to restore. Haven now records *when* the keyboard went away instead, and treats a disappearance in the last fraction of a second before backgrounding as the system's doing rather than yours. (#515, diagnosed from @paour's logcat)
+
+🛡️ **One address the log scrubber missed.** v5.87.7 stopped connection details reaching the system log, but an RDP server's address still got through, because the library underneath prints an address as a list of numbers rather than in the usual dotted form — and a scrubber looking for `192.168.1.100` cannot match `[192, 168, 1, 100]`. Both spellings are now scrubbed. (#477)
+
 ## v5.87.7
 
 - Fixed the crash where Haven closes itself a second or two after connecting, or when a full-screen program starts.

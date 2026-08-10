@@ -1,0 +1,2 @@
+- The on-screen keyboard comes back when you return to Haven, instead of staying away and leaving the arrow buttons doing nothing.
+- The address of the machine you connect to over RDP no longer reaches the system log.
