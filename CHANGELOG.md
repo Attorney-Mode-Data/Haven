@@ -8,9 +8,15 @@ compare link is appended automatically — don't add it here.
 ## v5.87.8
 
 - The on-screen keyboard comes back when you return to Haven, instead of staying away and leaving the arrow buttons doing nothing.
+- Ctrl and Alt now apply to the extra keys above the keyboard, so Ctrl+End, Ctrl+Home and Ctrl+arrow finally do what they say.
+- Tap Ctrl twice to lock it on, for shortcuts you need to press twice.
 - The address of the machine you connect to over RDP no longer reaches the system log.
 
 ⌨️ **The keyboard that didn't come back.** Switch away from Haven and switch back, and the keyboard stayed down — and with it the arrow and control buttons above it, which is how this was first reported. The fix shipped in v5.87.2 asked "is the keyboard up?" at the moment Haven was moved to the background, on the assumption that the answer was still intact there. It isn't: Android takes the keyboard away *as part of* moving the app out, so the answer was always "no" and there was never anything to restore. Haven now records *when* the keyboard went away instead, and treats a disappearance in the last fraction of a second before backgrounding as the system's doing rather than yours. (#515, diagnosed from @paour's logcat)
+
+⌃ **Ctrl that didn't reach half the keyboard.** The extra keys above the keyboard — End, Home, Page Up/Down, the arrows — sent themselves with no modifier attached, whatever Ctrl or Alt you had tapped. Ctrl worked for letters typed on the keyboard proper and nowhere else, so Ctrl+End did nothing but End. All of those combinations now work.
+
+🔒 **Ctrl that stays on.** Tap Ctrl twice and it locks: it applies to the next two keypresses instead of just one, then releases itself. A third tap releases it early, and a locked key is outlined so you can see it's on. Ctrl+C twice to get out of something — the case this was asked for — is exactly one lock. (#522, specified in detail by @a8645322)
 
 🛡️ **One address the log scrubber missed.** v5.87.7 stopped connection details reaching the system log, but an RDP server's address still got through, because the library underneath prints an address as a list of numbers rather than in the usual dotted form — and a scrubber looking for `192.168.1.100` cannot match `[192, 168, 1, 100]`. Both spellings are now scrubbed. (#477)
 
