@@ -754,8 +754,53 @@ class TerminalViewModel @Inject constructor(
     private val _altActive = MutableStateFlow(false)
     val altActive: StateFlow<Boolean> = _altActive.asStateFlow()
 
-    fun toggleCtrl() { _ctrlActive.value = !_ctrlActive.value }
-    fun toggleAlt() { _altActive.value = !_altActive.value }
+    /**
+     * Locked modifiers survive more than one keystroke (#522). A lock is the
+     * second consecutive tap of the same modifier, so the three states cycle
+     * off → one-shot → locked → off on successive taps.
+     */
+    private val _ctrlLocked = MutableStateFlow(false)
+    val ctrlLocked: StateFlow<Boolean> = _ctrlLocked.asStateFlow()
+
+    private val _altLocked = MutableStateFlow(false)
+    val altLocked: StateFlow<Boolean> = _altLocked.asStateFlow()
+
+    /**
+     * A lock releases itself after this many keystrokes have used it. The
+     * reporter's Claude Code case — `Ctrl+C` twice to exit — is exactly one
+     * lock cycle, so the common use needs no third tap to unlock. Counted in
+     * keystrokes rather than seconds on their advice: a timeout would put back
+     * the race against the clock the lock exists to remove. (#522)
+     */
+    private val lockedUsesAllowed = 2
+    private var ctrlLockedUses = 0
+    private var altLockedUses = 0
+
+    fun toggleCtrl() {
+        when {
+            _ctrlLocked.value -> { _ctrlLocked.value = false; _ctrlActive.value = false }
+            _ctrlActive.value -> { _ctrlLocked.value = true; ctrlLockedUses = 0 }
+            else -> _ctrlActive.value = true
+        }
+    }
+
+    fun toggleAlt() {
+        when {
+            _altLocked.value -> { _altLocked.value = false; _altActive.value = false }
+            _altActive.value -> { _altLocked.value = true; altLockedUses = 0 }
+            else -> _altActive.value = true
+        }
+    }
+
+    /**
+     * The active modifiers as libvterm's dispatchKey mask — bit 0 Shift, bit 1
+     * Alt, bit 2 Ctrl (`Terminal.cpp`). The toolbar's own keys dispatch a key
+     * code rather than bytes, so this is what carries a tapped Ctrl to them;
+     * without it Ctrl+End left as a bare End. Shift is the toolbar's own state
+     * and is not folded in here.
+     */
+    fun toolbarModifierMask(): Int =
+        (if (_altActive.value) 2 else 0) or (if (_ctrlActive.value) 4 else 0)
 
     /**
      * Clear the one-shot sticky Ctrl/Alt after a keystroke has consumed them.
@@ -763,10 +808,31 @@ class TerminalViewModel @Inject constructor(
      * so a tapped modifier can't get stuck — e.g. in Standard keyboard mode a
      * Ctrl that the IME composed past would otherwise persist and turn the next
      * Enter into Ctrl+Enter (`^[[13;5u`). (#298)
+     *
+     * A locked modifier is not transient: it counts the keystroke instead, and
+     * releases once it has served [lockedUsesAllowed] of them. (#522)
      */
     fun clearStickyModifiers() {
-        if (_ctrlActive.value) _ctrlActive.value = false
-        if (_altActive.value) _altActive.value = false
+        if (_ctrlActive.value) {
+            if (_ctrlLocked.value) {
+                if (++ctrlLockedUses >= lockedUsesAllowed) {
+                    _ctrlLocked.value = false
+                    _ctrlActive.value = false
+                }
+            } else {
+                _ctrlActive.value = false
+            }
+        }
+        if (_altActive.value) {
+            if (_altLocked.value) {
+                if (++altLockedUses >= lockedUsesAllowed) {
+                    _altLocked.value = false
+                    _altActive.value = false
+                }
+            } else {
+                _altActive.value = false
+            }
+        }
     }
 
     fun setFontSize(sizeSp: Int) {

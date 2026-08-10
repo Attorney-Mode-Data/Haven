@@ -295,6 +295,8 @@ fun TerminalScreen(
     val activeTabIndex by viewModel.activeTabIndex.collectAsState()
     val ctrlActive by viewModel.ctrlActive.collectAsState()
     val altActive by viewModel.altActive.collectAsState()
+    val ctrlLocked by viewModel.ctrlLocked.collectAsState()
+    val altLocked by viewModel.altLocked.collectAsState()
     // Push the live system light/dark mode to the ViewModel so its
     // [terminalColorScheme] flow can resolve the auto-switch pref correctly.
     // Must run before collecting the flow so the first emission reflects
@@ -1591,10 +1593,21 @@ fun TerminalScreen(
                     // needed while typing. Fullscreen still hides the system + tab bars.
                     KeyboardToolbar(
                         onSendBytes = { bytes -> activeTab.sendInput(bytes) },
-                        onDispatchKey = { mods, key -> activeTab.emulator?.dispatchKey(mods, key) },
+                        // The toolbar's own keys dispatch with mods = 0, so a tapped
+                        // Ctrl/Alt never reached them — Ctrl+End sent a bare End. Fold
+                        // the active modifiers in here (bit 1 = Alt, bit 2 = Ctrl, per
+                        // Terminal.cpp's dispatchKey) and let libvterm build the
+                        // sequence: Ctrl+End becomes ESC[1;5F.
+                        onDispatchKey = { mods, key ->
+                            val tapped = viewModel.toolbarModifierMask()
+                            activeTab.emulator?.dispatchKey(mods or tapped, key)
+                            if (tapped != 0) viewModel.clearStickyModifiers()
+                        },
                         focusRequester = focusRequester,
                         ctrlActive = ctrlActive,
                         altActive = altActive,
+                        ctrlLocked = ctrlLocked,
+                        altLocked = altLocked,
                         bracketPasteMode = isBracketPaste,
                         layout = toolbarLayout,
                         navBlockMode = navBlockMode,

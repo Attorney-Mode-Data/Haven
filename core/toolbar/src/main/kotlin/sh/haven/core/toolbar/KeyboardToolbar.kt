@@ -229,6 +229,16 @@ private val LocalToolbarMinKeyWidth = compositionLocalOf { DEFAULT_MIN_KEY_WIDTH
  */
 private val LocalToolbarFillCell = compositionLocalOf { false }
 
+/** Which modifiers are locked on rather than armed for one keystroke (#522). */
+internal data class LockedModifiers(val ctrl: Boolean = false, val alt: Boolean = false)
+
+/**
+ * Read by the Ctrl/Alt keys so a lock looks different from a one-shot tap —
+ * both are "active", but only one survives the next keystroke, and a modifier
+ * that silently outlives its keypress is the confusing state to be stuck in.
+ */
+private val LocalToolbarLockedModifiers = compositionLocalOf { LockedModifiers() }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun KeyboardToolbar(
@@ -237,6 +247,8 @@ fun KeyboardToolbar(
     focusRequester: FocusRequester,
     ctrlActive: Boolean = false,
     altActive: Boolean = false,
+    ctrlLocked: Boolean = false,
+    altLocked: Boolean = false,
     bracketPasteMode: Boolean = false,
     layout: ToolbarLayout = ToolbarLayout.DEFAULT,
     navBlockMode: sh.haven.core.data.preferences.NavBlockMode = sh.haven.core.data.preferences.NavBlockMode.ALIGNED,
@@ -346,6 +358,7 @@ fun KeyboardToolbar(
     CompositionLocalProvider(
         LocalToolbarCallbacks provides callbacks,
         LocalToolbarMinKeyWidth provides minKeyWidth,
+        LocalToolbarLockedModifiers provides LockedModifiers(ctrlLocked, altLocked),
     ) {
         Surface(
             tonalElevation = if (reorderMode) 4.dp else 2.dp,
@@ -1074,8 +1087,18 @@ private fun BuiltInKey(
             onClick = cb.onOpenTextInput,
         )
         ToolbarKey.SHIFT -> ToolbarToggleButton("Shift", shiftActive, onClick = cb.onToggleShift)
-        ToolbarKey.CTRL -> ToolbarToggleButton("Ctrl", ctrlActive, onClick = cb.onToggleCtrl)
-        ToolbarKey.ALT -> ToolbarToggleButton("Alt", altActive, onClick = cb.onToggleAlt)
+        ToolbarKey.CTRL -> ToolbarToggleButton(
+            "Ctrl",
+            ctrlActive,
+            locked = LocalToolbarLockedModifiers.current.ctrl,
+            onClick = cb.onToggleCtrl,
+        )
+        ToolbarKey.ALT -> ToolbarToggleButton(
+            "Alt",
+            altActive,
+            locked = LocalToolbarLockedModifiers.current.alt,
+            onClick = cb.onToggleAlt,
+        )
         ToolbarKey.ALTGR -> {
             val altGrActive = ctrlActive && altActive
             ToolbarToggleButton("AltGr", altGrActive) {
@@ -1235,6 +1258,7 @@ private fun ToolbarKeyButton(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     repeating: Boolean = false,
+    locked: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -1315,6 +1339,10 @@ private fun ToolbarKeyButton(
                 result.consumed
             },
         shape = RoundedCornerShape(8.dp),
+        // A locked modifier outlives its keystroke, so it needs to read as more
+        // than "active" at a glance — an outline round the already-highlighted
+        // key, rather than a second shade nobody can tell from the first.
+        border = if (locked) BorderStroke(2.dp, MaterialTheme.colorScheme.onPrimary) else null,
         color = if (selected) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -1444,8 +1472,13 @@ private fun ToolbarTextButton(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ToolbarToggleButton(label: String, active: Boolean, onClick: () -> Unit) {
-    ToolbarKeyButton(onClick = onClick, selected = active) {
+private fun ToolbarToggleButton(
+    label: String,
+    active: Boolean,
+    locked: Boolean = false,
+    onClick: () -> Unit,
+) {
+    ToolbarKeyButton(onClick = onClick, selected = active, locked = locked) {
         ToolbarKeyText(label)
     }
 }
