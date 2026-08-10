@@ -2212,7 +2212,14 @@ class ProotManager @Inject constructor(
             } else {
                 val run = readProcessBounded(process, timeoutMs)
                 if (run.timedOut) {
-                    Log.w(TAG, "Guest command exceeded ${timeoutMs}ms and was killed: ${command.take(120)}")
+                    // Program name only. Which command hung is the diagnostic; its
+                    // arguments are where the secrets are — `mysql -p…`, an auth
+                    // header, a token in a URL (#518).
+                    Log.w(
+                        TAG,
+                        "Guest command exceeded ${timeoutMs}ms and was killed: " +
+                            "${command.substringBefore(' ')} (${command.length} chars)",
+                    )
                 }
                 Pair(run.output, run.exitCode)
             }

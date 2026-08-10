@@ -125,7 +125,9 @@ class TerminalInputQueue @Inject constructor(
             submitKey = submitKey,
             clientHint = clientHint,
         )
-        Log.i(TAG, "enqueue $id: sessionId=$sessionId text='${text.take(40)}' pattern=$promptPattern timeout=${timeoutSeconds}s baselineTotalBytes=$baseline submitKey=${submitKey.toByteArray().joinToString { "0x%02x".format(it) }}")
+        // Length, not content: what gets queued here is typed into a shell, and a
+        // password sent this way would otherwise sit in logcat verbatim (#518).
+        Log.i(TAG, "enqueue $id: sessionId=$sessionId textLen=${text.length} pattern=$promptPattern timeout=${timeoutSeconds}s baselineTotalBytes=$baseline submitKey=${submitKey.toByteArray().joinToString { "0x%02x".format(it) }}")
         return id
     }
 

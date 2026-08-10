@@ -1339,7 +1339,10 @@ class DesktopViewModel @Inject constructor(
                         releaseSshTunnelDependent(profileId)
                     }
                     onRemoteClipboard = { text ->
-                        Log.d(TAG, "VNC clipboard ($tabId): ${text.take(50)}")
+                        // Length only. A clipboard is where a password manager puts
+                        // the password, and this line put 50 characters of it in
+                        // logcat for anyone who reads a bug report (#518).
+                        Log.d(TAG, "VNC clipboard ($tabId): ${text.length} chars")
                     }
                 }
 
