@@ -84,6 +84,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.CompositionLocalProvider
@@ -144,6 +145,22 @@ private val MIN_JUSTIFIED_TAB_WIDTH = 96.dp
  * backgrounds such as Solarized Light flip the icons dark.
  */
 private const val BRIGHT_BACKGROUND_LUMINANCE = 0.5f
+
+/**
+ * How recently the IME must have gone away for the backgrounding to be the cause (#515).
+ *
+ * Android takes the keyboard down as part of moving the app out, and the insets
+ * report it gone *before* ON_PAUSE arrives — so "was the keyboard up?" cannot be
+ * answered by reading them at pause. It has to be answered by how long ago it
+ * went. A system-driven hide lands within a couple of hundred milliseconds of
+ * the pause; a user tapping it away happened whenever they tapped, which is
+ * essentially never that recent.
+ *
+ * Generous rather than tight: restoring a keyboard the user had just dismissed
+ * is a nuisance they can undo with one tap, while failing to restore one they
+ * wanted is the bug being fixed.
+ */
+private const val IME_BACKGROUND_HIDE_WINDOW_MS = 400L
 
 private val TAB_GROUP_COLORS = listOf(
     Color(0xFF42A5F5), // blue
@@ -530,8 +547,12 @@ fun TerminalScreen(
     // Detect keyboard hide → send Ctrl+L for Zellij profiles to trigger redraw
     val imeVisible = WindowInsets.isImeVisible
     var wasImeVisible by remember { mutableStateOf(imeVisible) }
+    // When the IME last went away, so the pause handler below can tell "the user
+    // dismissed it" from "the system took it as we were backgrounded" (#515).
+    var imeHiddenAtMs by remember { mutableLongStateOf(0L) }
     LaunchedEffect(imeVisible) {
         if (wasImeVisible && !imeVisible) {
+            imeHiddenAtMs = android.os.SystemClock.elapsedRealtime()
             viewModel.sendRedrawIfZellij()
         }
         wasImeVisible = imeVisible
@@ -539,13 +560,28 @@ fun TerminalScreen(
 
     // #515: Android drops the IME when Haven goes to the background and nothing
     // ever brought it back, so returning to a session always found the keyboard
-    // down even though the user had left it up. Snapshot the state on the way out
-    // — at ON_PAUSE the insets are still intact — and restore it on the way back.
+    // down even though the user had left it up.
+    //
+    // The first attempt at this sampled the insets at ON_PAUSE, on the assumption
+    // that they were still intact there. @paour's logcat says otherwise:
+    //
+    //     I TerminalIme: ime pause: imeVisible=false (recording)
+    //
+    // The system has already taken the IME away by the time we are paused, so
+    // that version recorded "keyboard down" every time and had nothing to
+    // restore. It shipped in v5.87.2 and did nothing for two releases.
+    //
+    // So the question at pause is not "is the IME up right now" but "was it up
+    // until a moment ago". A hide caused by backgrounding lands within a few
+    // hundred milliseconds of the pause; a hide the *user* asked for happened
+    // whenever they tapped, which is almost never that recent. Hence the
+    // lookback rather than an instantaneous read.
     //
     // rememberSaveable so the answer survives the process death that a
     // long backgrounding tends to end in; a plain remember would restore
     // "keyboard down" and look like the original bug.
     val currentImeVisible by rememberUpdatedState(imeVisible)
+    val currentImeHiddenAtMs by rememberUpdatedState(imeHiddenAtMs)
     var imeVisibleBeforeBackground by rememberSaveable { mutableStateOf(false) }
     androidx.lifecycle.compose.LifecycleResumeEffect(isActive, physicalKeyboardAttached) {
         val willRestore = imeVisibleBeforeBackground && isActive && !physicalKeyboardAttached
@@ -575,8 +611,18 @@ fun TerminalScreen(
             }
         }
         onPauseOrDispose {
-            android.util.Log.i("TerminalIme", "ime pause: imeVisible=$currentImeVisible (recording)")
-            imeVisibleBeforeBackground = currentImeVisible
+            // Up now, or taken away so recently that the backgrounding is the
+            // only plausible cause.
+            val hiddenAgoMs = android.os.SystemClock.elapsedRealtime() - currentImeHiddenAtMs
+            val takenByTheSystem = currentImeHiddenAtMs > 0L && hiddenAgoMs <= IME_BACKGROUND_HIDE_WINDOW_MS
+            val wasUp = currentImeVisible || takenByTheSystem
+            android.util.Log.i(
+                "TerminalIme",
+                "ime pause: imeVisible=$currentImeVisible hiddenAgo=${
+                    if (currentImeHiddenAtMs > 0L) "${hiddenAgoMs}ms" else "never"
+                } -> recording=$wasUp",
+            )
+            imeVisibleBeforeBackground = wasUp
         }
     }
 
