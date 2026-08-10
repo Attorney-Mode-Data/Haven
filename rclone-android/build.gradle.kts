@@ -108,12 +108,51 @@ tasks.named("compileKotlin") {
     dependsOn(buildRcloneNative)
 }
 
-// #493: carry the gomobile classes in this project's own jar, so consumers
+// The gomobile classes, unpacked so they land in this project's **class output**
+// and not only inside its jar.
+//
+// Folding them into the jar alone is not enough, and the failure is silent. A
+// java-library exposes two things to a consumer: the packaged jar, and the raw
+// class directories. AGP dexes a project dependency's *class directories* for a
+// debug build, and only runs over the *jar* for a minified release. So classes
+// added at jar-packaging time reach a release APK and never reach a debug one:
+//
+//     classes dir:  sh/haven/rclone/bridge  2 .class   wgbridge  0 .class
+//     packaged jar: sh/haven/rclone/bridge  2 .class   wgbridge  6 .class
+//
+// The debug APK therefore *referenced* sh.haven.rclone.binding.wgbridge with
+// zero methods defined, and died on launch the moment TunnelManager touched
+// WireGuard: NoClassDefFoundError, with a green build and no warning anywhere.
+// Registering the unpacked directory as class output puts them on both routes.
+// Unpacked into the Kotlin compile output on purpose, rather than into a
+// directory of its own registered with `sourceSets.output.dir(...)`. That was
+// tried first and does nothing: `output.dir()` adds to the source set's *extra*
+// output directories, which are not part of `classesDirs`, and it is
+// `classesDirs` that backs the outgoing CLASSES variant a consumer sees. The
+// classes sat on disk and AGP never looked at them.
+//
+// Copy, not Sync: Sync clears the destination, which here is where compileKotlin
+// puts this project's own classes.
+val unpackRcbridgeBindings by tasks.registering(Copy::class) {
+    dependsOn(buildRcloneNative, tasks.named("compileKotlin"))
+    from(provider { if (rcbridgeJar.isFile) zipTree(rcbridgeJar) else files() })
+    into(layout.buildDirectory.dir("classes/kotlin/main"))
+    // Metadata from the gomobile jar must not become this project's manifest.
+    exclude("META-INF/**")
+}
+
+// `classes` is what both the jar and the CLASSES variant are built from, so
+// hanging the unpack off it covers every consumer route.
+tasks.named("classes") { dependsOn(unpackRcbridgeBindings) }
+
+// #493: carry the gomobile classes in this project's own jar too, so consumers
 // (core:rclone, core:tunnel) reach them through `project(":rclone-android")`
 // rather than through a raw file path they would have to resolve themselves.
 // That is what lets the jar stop being a committed binary.
 tasks.named<Jar>("jar") {
     dependsOn(buildRcloneNative)
     from(provider { if (rcbridgeJar.isFile) zipTree(rcbridgeJar) else files() })
+    // The unpacked directory above is already class output, so the jar now picks
+    // these up twice; EXCLUDE keeps the first and makes that a no-op.
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
