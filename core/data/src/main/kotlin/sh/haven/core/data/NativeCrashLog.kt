@@ -161,8 +161,12 @@ class NativeCrashLog(private val context: Context) {
                     // The tombstone is the whole point, but it is not always
                     // kept — read failures degrade to a record without one
                     // rather than losing the fact that a crash happened.
+                    //
+                    // Read as BYTES, not through a reader: this is a protobuf, and
+                    // decoding it as text destroys a third of it along with the
+                    // abort message (#517).
                     trace = try {
-                        info.traceInputStream?.bufferedReader()?.use { it.readText() }
+                        info.traceInputStream?.use { printableRuns(it.readBytes()) }?.takeIf { it.isNotBlank() }
                     } catch (e: Exception) {
                         Log.w(TAG, "no tombstone for crash at ${info.timestamp}: ${e.message}")
                         null
@@ -173,6 +177,47 @@ class NativeCrashLog(private val context: Context) {
 
     internal companion object {
         const val MAX_RECORDS = 10
+
+        /** Shortest printable run worth keeping — below this it is punctuation, not a symbol. */
+        private const val MIN_PRINTABLE_RUN = 6
+
+        /** Enough for a full thread dump; a tombstone that overruns this is truncated, not dropped. */
+        private const val MAX_SUMMARY_CHARS = 256 * 1024
+
+        /**
+         * Readable text pulled out of a tombstone, which is **binary** (#517).
+         *
+         * `getTraceInputStream()` hands back a protobuf for a native crash, not
+         * text. Reading it through a reader decodes it as UTF-8 and replaces every
+         * byte that is not valid UTF-8 with U+FFFD — irreversibly. A real report
+         * arrived having lost **32% of its bytes** that way, 108,475 substitutions
+         * across 1 MB, and the abort message went with them. The frames survived
+         * only because symbol names happen to be ASCII.
+         *
+         * So: take the bytes, and keep the runs that were text to begin with. That
+         * is the abort message, the library paths, the symbol names and the thread
+         * names — everything a backtrace is read for — without pretending the
+         * protobuf framing around them was ever text.
+         */
+        internal fun printableRuns(bytes: ByteArray, limit: Int = MAX_SUMMARY_CHARS): String {
+            val out = StringBuilder()
+            val run = StringBuilder()
+            fun flush() {
+                if (run.length >= MIN_PRINTABLE_RUN) {
+                    if (out.isNotEmpty()) out.append('\n')
+                    out.append(run)
+                }
+                run.setLength(0)
+            }
+            for (b in bytes) {
+                val c = b.toInt() and 0xFF
+                // Printable ASCII plus tab; everything else ends the run.
+                if (c == 0x09 || c in 0x20..0x7E) run.append(c.toChar()) else flush()
+                if (out.length >= limit) break
+            }
+            flush()
+            return if (out.length > limit) out.substring(0, limit) else out.toString()
+        }
 
         /**
          * Combine stored and newly-seen crashes into what should be written back.

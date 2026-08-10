@@ -117,4 +117,46 @@ class NativeCrashLogTest {
     fun `an unknown signal falls back to its number`() {
         assertEquals("signal 99", record(1, signal = 99).signalName)
     }
+
+    /**
+     * A tombstone is protobuf, not text (#517).
+     *
+     * The real report that exposed this had been read through a `bufferedReader`,
+     * which replaced every non-UTF-8 byte with U+FFFD — 108,475 substitutions, a
+     * third of the file, and the abort message among them. This models that shape:
+     * symbol text embedded in binary framing.
+     */
+    @Test
+    fun `readable text is recovered from a binary tombstone`() {
+        val tombstone =
+            byteArrayOf(0x0A, 0xEF.toByte(), 0xBF.toByte(), 0x00, 0x12) +
+                "JNI ERROR (app bug): local reference table overflow".toByteArray() +
+                byteArrayOf(0x00, 0xFF.toByte(), 0x08) +
+                "libjni_cb_term.so".toByteArray() +
+                byteArrayOf(0xC0.toByte(), 0x80.toByte())
+
+        val summary = NativeCrashLog.printableRuns(tombstone)
+
+        assertTrue("abort message lost: $summary", summary.contains("JNI ERROR (app bug)"))
+        assertTrue("library name lost: $summary", summary.contains("libjni_cb_term.so"))
+        assertTrue("binary must not be decoded as text: $summary", !summary.contains('�'))
+    }
+
+    /** Framing bytes that happen to be printable must not glue unrelated runs together. */
+    @Test
+    fun `short punctuation runs are dropped rather than joined`() {
+        val summary = NativeCrashLog.printableRuns(
+            "abort_message_here".toByteArray() + byteArrayOf(0x00, 0x2A, 0x00) + "libc.so".toByteArray(),
+        )
+        assertEquals(listOf("abort_message_here", "libc.so"), summary.lines())
+    }
+
+    /** A huge tombstone must be truncated, never dropped — a partial backtrace still names the library. */
+    @Test
+    fun `an oversized tombstone is truncated not discarded`() {
+        val huge = ("A".repeat(64) + " ").repeat(8000).toByteArray(Charsets.ISO_8859_1)
+        val summary = NativeCrashLog.printableRuns(huge, limit = 4096)
+        assertTrue("expected truncation, got ${summary.length}", summary.length <= 4096)
+        assertTrue("truncated to nothing", summary.contains("AAAAAA"))
+    }
 }
