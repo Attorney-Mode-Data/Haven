@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.animation.AnimatedVisibility
@@ -562,6 +563,31 @@ private fun RdpViewer(
     val keyboardController = LocalSoftwareKeyboardController.current
     var keyboardVisible by remember { mutableStateOf(false) }
 
+    // #507: with a physical keyboard there is no reason to toggle the soft one,
+    // and the soft-keyboard toggle was the ONLY thing that ever focused the
+    // hidden text field — so nothing on this screen held focus, and hardware
+    // Enter/Space activated whatever Compose had focused instead (the nav
+    // drawer button, per @pawlosck's repro: "when I can't write, the menu
+    // opens every time"). The canvas is focusable so the screen can hold
+    // focus WITHOUT summoning the IME (focusing the text field shows it),
+    // and the scancode handler lives on the root Box, which sees the preview
+    // pass for every descendant — the text field included — so one handler
+    // covers both focus holders.
+    val hardwareKeyFocus = remember { FocusRequester() }
+    val handleHardwareKey: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = { event ->
+        val scancode = androidKeyToScancode(event.key)
+        if (scancode != null) {
+            when (event.type) {
+                KeyEventType.KeyDown -> onKeyDown(scancode)
+                KeyEventType.KeyUp -> onKeyUp(scancode)
+            }
+            true
+        } else {
+            false
+        }
+    }
+    LaunchedEffect(Unit) { hardwareKeyFocus.requestFocus() }
+
     // Modifier state for key toolbar
     var ctrlActive by remember { mutableStateOf(false) }
     var altActive by remember { mutableStateOf(false) }
@@ -585,7 +611,11 @@ private fun RdpViewer(
         mutableStateOf(TextFieldValue(sentinel, TextRange(sentinel.length)))
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent(handleHardwareKey),
+    ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // RDP canvas
         Box(
@@ -593,6 +623,8 @@ private fun RdpViewer(
                 .weight(1f)
                 .fillMaxWidth()
                 .background(Color.Black)
+                .focusRequester(hardwareKeyFocus)
+                .focusable()
                 .onSizeChanged { viewSize = it }
                 .pointerInput(frame.width, frame.height, viewSize, inputMode) {
                     val touchSlopPx = viewConfiguration.touchSlop
@@ -602,6 +634,11 @@ private fun RdpViewer(
                             pass = PointerEventPass.Initial,
                         )
                         firstDown.consume()
+                        // #507: a canvas tap re-claims hardware-key focus from
+                        // whatever took it (drawer, toolbar button) — but not
+                        // while the soft keyboard is up, where moving focus
+                        // off the text field would dismiss it.
+                        if (!keyboardVisible) hardwareKeyFocus.requestFocus()
                         var totalFingers = 1
                         var prevCentroid = firstDown.position
                         var prevSpan = 0f
@@ -830,21 +867,12 @@ private fun RdpViewer(
 
                 textFieldValue = TextFieldValue(sentinel, TextRange(sentinel.length))
             },
+            // Hardware keys are handled by the root Box's onPreviewKeyEvent
+            // (#507) — an ancestor of this field, so its preview pass fires
+            // whether focus sits here (soft keyboard) or on the canvas.
             modifier = Modifier
                 .size(1.dp)
-                .focusRequester(focusRequester)
-                .onPreviewKeyEvent { event ->
-                    val scancode = androidKeyToScancode(event.key)
-                    if (scancode != null) {
-                        when (event.type) {
-                            KeyEventType.KeyDown -> onKeyDown(scancode)
-                            KeyEventType.KeyUp -> onKeyUp(scancode)
-                        }
-                        true
-                    } else {
-                        false
-                    }
-                },
+                .focusRequester(focusRequester),
         )
 
         // RDP key toolbar — hidden in fullscreen, and also hidden when the
@@ -890,6 +918,7 @@ private fun RdpViewer(
                         keyboardController?.show()
                     } else {
                         keyboardController?.hide()
+                        hardwareKeyFocus.requestFocus()
                     }
                 },
             )
@@ -923,6 +952,7 @@ private fun RdpViewer(
                         keyboardController?.show()
                     } else {
                         keyboardController?.hide()
+                        hardwareKeyFocus.requestFocus()
                     }
                 }) {
                     Icon(
@@ -1027,6 +1057,7 @@ private fun RdpViewer(
                             keyboardController?.show()
                         } else {
                             keyboardController?.hide()
+                            hardwareKeyFocus.requestFocus()
                         }
                     }) {
                         Icon(
