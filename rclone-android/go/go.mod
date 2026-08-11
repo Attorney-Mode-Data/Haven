@@ -4,11 +4,11 @@ go 1.26.5
 
 require (
 	github.com/ProtonMail/gopenpgp/v3 v3.4.1
-	github.com/rclone/go-proton-api v1.0.3
+	github.com/rclone/go-proton-api v1.0.4
 	github.com/rclone/rclone v1.75.0
 	golang.org/x/crypto v0.54.0
 	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
-	tailscale.com v1.102.1
+	tailscale.com v1.102.2
 )
 
 require (
