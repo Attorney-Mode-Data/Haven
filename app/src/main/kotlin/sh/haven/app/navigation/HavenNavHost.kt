@@ -427,6 +427,8 @@ fun HavenNavHost(
         .collectAsState(initial = sh.haven.core.data.preferences.DesktopKeyPlacement.LEFT)
     val fullscreenButtonCorner by preferencesRepository.fullscreenButtonCorner
         .collectAsState(initial = sh.haven.core.data.preferences.FullscreenButtonCorner.DEFAULT)
+    val rdpChipAnchor by preferencesRepository.rdpChipAnchor
+        .collectAsState(initial = sh.haven.core.data.preferences.RdpChipAnchor.DEFAULT)
     val toolbarMinKeyWidth by preferencesRepository.toolbarMinButtonWidth
         .collectAsState(initial = sh.haven.core.data.preferences.UserPreferencesRepository.DEFAULT_TOOLBAR_MIN_BUTTON_WIDTH)
     val showSearchButton by preferencesRepository.showSearchButton
@@ -766,6 +768,10 @@ fun HavenNavHost(
                         toolbarLayout = toolbarLayout,
                         navBlockMode = navBlockMode,
                         toolbarUniformGrid = toolbarUniformGrid,
+                        rdpChipAnchor = rdpChipAnchor,
+                        onRdpChipAnchorChange = {
+                            coroutineScope.launch { preferencesRepository.setRdpChipAnchor(it) }
+                        },
                         inputMode = desktopInputMode,
                         onSetInputMode = { mode ->
                             coroutineScope.launch { preferencesRepository.setDesktopInputMode(mode) }

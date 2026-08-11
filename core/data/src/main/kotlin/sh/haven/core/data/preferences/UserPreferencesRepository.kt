@@ -70,6 +70,7 @@ class UserPreferencesRepository @Inject constructor(
     private val editModeControlsPlacementKey = stringPreferencesKey("edit_mode_controls_placement")
     private val desktopKeyPlacementKey = stringPreferencesKey("desktop_key_placement")
     private val fullscreenButtonCornerKey = stringPreferencesKey("fullscreen_button_corner")
+    private val rdpChipAnchorKey = stringPreferencesKey("rdp_fullscreen_chip_anchor")
     private val sessionCommandOverrideKey = stringPreferencesKey("session_command_override")
     private val sftpSortModeKey = stringPreferencesKey("sftp_sort_mode")
     private val lockTimeoutKey = stringPreferencesKey("lock_timeout")
@@ -1668,6 +1669,21 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setFullscreenButtonCorner(corner: FullscreenButtonCorner) {
         dataStore.edit { prefs ->
             prefs[fullscreenButtonCornerKey] = corner.id
+        }
+    }
+
+    /**
+     * Anchor of the fullscreen session-menu chip in remote-desktop sessions
+     * (#528 follow-up) — hold-and-drag to move it, same idiom as the terminal
+     * fullscreen button above, persisted across sessions.
+     */
+    val rdpChipAnchor: Flow<RdpChipAnchor> = dataStore.data.map { prefs ->
+        prefs[rdpChipAnchorKey]?.let { RdpChipAnchor.fromId(it) } ?: RdpChipAnchor.DEFAULT
+    }
+
+    suspend fun setRdpChipAnchor(anchor: RdpChipAnchor) {
+        dataStore.edit { prefs ->
+            prefs[rdpChipAnchorKey] = anchor.id
         }
     }
 

@@ -81,7 +81,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -170,6 +174,10 @@ fun RdpSessionContent(
      */
     onCycleOrientation: () -> Unit = {},
     onRetry: (() -> Unit)? = null,
+    /** Fullscreen menu-chip anchor; hold-drag to move, persisted by the host (#528). */
+    chipAnchor: sh.haven.core.data.preferences.RdpChipAnchor =
+        sh.haven.core.data.preferences.RdpChipAnchor.DEFAULT,
+    onChipAnchorChange: (sh.haven.core.data.preferences.RdpChipAnchor) -> Unit = {},
 ) {
     val connectedState by connected.collectAsState()
     val frameState by frame.collectAsState()
@@ -235,6 +243,8 @@ fun RdpSessionContent(
             onSetInputMode = onSetInputMode,
             currentOrientation = currentOrientation,
             onCycleOrientation = onCycleOrientation,
+            chipAnchor = chipAnchor,
+            onChipAnchorChange = onChipAnchorChange,
         )
     } else {
         DesktopPlaceholder(
@@ -506,6 +516,9 @@ private fun RdpViewer(
     onSetInputMode: ((String) -> Unit)? = null,
     currentOrientation: Int = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
     onCycleOrientation: () -> Unit = {},
+    chipAnchor: sh.haven.core.data.preferences.RdpChipAnchor =
+        sh.haven.core.data.preferences.RdpChipAnchor.DEFAULT,
+    onChipAnchorChange: (sh.haven.core.data.preferences.RdpChipAnchor) -> Unit = {},
 ) {
     // Map the activity-orientation constant to the local enum for
     // icon/description rendering. Source-of-truth for the value lives
@@ -1026,16 +1039,48 @@ private fun RdpViewer(
             )
         }
 
+        // Top-centre by default, not top-end: the remote's OWN window controls
+        // live in the top-right corner (Windows minimise/restore/close), and
+        // the chip was sitting exactly on top of them (#528). mstsc parks its
+        // connection pill top-centre for the same reason. Hold-and-drag moves
+        // it to any of six edge anchors — same idiom as the terminal's
+        // fullscreen button (#445) — snapping to wherever it's released
+        // nearest and remembering the spot.
+        var chipDragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+        var chipCoords by remember {
+            mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null)
+        }
         AnimatedVisibility(
             visible = !overlayVisible,
             enter = fadeIn(),
             exit = fadeOut(),
-            // Top-centre, not top-end: the remote's OWN window controls live in
-            // the top-right corner (Windows minimise/restore/close), and the
-            // chip was sitting exactly on top of them (#528). mstsc parks its
-            // connection pill top-centre for the same reason.
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .align(chipAnchor.toComposeAlignment())
+                .offset { androidx.compose.ui.unit.IntOffset(chipDragOffset.x.toInt(), chipDragOffset.y.toInt()) }
+                .onGloballyPositioned { chipCoords = it }
+                .pointerInput(Unit) {
+                    detectDragGesturesAfterLongPress(
+                        onDrag = { change, delta ->
+                            change.consume()
+                            chipDragOffset += delta
+                        },
+                        onDragEnd = {
+                            val coords = chipCoords
+                            val parent = coords?.parentLayoutCoordinates
+                            if (coords != null && parent != null) {
+                                val c = coords.boundsInParent().center
+                                onChipAnchorChange(
+                                    sh.haven.core.data.preferences.RdpChipAnchor.nearest(
+                                        c.x, c.y,
+                                        parent.size.width.toFloat(),
+                                        parent.size.height.toFloat(),
+                                    ),
+                                )
+                            }
+                            chipDragOffset = androidx.compose.ui.geometry.Offset.Zero
+                        },
+                    )
+                }
                 .graphicsLayer { alpha = chipAlpha },
         ) {
             Surface(
@@ -1058,7 +1103,7 @@ private fun RdpViewer(
             visible = overlayVisible,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier.align(chipAnchor.toComposeAlignment()),
         ) {
             Surface(
                 shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
@@ -1723,4 +1768,13 @@ internal fun rdpErrorHint(error: String): RdpErrorHint? = when {
         linkUrl = "https://github.com/GlassHaven/Haven/issues/461",
     )
     else -> null
+}
+
+private fun sh.haven.core.data.preferences.RdpChipAnchor.toComposeAlignment(): Alignment = when (this) {
+    sh.haven.core.data.preferences.RdpChipAnchor.TOP_START -> Alignment.TopStart
+    sh.haven.core.data.preferences.RdpChipAnchor.TOP_CENTER -> Alignment.TopCenter
+    sh.haven.core.data.preferences.RdpChipAnchor.TOP_END -> Alignment.TopEnd
+    sh.haven.core.data.preferences.RdpChipAnchor.BOTTOM_START -> Alignment.BottomStart
+    sh.haven.core.data.preferences.RdpChipAnchor.BOTTOM_CENTER -> Alignment.BottomCenter
+    sh.haven.core.data.preferences.RdpChipAnchor.BOTTOM_END -> Alignment.BottomEnd
 }

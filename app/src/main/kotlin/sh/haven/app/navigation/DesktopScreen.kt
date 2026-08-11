@@ -75,6 +75,9 @@ private val TAB_COLORS = listOf(
 fun DesktopScreen(
     desktopViewModel: DesktopViewModel,
     toolbarLayout: ToolbarLayout = ToolbarLayout.DEFAULT,
+    rdpChipAnchor: sh.haven.core.data.preferences.RdpChipAnchor =
+        sh.haven.core.data.preferences.RdpChipAnchor.DEFAULT,
+    onRdpChipAnchorChange: (sh.haven.core.data.preferences.RdpChipAnchor) -> Unit = {},
     navBlockMode: NavBlockMode = NavBlockMode.ALIGNED,
     toolbarUniformGrid: Boolean = false,
     inputMode: String = "DIRECT",
@@ -259,6 +262,8 @@ fun DesktopScreen(
                             frameSeq = tab.frameSeq,
                             error = tab.error,
                             toolbarLayout = toolbarLayout,
+                            chipAnchor = rdpChipAnchor,
+                            onChipAnchorChange = onRdpChipAnchorChange,
                             onTap = { x, y -> desktopViewModel.sendClick(x, y) },
                             onMiddleClick = { x, y -> desktopViewModel.sendClick(x, y, button = 2) },
                             onDragStart = { x, y ->
@@ -296,6 +301,8 @@ fun DesktopScreen(
                             frame = tab.frame,
                             error = tab.error,
                             toolbarLayout = toolbarLayout,
+                            chipAnchor = rdpChipAnchor,
+                            onChipAnchorChange = onRdpChipAnchorChange,
                             onTap = { x, y -> desktopViewModel.sendClick(x, y) },
                             onDragStart = { x, y ->
                                 desktopViewModel.sendPointer(x, y)

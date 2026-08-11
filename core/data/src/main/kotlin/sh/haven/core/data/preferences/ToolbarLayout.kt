@@ -123,6 +123,42 @@ enum class FullscreenButtonCorner(val id: String) {
     }
 }
 
+/**
+ * Where the fullscreen session-menu chip sits (#528 follow-up). Six anchors —
+ * thirds along the top and bottom edges — rather than the terminal button's
+ * four corners, because TOP_CENTER is this chip's default: the top corners
+ * are where remote OSes keep their own window controls, and a drag must be
+ * able to bring the chip back to centre.
+ */
+enum class RdpChipAnchor(val id: String) {
+    TOP_START("top_start"),
+    TOP_CENTER("top_center"),
+    TOP_END("top_end"),
+    BOTTOM_START("bottom_start"),
+    BOTTOM_CENTER("bottom_center"),
+    BOTTOM_END("bottom_end");
+
+    companion object {
+        val DEFAULT = TOP_CENTER
+
+        fun fromId(id: String): RdpChipAnchor? = entries.find { it.id == id }
+
+        /**
+         * The anchor nearest to a point in a [width]×[height] box: thirds of
+         * the width decide start/centre/end, the height's half decides
+         * top/bottom. Pure — unit-tested, no Compose types.
+         */
+        fun nearest(centerX: Float, centerY: Float, width: Float, height: Float): RdpChipAnchor {
+            val top = centerY < height / 2f
+            return when {
+                centerX < width / 3f -> if (top) TOP_START else BOTTOM_START
+                centerX < width * 2f / 3f -> if (top) TOP_CENTER else BOTTOM_CENTER
+                else -> if (top) TOP_END else BOTTOM_END
+            }
+        }
+    }
+}
+
 data class MacroPreset(val label: String, val send: String, val description: String)
 
 val MACRO_PRESETS = listOf(
