@@ -5,6 +5,15 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.10
+
+- A locked Ctrl or Alt now stays on until you tap it off — it no longer dies after one keypress while still showing as locked.
+- The "delete key?" title now shows the count in Bengali, French, Hindi and Portuguese instead of assuming "one" means exactly one.
+
+🔒 **The lock that spent itself.** v5.87.8's double-tap Ctrl lock worked for exactly one keypress: the first Ctrl+C landed, the second sent a bare `c`, and the key sat there blue and inert. Keyboard input passes through two hand-off points and only one of them knew the lock existed — the other cleared Ctrl unconditionally after use, which is also why the indicator (a separate flag) never noticed. Fixing it also settled what "locked" means: v5.87.8 released the lock by itself after two keystrokes; the requester's follow-up said it plainly — locked means every keypress carries the modifier until you tap it off — and that is now the behaviour. Tap for one keypress, double-tap to hold, tap again to release. Watched working on a device: two Ctrl+C's, then a plain `c` after unlock. (#522, caught the day it shipped by @a8645322)
+
+🌐 **Plural titles that assumed "one" means 1.** In Bengali, French, Hindi and Portuguese the "one" plural category covers more than the number 1, so the bulk-delete confirmation title ("Delete this key?") could sit over a count it didn't show. Those four now say the number. (found by the nightly lint run)
+
 ## v5.87.9
 
 - The keyboard now really does come back when you return to Haven — the previous fix remembered correctly but Android refused the request; this one was watched working on a device before shipping.
