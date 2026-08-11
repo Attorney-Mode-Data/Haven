@@ -765,21 +765,10 @@ class TerminalViewModel @Inject constructor(
     private val _altLocked = MutableStateFlow(false)
     val altLocked: StateFlow<Boolean> = _altLocked.asStateFlow()
 
-    /**
-     * A lock releases itself after this many keystrokes have used it. The
-     * reporter's Claude Code case — `Ctrl+C` twice to exit — is exactly one
-     * lock cycle, so the common use needs no third tap to unlock. Counted in
-     * keystrokes rather than seconds on their advice: a timeout would put back
-     * the race against the clock the lock exists to remove. (#522)
-     */
-    private val lockedUsesAllowed = 2
-    private var ctrlLockedUses = 0
-    private var altLockedUses = 0
-
     fun toggleCtrl() {
         when {
             _ctrlLocked.value -> { _ctrlLocked.value = false; _ctrlActive.value = false }
-            _ctrlActive.value -> { _ctrlLocked.value = true; ctrlLockedUses = 0 }
+            _ctrlActive.value -> _ctrlLocked.value = true
             else -> _ctrlActive.value = true
         }
     }
@@ -787,7 +776,7 @@ class TerminalViewModel @Inject constructor(
     fun toggleAlt() {
         when {
             _altLocked.value -> { _altLocked.value = false; _altActive.value = false }
-            _altActive.value -> { _altLocked.value = true; altLockedUses = 0 }
+            _altActive.value -> _altLocked.value = true
             else -> _altActive.value = true
         }
     }
@@ -809,30 +798,16 @@ class TerminalViewModel @Inject constructor(
      * Ctrl that the IME composed past would otherwise persist and turn the next
      * Enter into Ctrl+Enter (`^[[13;5u`). (#298)
      *
-     * A locked modifier is not transient: it counts the keystroke instead, and
-     * releases once it has served [lockedUsesAllowed] of them. (#522)
+     * A locked modifier is not transient at all: it applies to every keystroke
+     * until the user taps it off — the requester's follow-up on #522 settled
+     * that this, not a keystroke budget, is what "locked" means. Keeping the
+     * release policy in this one function also lets every consume site call it
+     * safely: it is idempotent, so a keystroke that passes through both the
+     * key-event path and the byte path can't spend anything twice.
      */
     fun clearStickyModifiers() {
-        if (_ctrlActive.value) {
-            if (_ctrlLocked.value) {
-                if (++ctrlLockedUses >= lockedUsesAllowed) {
-                    _ctrlLocked.value = false
-                    _ctrlActive.value = false
-                }
-            } else {
-                _ctrlActive.value = false
-            }
-        }
-        if (_altActive.value) {
-            if (_altLocked.value) {
-                if (++altLockedUses >= lockedUsesAllowed) {
-                    _altLocked.value = false
-                    _altActive.value = false
-                }
-            } else {
-                _altActive.value = false
-            }
-        }
+        if (!_ctrlLocked.value) _ctrlActive.value = false
+        if (!_altLocked.value) _altActive.value = false
     }
 
     fun setFontSize(sizeSp: Int) {
@@ -979,7 +954,11 @@ class TerminalViewModel @Inject constructor(
     }
 
     /**
-     * Apply Ctrl/Alt modifiers to keyboard input, then reset them (one-shot).
+     * Apply Ctrl/Alt modifiers to keyboard input, then release them through
+     * [clearStickyModifiers] so a lock survives. This function clearing the
+     * state directly was the #522 follow-up bug: it knew nothing about locks,
+     * so a locked Ctrl worked for exactly one keypress and then sat there
+     * blue and inert — the byte path spent it while the visual said held.
      * Ctrl+letter -> char AND 0x1F (e.g. Ctrl+C = 0x03).
      * Alt+char -> ESC prefix.
      */
@@ -988,8 +967,7 @@ class TerminalViewModel @Inject constructor(
         val alt = _altActive.value
         if (!ctrl && !alt) return data
 
-        _ctrlActive.value = false
-        _altActive.value = false
+        clearStickyModifiers()
 
         var result = data
         if (ctrl && result.size == 1) {

@@ -202,8 +202,11 @@ class TerminalViewModelTest {
         assertEquals(0, viewModel.toolbarModifierMask())
     }
 
-    // #522: Ctrl, Ctrl locks. The reporter's case is Claude Code's double
-    // Ctrl+C to exit, which is exactly the two keystrokes a lock serves.
+    // #522, round two: the requester's follow-up settled the lock's meaning —
+    // locked (blue) means every keypress carries Ctrl until the user taps it
+    // off. No keystroke budget: v5.87.8's release-after-two was both broken in
+    // practice (a second consume site spent the modifier after ONE press) and
+    // not what the requester wanted once they had it under their fingers.
     @Test
     fun `a second Ctrl tap locks it, and it survives one keystroke`() {
         viewModel.toggleCtrl()
@@ -219,16 +222,15 @@ class TerminalViewModelTest {
     }
 
     @Test
-    fun `a locked Ctrl releases itself after two keystrokes`() {
+    fun `a locked Ctrl survives any number of keystrokes`() {
         viewModel.toggleCtrl()
         viewModel.toggleCtrl()
 
-        viewModel.clearStickyModifiers()
-        viewModel.clearStickyModifiers()
+        repeat(5) { viewModel.clearStickyModifiers() }
 
-        assertEquals(false, viewModel.ctrlLocked.value)
-        assertEquals(false, viewModel.ctrlActive.value)
-        assertEquals(0, viewModel.toolbarModifierMask())
+        assertEquals(true, viewModel.ctrlLocked.value)
+        assertEquals(true, viewModel.ctrlActive.value)
+        assertEquals(4, viewModel.toolbarModifierMask())
     }
 
     @Test
@@ -242,17 +244,17 @@ class TerminalViewModelTest {
     }
 
     @Test
-    fun `locking Ctrl again after a release starts a fresh pair of keystrokes`() {
+    fun `Ctrl can be locked again after a manual unlock`() {
         viewModel.toggleCtrl()
         viewModel.toggleCtrl()
-        viewModel.clearStickyModifiers()
-        viewModel.clearStickyModifiers()
+        viewModel.toggleCtrl()
 
         viewModel.toggleCtrl()
         viewModel.toggleCtrl()
         viewModel.clearStickyModifiers()
 
-        assertEquals("the use count must reset with the new lock", true, viewModel.ctrlActive.value)
+        assertEquals(true, viewModel.ctrlLocked.value)
+        assertEquals(true, viewModel.ctrlActive.value)
     }
 
     @Test
