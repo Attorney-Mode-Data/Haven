@@ -9,6 +9,8 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
@@ -605,6 +607,26 @@ private fun RdpViewer(
         }
     }
 
+    // #528: the summon chip dims to a ghost after a few idle seconds. It used
+    // to sit at 40% alpha forever — @pawlosck asked to move or hide it because
+    // it was parked over the remote's own window controls (top-right is where
+    // Windows keeps minimise/restore/close; the chip now lives top-centre,
+    // mstsc's convention, for the same reason). Full alpha returns whenever
+    // the overlay opens, so finding it again is one glance, not a hunt.
+    var chipDimmed by remember { mutableStateOf(false) }
+    LaunchedEffect(fullscreen, overlayVisible) {
+        chipDimmed = false
+        if (fullscreen && !overlayVisible) {
+            delay(5000)
+            chipDimmed = true
+        }
+    }
+    val chipAlpha by animateFloatAsState(
+        targetValue = if (chipDimmed) 0.35f else 1f,
+        animationSpec = tween(durationMillis = 800),
+        label = "fullscreenChipAlpha",
+    )
+
     // Sentinel for the hidden text field
     val sentinel = " "
     var textFieldValue by remember {
@@ -1008,11 +1030,17 @@ private fun RdpViewer(
             visible = !overlayVisible,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopEnd),
+            // Top-centre, not top-end: the remote's OWN window controls live in
+            // the top-right corner (Windows minimise/restore/close), and the
+            // chip was sitting exactly on top of them (#528). mstsc parks its
+            // connection pill top-centre for the same reason.
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .graphicsLayer { alpha = chipAlpha },
         ) {
             Surface(
                 onClick = { overlayVisible = true },
-                shape = RoundedCornerShape(bottomStart = 12.dp),
+                shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
             ) {
                 Icon(
@@ -1030,10 +1058,10 @@ private fun RdpViewer(
             visible = overlayVisible,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopEnd),
+            modifier = Modifier.align(Alignment.TopCenter),
         ) {
             Surface(
-                shape = RoundedCornerShape(bottomStart = 16.dp),
+                shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 // alpha-copied colour defeats contentColorFor, so set it
                 // explicitly or the icons render black on the dark sheet (#286).
