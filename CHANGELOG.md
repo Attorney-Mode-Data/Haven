@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.11
+
+- With a physical keyboard on an RDP session, Enter and Space now go to the remote machine instead of opening Haven's own menus — one stray Enter could previously even drop you out of the session.
+
+⌨️ **The keyboard that drove the wrong computer.** Attach a real keyboard to an RDP session and some keys acted on Haven itself: Enter opened the navigation menu, Space activated buttons, and in the worst case a keystroke threw you out of the session entirely. The cause was that nothing on the session screen ever claimed keyboard focus unless you toggled the *soft* keyboard — which is the one thing you never do with a real keyboard attached — so every keypress went to whatever the system had focused instead. The session screen now takes focus the moment it opens, keeps hardware keys for the remote no matter which of its own controls is focused, and re-takes focus when you tap the screen or dismiss the soft keyboard. Reproduced and verified on a device against a test server: before, Enter+Space kicked Haven off the session with nothing reaching the remote; after, the session stays put and both keys arrive. (#507, pinned down by @pawlosck's "when I can't write, the menu opens every time")
+
 ## v5.87.10
 
 - A locked Ctrl or Alt now stays on until you tap it off — it no longer dies after one keypress while still showing as locked.
