@@ -5,6 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.12
+
+- The fullscreen menu button moved to the top centre, so it no longer covers the remote's own minimise/restore/close buttons — and it fades out when you're not using it.
+
+🖥️ **The menu button that sat on the remote's close button.** In a fullscreen RDP session, Haven's menu chip lived in the top-right corner — exactly where Windows keeps minimise, restore and close — so the remote's own window controls were unreachable underneath it. It now sits top-centre, the spot desktop RDP clients reserve for their connection bar for precisely this reason, and after five idle seconds it fades to a ghost so it stops competing with the remote's content. It returns to full strength the moment you open it. Watched working on a device: chip top-centre with the corner clear, dimmed on idle, menu opens and exits fullscreen. (#528, from @pawlosck's "move or hide hamburger menu")
+
 ## v5.87.11
 
 - With a physical keyboard on an RDP session, Enter and Space now go to the remote machine instead of opening Haven's own menus — one stray Enter could previously even drop you out of the session.
