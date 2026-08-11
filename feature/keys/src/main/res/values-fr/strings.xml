@@ -231,7 +231,7 @@
     <string name="keys_selection_cancel">Quitter le mode sélection</string>
     <string name="keys_selection_delete">Supprimer les clés sélectionnées</string>
     <plurals name="keys_bulk_delete_title">
-        <item quantity="one">Supprimer cette clé ?</item>
+        <item quantity="one">Supprimer %1$d clé ?</item>
         <item quantity="other">Supprimer %1$d clés ?</item>
     </plurals>
     <string name="keys_bulk_delete_body">Cette action est irréversible. Le matériel de clé privée est effacé du keystore.</string>

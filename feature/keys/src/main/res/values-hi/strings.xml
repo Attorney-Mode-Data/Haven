@@ -231,7 +231,7 @@
     <string name="keys_selection_cancel">चयन मोड से बाहर निकलें</string>
     <string name="keys_selection_delete">चयनित कुंजियाँ हटाएँ</string>
     <plurals name="keys_bulk_delete_title">
-        <item quantity="one">इस कुंजी को हटाएँ?</item>
+        <item quantity="one">%1$d कुंजी हटाएँ?</item>
         <item quantity="other">%1$d कुंजियाँ हटाएँ?</item>
     </plurals>
     <string name="keys_bulk_delete_body">इसे पूर्ववत नहीं किया जा सकता। निजी कुंजी सामग्री कीस्टोर से मिटा दी जाती है।</string>

@@ -231,7 +231,7 @@
     <string name="keys_selection_cancel">Sair do modo de seleção</string>
     <string name="keys_selection_delete">Excluir chaves selecionadas</string>
     <plurals name="keys_bulk_delete_title">
-        <item quantity="one">Excluir esta chave?</item>
+        <item quantity="one">Excluir %1$d chave?</item>
         <item quantity="other">Excluir %1$d chaves?</item>
     </plurals>
     <string name="keys_bulk_delete_body">Isto não pode ser desfeito. O material da chave privada é apagado do keystore.</string>

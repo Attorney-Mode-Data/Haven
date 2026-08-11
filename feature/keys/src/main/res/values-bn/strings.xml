@@ -231,7 +231,7 @@
     <string name="keys_selection_cancel">নির্বাচন মোড থেকে বেরোন</string>
     <string name="keys_selection_delete">নির্বাচিত কী মুছুন</string>
     <plurals name="keys_bulk_delete_title">
-        <item quantity="one">এই কী মুছবেন?</item>
+        <item quantity="one">%1$d টি কী মুছবেন?</item>
         <item quantity="other">%1$d টি কী মুছবেন?</item>
     </plurals>
     <string name="keys_bulk_delete_body">এটি ফেরানো যাবে না। ব্যক্তিগত কী উপাদান কীস্টোর থেকে মুছে ফেলা হয়।</string>
