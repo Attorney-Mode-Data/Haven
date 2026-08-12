@@ -117,6 +117,16 @@ class Avc420MediaCodecDecoder : Avc420Decoder, Closeable {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
             }
+            // #477: the standard low-latency key is a request many decoders
+            // ignore; the vendor extensions below are what actually collapse
+            // the output pipeline on Qualcomm/MediaTek/Exynos parts. Unknown
+            // keys are silently dropped by codecs that don't recognise them,
+            // so setting all of them is safe everywhere. PRIORITY 0 marks the
+            // session realtime, which affects codec scheduling on big.LITTLE.
+            setInteger(MediaFormat.KEY_PRIORITY, 0)
+            setInteger("vendor.qti-ext-dec-low-latency.enable", 1)
+            setInteger("vendor.rtc-ext-dec-low-latency.enable", 1)
+            setInteger("vendor.low-latency.enable", 1)
         }
         val mc = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
         mc.configure(format, /* surface = */ null, /* crypto = */ null, /* flags = */ 0)
