@@ -298,6 +298,7 @@ fun TerminalScreen(
     val altActive by viewModel.altActive.collectAsState()
     val ctrlLocked by viewModel.ctrlLocked.collectAsState()
     val altLocked by viewModel.altLocked.collectAsState()
+    val swipeArrowsMode by viewModel.swipeArrowsMode.collectAsState()
     // Push the live system light/dark mode to the ViewModel so its
     // [terminalColorScheme] flow can resolve the auto-switch pref correctly.
     // Must run before collecting the flow so the first emission reflects
@@ -1309,7 +1310,7 @@ fun TerminalScreen(
                     // scroll wheel forwards whenever the app requested mouse mode.
                     // Haven's local scrollback and row-based selection are reached
                     // with a two-finger swipe / tap-and-hold in non-mouse-mode.
-                    val gestureCallback = remember(activeTab, isMouseMode, isAltScreen, mouseInputEnabled, terminalRightClick) {
+                    val gestureCallback = remember(activeTab, isMouseMode, isAltScreen, mouseInputEnabled, terminalRightClick, swipeArrowsMode) {
                         if (isMouseMode) object : org.connectbot.terminal.TerminalGestureCallback {
                             override fun onTap(col: Int, row: Int): Boolean {
                                 if (!mouseInputEnabled) return false
@@ -1347,7 +1348,7 @@ fun TerminalScreen(
                                 }
                                 return true // claim the drag — terminal stops scroll fallback
                             }
-                        } else if (isAltScreen) object : org.connectbot.terminal.TerminalGestureCallback {
+                        } else if (isAltScreen || swipeArrowsMode) object : org.connectbot.terminal.TerminalGestureCallback {
                             // Alt screen without mouse tracking (tmux default,
                             // nano, vim, less): Haven's local scrollback is the
                             // frozen *primary* buffer, so scrolling it paints
@@ -1365,7 +1366,11 @@ fun TerminalScreen(
                                 // emulator: decline so the swipe falls back to
                                 // native local scrollback — which is exactly what
                                 // those opt-outs are for.
-                                if (!activeTab.emulator.isAltScreenActive()) return false
+                                // #524: swipe-arrows mode forces this branch at a
+                                // plain shell prompt too — command history without
+                                // arrow keys on the toolbar — so the emulator
+                                // check only gates the automatic path.
+                                if (!swipeArrowsMode && !activeTab.emulator.isAltScreenActive()) return false
                                 activeTab.sendInput(
                                     arrowKeyBytes(scrollUp, activeTab.cursorKeyAppMode.value),
                                 )
@@ -1703,6 +1708,8 @@ fun TerminalScreen(
                         onToggleStandardKeyboard = onToggleStandardKeyboard,
                         rawKeyboardMode = rawKeyboardMode,
                         onToggleRawKeyboard = onToggleRawKeyboard,
+                        swipeArrowsActive = swipeArrowsMode,
+                        onToggleSwipeArrows = { viewModel.toggleSwipeArrows() },
                         composeModeActive = composeController?.isComposeModeActive == true,
                         onToggleComposeMode = { composeController?.toggleComposeMode() },
                         onAttachTap = { attachSheetVisible = true },

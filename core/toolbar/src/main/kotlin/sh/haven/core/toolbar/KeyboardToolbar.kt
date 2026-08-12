@@ -176,6 +176,15 @@ data class ToolbarCallbacks(
     /** Flip [allowStandardKeyboard]. Usually persisted to preferences. */
     val onToggleStandardKeyboard: () -> Unit = {},
     /**
+     * #524: swipe-arrows mode — while on, a vertical swipe sends ↑/↓ even at
+     * a plain shell prompt instead of only on the alternate screen. Latched
+     * and persisted (its point is to free the arrow-key slots), so it renders
+     * as an on/off tint, not a one-shot modifier.
+     */
+    val swipeArrowsActive: Boolean = false,
+    /** Flip [swipeArrowsActive]. Persisted to preferences by the host. */
+    val onToggleSwipeArrows: () -> Unit = {},
+    /**
      * Raw keyboard mode — when true the terminal returns no InputConnection
      * at all, so Gboard has nothing to decorate and its mic, suggestion
      * strip and AI Core writing assist cannot appear. Drives the Raw
@@ -277,6 +286,8 @@ fun KeyboardToolbar(
     onToggleRawKeyboard: () -> Unit = {},
     composeModeActive: Boolean = false,
     onToggleComposeMode: () -> Unit = {},
+    swipeArrowsActive: Boolean = false,
+    onToggleSwipeArrows: () -> Unit = {},
     onAttachTap: () -> Unit = {},
     onOpenTextInput: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -337,6 +348,8 @@ fun KeyboardToolbar(
         onToggleRawKeyboard = onToggleRawKeyboard,
         composeModeActive = composeModeActive,
         onToggleComposeMode = onToggleComposeMode,
+        swipeArrowsActive = swipeArrowsActive,
+        onToggleSwipeArrows = onToggleSwipeArrows,
         onAddSnippet = { snippet ->
             // Adding from the scissors sheet creates a library entry (no toolbar
             // button) — the user pins it as a button via toolbar settings if they
@@ -1098,6 +1111,11 @@ private fun BuiltInKey(
             altActive,
             locked = LocalToolbarLockedModifiers.current.alt,
             onClick = cb.onToggleAlt,
+        )
+        ToolbarKey.SWIPE_ARROWS -> ToolbarToggleButton(
+            "Swipe",
+            cb.swipeArrowsActive,
+            onClick = cb.onToggleSwipeArrows,
         )
         ToolbarKey.ALTGR -> {
             val altGrActive = ctrlActive && altActive

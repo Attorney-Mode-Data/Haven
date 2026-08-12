@@ -96,6 +96,7 @@ class UserPreferencesRepository @Inject constructor(
     private val remoteClipboardToLocalKey = booleanPreferencesKey("remote_clipboard_to_local")
     private val verboseLoggingEnabledKey = booleanPreferencesKey("verbose_logging_enabled")
     private val mouseInputEnabledKey = booleanPreferencesKey("mouse_input_enabled")
+    private val swipeArrowsModeKey = booleanPreferencesKey("swipe_arrows_mode")
     private val terminalRightClickKey = booleanPreferencesKey("terminal_right_click")
     private val allowStandardKeyboardKey = booleanPreferencesKey("allow_standard_keyboard")
     private val rawKeyboardModeKey = booleanPreferencesKey("raw_keyboard_mode")
@@ -595,6 +596,22 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setMouseInputEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[mouseInputEnabledKey] = enabled
+        }
+    }
+
+    /**
+     * #524: swipes send arrow keys everywhere, not only on the alternate
+     * screen — command history at a shell prompt without arrow keys on the
+     * toolbar. Toggled from the toolbar's Swipe key; persisted because the
+     * point is to permanently replace the four arrow-key slots.
+     */
+    val swipeArrowsMode: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[swipeArrowsModeKey] ?: false
+    }
+
+    suspend fun setSwipeArrowsMode(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[swipeArrowsModeKey] = enabled
         }
     }
 

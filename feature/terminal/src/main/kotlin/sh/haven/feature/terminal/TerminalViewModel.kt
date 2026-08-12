@@ -811,6 +811,22 @@ class TerminalViewModel @Inject constructor(
     }
 
     /**
+     * #524: while on, a vertical swipe sends ↑/↓ even at a plain shell prompt
+     * (command history without arrow keys on the toolbar), instead of only on
+     * the alternate screen. A latched mode, not a modifier — it survives
+     * session end and app restart, because its point is to permanently free
+     * the four arrow-key toolbar slots.
+     */
+    val swipeArrowsMode: StateFlow<Boolean> = preferencesRepository.swipeArrowsMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun toggleSwipeArrows() {
+        viewModelScope.launch {
+            preferencesRepository.setSwipeArrowsMode(!swipeArrowsMode.value)
+        }
+    }
+
+    /**
      * Drop all modifier state, locks included. Runs when the tab list
      * reconciles to empty: a lock is scoped to the sessions it was locked
      * for, so exiting the last one (the #522 follow-up's Ctrl-locked
