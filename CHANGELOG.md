@@ -5,6 +5,15 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.15
+
+- RDP now tells the server your keyboard layout (from the phone's language) instead of always claiming US English — Windows, xrdp and KRDP set the session layout from it. VirtualBox-style servers ignore it either way.
+- RDP video decoding now asks the phone's chipset for its vendor low-latency mode — on chipsets that honour it, this can cut the per-frame wait substantially. An experiment in the open #477 investigation; the frame numbers in your logs will say whether your chip is one of them.
+
+⌨️ **The client that always claimed a US keyboard.** Every RDP connect announced keyboard layout 0x0409, US English. Servers that build the session's input layout from that announcement — Windows, xrdp, KRDP — would hand a Polish user a US layout no matter what the guest was configured for. Haven now maps the device's language to the matching Windows layout identifier (Polish, UK English, pt-BR vs pt-PT, Swiss/Belgian/Canadian French and more); anything unlisted still announces US, exactly as before. Surfaced by the #504 investigation: the reporter's VirtualBox guest was innocent (it ignores the announcement), but the announcement itself was wrong for every server that doesn't. (#504, @pawlosck)
+
+🎞️ **Asking the chipset for its fast lane.** #477's diagnosis found the display lag is pipeline *wait*, not decode work — and the standard Android low-latency request was already on, included in the reporter's measured 88–118 ms per frame. Many chipsets ignore the standard request and honour only their own vendor switch, so those are now set too, along with realtime codec priority. Harmless where unrecognised; measurable where honoured — the per-frame numbers in the EGFX log line are the verdict. The structural fix (decoding off the session loop so input stops queueing behind frames) is the next stage. (#477, from @skeezmoe's measured logs)
+
 ## v5.87.14
 
 - Zooming or rotating no longer silently destroys scrollback content — wide history lines now wrap when pulled back onto a narrower screen instead of losing their tails.
