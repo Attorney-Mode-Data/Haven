@@ -4248,6 +4248,16 @@ data class RdpConfig (
      * AVC tiles are dropped and the screen stays black.
      */
     var `avcEnabled`: kotlin.Boolean
+    , 
+    /**
+     * #504: the Windows keyboard-layout identifier (KLID, e.g. 0x0415 for
+     * Polish) announced in the GCC client core data. Servers that build the
+     * session's input layout from the announcement — Windows, xrdp, KRDP —
+     * would otherwise hand every non-US user a US layout. VirtualBox-style
+     * servers inject raw scancodes and ignore this entirely. Pass 0 to get
+     * the previous behaviour (0x0409, US English).
+     */
+    var `keyboardLayout`: kotlin.UInt
     
 ){
     
@@ -4274,6 +4284,7 @@ public object FfiConverterTypeRdpConfig: FfiConverterRustBuffer<RdpConfig> {
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterUInt.read(buf),
         )
     }
 
@@ -4287,7 +4298,8 @@ public object FfiConverterTypeRdpConfig: FfiConverterRustBuffer<RdpConfig> {
             FfiConverterBoolean.allocationSize(value.`enableCredssp`) +
             FfiConverterOptionalString.allocationSize(value.`pinnedCertSha256`) +
             FfiConverterBoolean.allocationSize(value.`progressiveUpgrade`) +
-            FfiConverterBoolean.allocationSize(value.`avcEnabled`)
+            FfiConverterBoolean.allocationSize(value.`avcEnabled`) +
+            FfiConverterUInt.allocationSize(value.`keyboardLayout`)
     )
 
     override fun write(value: RdpConfig, buf: ByteBuffer) {
@@ -4301,6 +4313,7 @@ public object FfiConverterTypeRdpConfig: FfiConverterRustBuffer<RdpConfig> {
             FfiConverterOptionalString.write(value.`pinnedCertSha256`, buf)
             FfiConverterBoolean.write(value.`progressiveUpgrade`, buf)
             FfiConverterBoolean.write(value.`avcEnabled`, buf)
+            FfiConverterUInt.write(value.`keyboardLayout`, buf)
     }
 }
 

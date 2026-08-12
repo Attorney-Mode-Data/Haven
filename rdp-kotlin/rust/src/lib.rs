@@ -226,6 +226,13 @@ pub struct RdpConfig {
     /// decoder; callers that don't register one must pass false, else negotiated
     /// AVC tiles are dropped and the screen stays black.
     pub avc_enabled: bool,
+    /// #504: the Windows keyboard-layout identifier (KLID, e.g. 0x0415 for
+    /// Polish) announced in the GCC client core data. Servers that build the
+    /// session's input layout from the announcement — Windows, xrdp, KRDP —
+    /// would otherwise hand every non-US user a US layout. VirtualBox-style
+    /// servers inject raw scancodes and ignore this entirely. Pass 0 to get
+    /// the previous behaviour (0x0409, US English).
+    pub keyboard_layout: u32,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -747,7 +754,11 @@ fn build_config(config: &RdpConfig) -> ironrdp_connector::Config {
         keyboard_type: gcc::KeyboardType::IbmEnhanced,
         keyboard_subtype: 0,
         keyboard_functional_keys_count: 12,
-        keyboard_layout: 0x0409, // US English
+        keyboard_layout: if config.keyboard_layout == 0 {
+            0x0409 // US English — the pre-#504 hardcoded announcement
+        } else {
+            config.keyboard_layout
+        },
         // Advertised network profile. Haven is a mobile client and the link is
         // usually WAN or worse, but this only tunes the server's own
         // heuristics — it does not gate any feature we depend on.
@@ -2918,6 +2929,7 @@ mod codec_advertisement_tests {
             pinned_cert_sha256: None,
             progressive_upgrade: false,
             avc_enabled: true,
+            keyboard_layout: 0,
         }
     }
 
@@ -2974,6 +2986,7 @@ mod region_tests {
             pinned_cert_sha256: None,
             progressive_upgrade: false,
             avc_enabled: false,
+            keyboard_layout: 0,
         });
         // Distinct value per pixel so a wrong row or column is detectable.
         let mut pixels = vec![0u8; w as usize * h as usize * 4];
@@ -3033,6 +3046,7 @@ mod region_tests {
             pinned_cert_sha256: None,
             progressive_upgrade: false,
             avc_enabled: false,
+            keyboard_layout: 0,
         });
         assert!(client.get_framebuffer_region(0, 0, 4, 4).is_none());
     }

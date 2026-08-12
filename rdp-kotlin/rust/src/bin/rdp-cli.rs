@@ -125,6 +125,7 @@ fn main() -> ExitCode {
         // No MediaCodec on the host, so tiles are dumped (EGFX_DUMP_DIR) and
         // dropped (no Avc420Decoder registered); capture-only.
         avc_enabled: std::env::var("HAVEN_RDP_AVC").is_ok(),
+        keyboard_layout: 0,
     };
 
     let client = Arc::new(RdpClient::new(config));
