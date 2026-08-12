@@ -5,6 +5,13 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.16
+
+- A USB device that stops responding — a flaky card reader, or one drawing more power than the phone's port can supply — no longer freezes Haven when you plug it in or unplug it. The stuck device is now handled off the UI thread, so the app stays responsive even while the device itself has wedged.
+- Physically unplugging an open USB drive now tears down its background VM and export on its own, instead of leaving them running until you close the drive by hand.
+
+🔌 **When a USB drive stops answering, the app shouldn't freeze with it.** Haven opens a plugged-in USB drive by handing it to a small Linux VM, and it used to close the device connection on the UI thread when the drive was pulled. If the drive had stopped responding at the kernel level — a failing reader, or a high-capacity card browning out an unpowered USB-C port — that close would block, and the whole app would hang (an ANR) on both plug and unplug. All of that USB lifecycle work now runs off the UI thread: the app stays responsive and simply reports the drive as gone, even while the device is wedged. A physical unplug now also unwinds the drive's VM and export by itself, and the keep-alive that pokes an open drive backs off after repeated failures instead of hammering a dead device. A device that has stopped answering is a hardware problem Haven can't fix — but it no longer takes the app down with it.
+
 ## v5.87.15
 
 - RDP now tells the server your keyboard layout (from the phone's language) instead of always claiming US English — Windows, xrdp and KRDP set the session layout from it. VirtualBox-style servers ignore it either way.
