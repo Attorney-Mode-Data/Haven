@@ -72,4 +72,69 @@ class TunnelDraftTest {
         assertEquals("ssh-1", tunnelCarrierForSave(enabled = true, carrierId = "ssh-1"))
         assertNull(tunnelCarrierForSave(enabled = true, carrierId = null))
     }
+
+    // --- Route-through picker persistence (#527) ---
+
+    private fun profile() = sh.haven.core.data.db.entities.ConnectionProfile(
+        label = "rdp", host = "10.0.0.5", username = "u",
+    )
+
+    @Test fun routingSelectionPersistsAPickedTunnel() {
+        // #527: a WireGuard tunnel picked in the RDP editor reverted to
+        // "None (direct)" on save — the save branch never wrote the field.
+        val saved = profile().withRoutingSelection(
+            proxyType = null, proxyHost = "", proxyPort = "1080",
+            proxyUser = "", proxyPassword = "", tunnelConfigId = "wg-home",
+        )
+        assertEquals("wg-home", saved.tunnelConfigId)
+        assertNull(saved.proxyType)
+    }
+
+    @Test fun routingSelectionPersistsAPickedProxy() {
+        val saved = profile().withRoutingSelection(
+            proxyType = "SOCKS5", proxyHost = "proxy.lan", proxyPort = "9050",
+            proxyUser = "u", proxyPassword = "p", tunnelConfigId = null,
+        )
+        assertEquals("SOCKS5", saved.proxyType)
+        assertEquals("proxy.lan", saved.proxyHost)
+        assertEquals(9050, saved.proxyPort)
+        assertEquals("u", saved.proxyUser)
+        assertEquals("p", saved.proxyPassword)
+        assertNull(saved.tunnelConfigId)
+    }
+
+    @Test fun routingSelectionNoneClearsStaleProxyFields() {
+        // Picking "None (direct)" must not leave orphaned credentials from a
+        // previous proxy choice behind on the profile.
+        val saved = profile().copy(
+            proxyType = "SOCKS5", proxyHost = "old.lan", proxyUser = "u", proxyPassword = "p",
+        ).withRoutingSelection(
+            proxyType = null, proxyHost = "old.lan", proxyPort = "1080",
+            proxyUser = "u", proxyPassword = "p", tunnelConfigId = null,
+        )
+        assertNull(saved.proxyType)
+        assertNull(saved.proxyHost)
+        assertNull(saved.proxyUser)
+        assertNull(saved.proxyPassword)
+    }
+
+    @Test fun routingSelectionSocks4NeverKeepsAPassword() {
+        // SOCKS4 has no password field on the wire; mirrors the SSH branch.
+        val saved = profile().withRoutingSelection(
+            proxyType = "SOCKS4", proxyHost = "proxy.lan", proxyPort = "1080",
+            proxyUser = "u", proxyPassword = "p", tunnelConfigId = null,
+        )
+        assertEquals("u", saved.proxyUser)
+        assertNull(saved.proxyPassword)
+    }
+
+    @Test fun routingSelectionBadPortFallsBackToDefault() {
+        assertEquals(
+            1080,
+            profile().withRoutingSelection(
+                proxyType = "SOCKS5", proxyHost = "h", proxyPort = "not-a-port",
+                proxyUser = "", proxyPassword = "", tunnelConfigId = null,
+            ).proxyPort,
+        )
+    }
 }

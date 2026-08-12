@@ -3407,6 +3407,8 @@ fun ConnectionEditDialog(
                             spaExplicitIp = spaExplicitIp.ifBlank { null },
                             spaPort = spaPort.toIntOrNull()?.takeIf { it in 1..65535 }
                                 ?: SpaConfig.DEFAULT_SPA_PORT,
+                        ).withRoutingSelection(
+                            proxyType, proxyHost, proxyPort, proxyUser, proxyPassword, tunnelConfigId,
                         )
                     } else if (connectionType == "RDP") {
                         val rdpPortInt = port.toIntOrNull() ?: 3389
@@ -3443,6 +3445,8 @@ fun ConnectionEditDialog(
                             spaExplicitIp = spaExplicitIp.ifBlank { null },
                             spaPort = spaPort.toIntOrNull()?.takeIf { it in 1..65535 }
                                 ?: SpaConfig.DEFAULT_SPA_PORT,
+                        ).withRoutingSelection(
+                            proxyType, proxyHost, proxyPort, proxyUser, proxyPassword, tunnelConfigId,
                         )
                     } else if (connectionType == "SPICE") {
                         val spicePortInt = port.toIntOrNull() ?: 5900
@@ -3475,6 +3479,8 @@ fun ConnectionEditDialog(
                             spaExplicitIp = spaExplicitIp.ifBlank { null },
                             spaPort = spaPort.toIntOrNull()?.takeIf { it in 1..65535 }
                                 ?: SpaConfig.DEFAULT_SPA_PORT,
+                        ).withRoutingSelection(
+                            proxyType, proxyHost, proxyPort, proxyUser, proxyPassword, tunnelConfigId,
                         )
                     } else if (connectionType == "RCLONE") {
                         (existing ?: ConnectionProfile(
@@ -3584,6 +3590,8 @@ fun ConnectionEditDialog(
                             spaExplicitIp = spaExplicitIp.ifBlank { null },
                             spaPort = spaPort.toIntOrNull()?.takeIf { it in 1..65535 }
                                 ?: SpaConfig.DEFAULT_SPA_PORT,
+                        ).withRoutingSelection(
+                            proxyType, proxyHost, proxyPort, proxyUser, proxyPassword, tunnelConfigId,
                         )
                     } else if (connectionType == "SSH") {
                         // CF tunnel transport forces port 22 (the tunnel

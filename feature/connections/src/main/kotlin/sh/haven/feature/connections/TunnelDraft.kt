@@ -45,3 +45,29 @@ internal fun tunnelComplete(enabled: Boolean, carrierId: String?): Boolean =
 /** Persist the carrier ID only while the tunnel is enabled. */
 internal fun tunnelCarrierForSave(enabled: Boolean, carrierId: String?): String? =
     if (enabled) carrierId else null
+
+/**
+ * Apply the shared Route-through picker's state onto a profile being
+ * saved. The picker (WireGuard/Tailscale tunnel or SOCKS/HTTP proxy,
+ * mutually exclusive) is rendered for VNC / RDP / SPICE / SMB as well as
+ * SSH, but only the SSH and EMAIL save branches ever persisted what it
+ * wrote — for the other four a picked tunnel or proxy silently reverted
+ * to "None (direct)" on save (#527). SSH keeps its own inline handling:
+ * the Cloudflare transport interleaves with these fields there.
+ */
+internal fun sh.haven.core.data.db.entities.ConnectionProfile.withRoutingSelection(
+    proxyType: String?,
+    proxyHost: String,
+    proxyPort: String,
+    proxyUser: String,
+    proxyPassword: String,
+    tunnelConfigId: String?,
+): sh.haven.core.data.db.entities.ConnectionProfile = copy(
+    proxyType = proxyType,
+    proxyHost = if (proxyType == null) null else proxyHost.ifBlank { null },
+    proxyPort = proxyPort.toIntOrNull() ?: 1080,
+    proxyUser = if (proxyType == null) null else proxyUser.ifBlank { null },
+    proxyPassword = if (proxyType == null || proxyType == "SOCKS4") null
+        else proxyPassword.ifBlank { null },
+    tunnelConfigId = tunnelConfigId,
+)
