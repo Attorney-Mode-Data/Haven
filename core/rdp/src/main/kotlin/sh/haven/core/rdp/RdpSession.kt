@@ -194,6 +194,9 @@ class RdpSession(
                 // #425: advertise H.264/AVC420 (KRDP). Only meaningful with a
                 // decoder registered below, so keep the two in lock-step.
                 avcEnabled = RdpDebugToggles.avcEnabled,
+                // #504: announce the device locale's keyboard layout instead
+                // of hardcoded US, for servers that honour the announcement.
+                keyboardLayout = keyboardLayoutKlid(),
             )
 
             // #477: record which settings this session actually ran with. Two
