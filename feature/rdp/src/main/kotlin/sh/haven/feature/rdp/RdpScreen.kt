@@ -1633,6 +1633,68 @@ internal fun androidKeyToScancode(key: Key): Int? = when (key) {
     Key.NumPadAdd -> SC_NUMPAD_ADD
     Key.NumPadDot -> SC_NUMPAD_DOT
     Key.NumLock -> SC_NUMLOCK
+    // Main-row letters, digits and punctuation (#504). The #507 focus fix moved
+    // hardware-key focus off the hidden text field, which had been the only
+    // thing converting printable keypresses (via its IME InputConnection), so
+    // every key NOT in this table started reaching the guest as nothing —
+    // letters, digits and Space died while the mapped special keys kept
+    // working.
+    //
+    // These are BASE scancodes on purpose: physical Shift and AltGr are
+    // already forwarded as real modifier keys above, so the guest composes
+    // shifted and AltGr characters itself. Wrapping our own Shift around a
+    // pre-shifted character (the soft-keyboard path in typeRdpChar) would
+    // release a Shift the user is still holding. Values are Set-1 / US
+    // positions and must stay in agreement with asciiCharToRdpScancode's
+    // tables — RdpScancodeTest cross-checks the two.
+    Key.A -> 0x1E
+    Key.B -> 0x30
+    Key.C -> 0x2E
+    Key.D -> 0x20
+    Key.E -> 0x12
+    Key.F -> 0x21
+    Key.G -> 0x22
+    Key.H -> 0x23
+    Key.I -> 0x17
+    Key.J -> 0x24
+    Key.K -> 0x25
+    Key.L -> 0x26
+    Key.M -> 0x32
+    Key.N -> 0x31
+    Key.O -> 0x18
+    Key.P -> 0x19
+    Key.Q -> 0x10
+    Key.R -> 0x13
+    Key.S -> 0x1F
+    Key.T -> 0x14
+    Key.U -> 0x16
+    Key.V -> 0x2F
+    Key.W -> 0x11
+    Key.X -> 0x2D
+    Key.Y -> 0x15
+    Key.Z -> 0x2C
+    Key.One -> 0x02
+    Key.Two -> 0x03
+    Key.Three -> 0x04
+    Key.Four -> 0x05
+    Key.Five -> 0x06
+    Key.Six -> 0x07
+    Key.Seven -> 0x08
+    Key.Eight -> 0x09
+    Key.Nine -> 0x0A
+    Key.Zero -> 0x0B
+    Key.Spacebar -> 0x39
+    Key.Grave -> 0x29
+    Key.Minus -> 0x0C
+    Key.Equals -> 0x0D
+    Key.LeftBracket -> 0x1A
+    Key.RightBracket -> 0x1B
+    Key.Backslash -> 0x2B
+    Key.Semicolon -> 0x27
+    Key.Apostrophe -> 0x28
+    Key.Comma -> 0x33
+    Key.Period -> 0x34
+    Key.Slash -> 0x35
     else -> null
 }
 

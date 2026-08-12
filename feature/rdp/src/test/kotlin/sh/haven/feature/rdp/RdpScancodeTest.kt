@@ -205,6 +205,89 @@ class RdpScancodeTest {
         assertNotEquals("numpad . is not Delete", SC_DELETE, SC_NUMPAD_DOT)
     }
 
+    /**
+     * #504 regression on v5.87.11+ — the focus fix moved hardware-key focus
+     * off the hidden text field, whose IME InputConnection had been the only
+     * path converting printable keypresses. From then on, any key absent from
+     * androidKeyToScancode reached the guest as nothing: pawlosck's report is
+     * the mapping table read back verbatim — numpad, F-keys, modifiers,
+     * Enter/Esc/Backspace all work (mapped), letters and digits are dead
+     * (unmapped). This test fails on the shipped code.
+     */
+    @Test
+    fun `every letter digit and punctuation key maps to a scancode`() {
+        val printable = mapOf(
+            "A" to Key.A, "M" to Key.M, "Z" to Key.Z,
+            "One" to Key.One, "Zero" to Key.Zero,
+            "Space" to Key.Spacebar, "Grave" to Key.Grave, "Minus" to Key.Minus,
+            "Equals" to Key.Equals, "LeftBracket" to Key.LeftBracket,
+            "RightBracket" to Key.RightBracket, "Backslash" to Key.Backslash,
+            "Semicolon" to Key.Semicolon, "Apostrophe" to Key.Apostrophe,
+            "Comma" to Key.Comma, "Period" to Key.Period, "Slash" to Key.Slash,
+        )
+        val unmapped = printable.filterValues { androidKeyToScancode(it) == null }.keys
+        assertTrue("these keys reach the guest as nothing: $unmapped", unmapped.isEmpty())
+    }
+
+    /**
+     * The hardware-key table and the soft-keyboard char table describe the
+     * same physical keyboard, so they must agree scancode-for-scancode. A
+     * typo in one is invisible at the type level; this is what catches it.
+     */
+    @Test
+    fun `hardware key table agrees with the soft-keyboard char table`() {
+        val letterKeys = listOf(
+            Key.A, Key.B, Key.C, Key.D, Key.E, Key.F, Key.G, Key.H, Key.I,
+            Key.J, Key.K, Key.L, Key.M, Key.N, Key.O, Key.P, Key.Q, Key.R,
+            Key.S, Key.T, Key.U, Key.V, Key.W, Key.X, Key.Y, Key.Z,
+        )
+        ('a'..'z').forEachIndexed { i, ch ->
+            assertEquals(
+                "letter '$ch': hardware and char tables disagree",
+                asciiCharToRdpScancode(ch)!!.first,
+                androidKeyToScancode(letterKeys[i]),
+            )
+        }
+        val digitKeys = mapOf(
+            '0' to Key.Zero, '1' to Key.One, '2' to Key.Two, '3' to Key.Three,
+            '4' to Key.Four, '5' to Key.Five, '6' to Key.Six, '7' to Key.Seven,
+            '8' to Key.Eight, '9' to Key.Nine,
+        )
+        digitKeys.forEach { (ch, key) ->
+            assertEquals(
+                "digit '$ch': hardware and char tables disagree",
+                asciiCharToRdpScancode(ch)!!.first,
+                androidKeyToScancode(key),
+            )
+        }
+        val punctuation = mapOf(
+            ' ' to Key.Spacebar, '`' to Key.Grave, '-' to Key.Minus,
+            '=' to Key.Equals, '[' to Key.LeftBracket, ']' to Key.RightBracket,
+            '\\' to Key.Backslash, ';' to Key.Semicolon, '\'' to Key.Apostrophe,
+            ',' to Key.Comma, '.' to Key.Period, '/' to Key.Slash,
+        )
+        punctuation.forEach { (ch, key) ->
+            assertEquals(
+                "'$ch': hardware and char tables disagree",
+                asciiCharToRdpScancode(ch)!!.first,
+                androidKeyToScancode(key),
+            )
+        }
+    }
+
+    /**
+     * Base scancodes on purpose: physical Shift/AltGr arrive as their own
+     * modifier scancodes, so the guest composes shifted characters itself.
+     * An extended marker here would press a different key entirely.
+     */
+    @Test
+    fun `printable keys are bare base scancodes`() {
+        listOf(Key.A, Key.Z, Key.One, Key.Zero, Key.Spacebar, Key.Slash).forEach { key ->
+            val code = androidKeyToScancode(key)!!
+            assertFalse("0x${code.toString(16)} must not be extended", isExtended(code))
+        }
+    }
+
     /** Every numpad scancode is its own key — a duplicate means two keys collide. */
     @Test
     fun `numpad scancodes are unique`() {
