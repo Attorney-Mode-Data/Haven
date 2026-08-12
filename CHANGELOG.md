@@ -5,6 +5,15 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.13
+
+- With a physical keyboard on an RDP session, letters, digits and punctuation reach the remote again — v5.87.11's focus fix had quietly cut the only path that carried them.
+- The fullscreen menu chip can now be held and dragged to any edge of the screen, and it remembers where you parked it.
+
+⌨️ **The letters the focus fix left behind.** v5.87.11 fixed hardware Enter and Space driving Haven's own menus by taking keyboard focus away from a hidden text field — but that field's input path was also the only thing converting letter and digit presses, so those started reaching the remote as nothing. The bug report was the key table read back verbatim: numpad, F-keys, modifiers, Enter, Esc and Backspace (all explicitly mapped) kept working, while letters, digits and Space (unmapped) died. Every main-row key is now sent as its own scancode, with your real Shift and AltGr forwarded as keys so the remote composes shifted — and AltGr — characters itself. The new tests fail against v5.87.12's mapping and pass against this one; it has not yet been watched against a real VirtualBox guest, which is the retest #504 is waiting on. (#504, diagnosed from @pawlosck's logcat — the decisive clue was a drop counter reading zero)
+
+🖥️ **Park the menu chip where you like.** v5.87.12 moved the fullscreen chip to the top centre and out of the way of the remote's window controls; now you can hold and drag it to any edge anchor — corners included — and it stays there for that connection across restarts. (#528, @pawlosck)
+
 ## v5.87.12
 
 - The fullscreen menu button moved to the top centre, so it no longer covers the remote's own minimise/restore/close buttons — and it fades out when you're not using it.
