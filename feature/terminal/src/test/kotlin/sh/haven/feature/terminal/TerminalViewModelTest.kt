@@ -233,6 +233,32 @@ class TerminalViewModelTest {
         assertEquals(4, viewModel.toolbarModifierMask())
     }
 
+    // #522, round three: the lock outlived the sessions it was locked for.
+    // The requester's flow — lock Ctrl, C C to leave Claude Code, D for
+    // Ctrl+D to exit the shell — ends the last session with the lock still
+    // on, and the next connection started with Ctrl pre-locked. The lock
+    // now dies with the last tab. (Deliberately NOT on per-tab close: the
+    // toolbar state is shared and a surviving tab may be mid-use of it.)
+    @Test
+    fun `a locked Ctrl does not survive the last session ending`() {
+        viewModel.toggleCtrl()
+        viewModel.toggleCtrl()
+        viewModel.toggleAlt()
+        viewModel.toggleAlt()
+        assertEquals(true, viewModel.ctrlLocked.value)
+        assertEquals(true, viewModel.altLocked.value)
+
+        // Every session manager is empty, so this reconciles to zero tabs —
+        // the state right after Ctrl+D closed the final session.
+        runBlocking { viewModel.syncSessions() }
+
+        assertEquals(false, viewModel.ctrlLocked.value)
+        assertEquals(false, viewModel.ctrlActive.value)
+        assertEquals(false, viewModel.altLocked.value)
+        assertEquals(false, viewModel.altActive.value)
+        assertEquals(0, viewModel.toolbarModifierMask())
+    }
+
     @Test
     fun `a third Ctrl tap unlocks it immediately`() {
         viewModel.toggleCtrl()

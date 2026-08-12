@@ -810,6 +810,21 @@ class TerminalViewModel @Inject constructor(
         if (!_altLocked.value) _altActive.value = false
     }
 
+    /**
+     * Drop all modifier state, locks included. Runs when the tab list
+     * reconciles to empty: a lock is scoped to the sessions it was locked
+     * for, so exiting the last one (the #522 follow-up's Ctrl-locked
+     * Ctrl+D) must not hand the next connection a pre-locked key. Not
+     * called on individual tab closes — the toolbar state is shared, and
+     * a surviving tab may be mid-use of the lock.
+     */
+    private fun resetModifiers() {
+        _ctrlLocked.value = false
+        _altLocked.value = false
+        _ctrlActive.value = false
+        _altActive.value = false
+    }
+
     fun setFontSize(sizeSp: Int) {
         viewModelScope.launch {
             preferencesRepository.setTerminalFontSize(sizeSp)
@@ -2005,6 +2020,8 @@ class TerminalViewModel @Inject constructor(
         }
 
         _tabs.value = currentTabs
+
+        if (currentTabs.isEmpty()) resetModifiers()
 
         droppedTabs.forEach { tab ->
             runCatching { tab.emulator.close() }
