@@ -502,7 +502,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">Shell Android natif</string>
     <string name="connections_field_background_opacity">Remplacer l\'opacité de l\'arrière-plan</string>
-    <string name="connections_helper_background_opacity">En dessous de 100%, le terminal devient translucide et affiche le fond d\'écran de l\'appareil derrière le texte pour ce profil. Désactivé = utiliser le réglage global.</string>
+    <string name="connections_helper_background_opacity" formatted="false">En dessous de 100%, le terminal devient translucide et affiche le fond d\'écran de l\'appareil derrière le texte pour ce profil. Désactivé = utiliser le réglage global.</string>
     <string name="connections_background_opacity_value">Opacité : %1$d%%</string>
     <string name="connections_reveal_password_title">Afficher le mot de passe enregistré</string>
     <string name="connections_reveal_password_subtitle">Confirmez votre identité pour afficher le mot de passe enregistré</string>

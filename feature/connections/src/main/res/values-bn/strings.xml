@@ -502,7 +502,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">নেটিভ Android শেল</string>
     <string name="connections_field_background_opacity">ব্যাকগ্রাউন্ড অস্বচ্ছতা ওভাররাইড করুন</string>
-    <string name="connections_helper_background_opacity">100%-এর নিচে টার্মিনাল স্বচ্ছপ্রায় হয়ে যায় এবং এই প্রোফাইলে টেক্সটের পিছনে ডিভাইসের ওয়ালপেপার দেখায়। বন্ধ = গ্লোবাল সেটিং ব্যবহার।</string>
+    <string name="connections_helper_background_opacity" formatted="false">100%-এর নিচে টার্মিনাল স্বচ্ছপ্রায় হয়ে যায় এবং এই প্রোফাইলে টেক্সটের পিছনে ডিভাইসের ওয়ালপেপার দেখায়। বন্ধ = গ্লোবাল সেটিং ব্যবহার।</string>
     <string name="connections_background_opacity_value">অস্বচ্ছতা: %1$d%%</string>
     <string name="connections_reveal_password_title">সংরক্ষিত পাসওয়ার্ড দেখান</string>
     <string name="connections_reveal_password_subtitle">সংরক্ষিত পাসওয়ার্ড দেখাতে নিশ্চিত করুন যে এটি আপনিই</string>

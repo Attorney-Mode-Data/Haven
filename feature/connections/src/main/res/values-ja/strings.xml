@@ -502,7 +502,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">ネイティブ Android シェル</string>
     <string name="connections_field_background_opacity">背景の不透明度を上書き</string>
-    <string name="connections_helper_background_opacity">100% 未満にすると、このプロファイルのターミナルが半透明になり、文字の背後にデバイスの壁紙が表示されます。オフ = グローバル設定を使用。</string>
+    <string name="connections_helper_background_opacity" formatted="false">100% 未満にすると、このプロファイルのターミナルが半透明になり、文字の背後にデバイスの壁紙が表示されます。オフ = グローバル設定を使用。</string>
     <string name="connections_background_opacity_value">不透明度: %1$d%%</string>
     <string name="connections_reveal_password_title">保存済みパスワードを表示</string>
     <string name="connections_reveal_password_subtitle">本人確認を行うと保存済みパスワードが表示されます</string>

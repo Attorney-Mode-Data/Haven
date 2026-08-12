@@ -502,7 +502,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">Нативная оболочка Android</string>
     <string name="connections_field_background_opacity">Переопределить непрозрачность фона</string>
-    <string name="connections_helper_background_opacity">Ниже 100% терминал становится полупрозрачным и показывает обои устройства за текстом для этого профиля. Выключено = используется глобальная настройка.</string>
+    <string name="connections_helper_background_opacity" formatted="false">Ниже 100% терминал становится полупрозрачным и показывает обои устройства за текстом для этого профиля. Выключено = используется глобальная настройка.</string>
     <string name="connections_background_opacity_value">Непрозрачность: %1$d%%</string>
     <string name="connections_reveal_password_title">Показать сохранённый пароль</string>
     <string name="connections_reveal_password_subtitle">Подтвердите, что это вы, чтобы показать сохранённый пароль</string>

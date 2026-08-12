@@ -500,7 +500,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">原生 Android shell</string>
     <string name="connections_field_background_opacity">覆盖背景不透明度</string>
-    <string name="connections_helper_background_opacity">低于 100% 时，此配置的终端将变为半透明，在文字后面显示设备壁纸。关闭 = 使用全局设置。</string>
+    <string name="connections_helper_background_opacity" formatted="false">低于 100% 时，此配置的终端将变为半透明，在文字后面显示设备壁纸。关闭 = 使用全局设置。</string>
     <string name="connections_background_opacity_value">不透明度：%1$d%%</string>
     <string name="connections_reveal_password_title">显示已保存的密码</string>
     <string name="connections_reveal_password_subtitle">验证身份后显示已保存的密码</string>

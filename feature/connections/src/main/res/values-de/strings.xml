@@ -502,7 +502,7 @@
     <!-- Backfill 2026-07: strings added since the last i18n pass -->
     <string name="connections_android_shell_label">Native Android-Shell</string>
     <string name="connections_field_background_opacity">Hintergrund-Deckkraft überschreiben</string>
-    <string name="connections_helper_background_opacity">Unter 100% wird das Terminal durchscheinend und zeigt für dieses Profil das Hintergrundbild des Geräts hinter dem Text. Aus = globale Einstellung verwenden.</string>
+    <string name="connections_helper_background_opacity" formatted="false">Unter 100% wird das Terminal durchscheinend und zeigt für dieses Profil das Hintergrundbild des Geräts hinter dem Text. Aus = globale Einstellung verwenden.</string>
     <string name="connections_background_opacity_value">Deckkraft: %1$d%%</string>
     <string name="connections_reveal_password_title">Gespeichertes Passwort anzeigen</string>
     <string name="connections_reveal_password_subtitle">Bestätige deine Identität, um das gespeicherte Passwort anzuzeigen</string>
