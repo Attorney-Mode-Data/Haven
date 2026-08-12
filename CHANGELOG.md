@@ -5,6 +5,21 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.14
+
+- Zooming or rotating no longer silently destroys scrollback content — wide history lines now wrap when pulled back onto a narrower screen instead of losing their tails.
+- An RDP/VNC/SPICE/SMB profile's "Route via" tunnel or proxy choice now actually saves — it used to revert to "None (direct)" every time.
+- A locked Ctrl or Alt now unlocks itself when your last session ends, instead of ambushing the next connection.
+- New optional "Swipe" toolbar key: while on, swiping sends ↑/↓ even at a plain shell prompt — command history without arrow keys on the bar.
+
+📜 **The scrollback that quietly stopped existing.** When the terminal gains rows — a zoom out, a rotation — it pulls lines back out of the scrollback to fill them. The engine asked for each line at the old width, deleted it from the store on handover, then kept only what fit the new width: on any resize where rows grew while columns shrank, every wide line's tail was destroyed, permanently and invisibly. "Scrollback isn't fully scrollable" was literal — the content was gone. The engine now asks at the width it can accept, and the store hands back one row's worth while re-queuing the rest as a soft-wrapped continuation, so wide lines wrap across the boundary instead of ceasing to exist. Reproduced and fixed under test against the real terminal engine: a 70-character line survives where it previously came back as its first 40. Not yet re-verified on a device — that retest is what #478 is waiting on. (#478, reopened by @skeezmoe's "the issue still exists" — they were right)
+
+🔀 **The routing picker that never saved.** The "Route via" picker (WireGuard/Tailscale tunnel or SOCKS/HTTP proxy) is shown for six connection types, but only the SSH and EMAIL save paths ever persisted what it wrote — for VNC, RDP, SPICE and SMB a picked tunnel or proxy silently reverted to "None (direct)" on save, every time. All four now go through one shared save helper. (#527, @VaneEcho)
+
+🔒 **The lock that outlived its sessions.** Lock Ctrl, exit your last session with Ctrl+D, connect somewhere else later — and the new session started with Ctrl still locked. The lock now dies with the last tab; closing one tab among several leaves it alone, since the toolbar state is shared and a surviving session may be mid-use of it. (#522, @a8645322's exact sign-off sequence is the regression test)
+
+👆 **Swipe as arrow keys, everywhere.** Haven already turns swipes into arrow keys inside full-screen apps and scrolls its own scrollback at the shell — automatically. But no automation can know you want *command history* at a plain prompt: the application state is identical either way. The new Swipe toolbar key (add it from toolbar customisation) latches that choice on, freeing the four arrow-key slots for other keys. Vertical only for now — horizontal swipes still switch tabs. (#524, argued for and won by @a8645322)
+
 ## v5.87.13
 
 - With a physical keyboard on an RDP session, letters, digits and punctuation reach the remote again — v5.87.11's focus fix had quietly cut the only path that carried them.
