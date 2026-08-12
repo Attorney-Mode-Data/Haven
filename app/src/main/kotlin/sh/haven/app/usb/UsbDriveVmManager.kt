@@ -8,6 +8,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -87,6 +88,20 @@ class UsbDriveVmManager @Inject constructor(
     val sessions: StateFlow<Map<String, Status>> = _sessions.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        // A physical unplug closes the broker handle but doesn't unwind our own
+        // export + VM session — without this the export map, VM-side attach, and
+        // the READY status leak until an explicit close. The broker signals the
+        // detach here (dependency-inverted: core:usb doesn't know about us).
+        // close() no-ops when no session exists for the busid, so an unplug of a
+        // never-opened device is harmless.
+        scope.launch {
+            usbBroker.detached.collect { deviceName ->
+                runCatching { close(busidOf(deviceName)) }
+            }
+        }
+    }
 
     private fun updateStatus(busid: String, transform: (Status) -> Status) {
         _sessions.update { it + (busid to transform(it[busid] ?: Status())) }
@@ -222,11 +237,20 @@ class UsbDriveVmManager @Inject constructor(
     private fun startKeepAlive(deviceName: String, busid: String) {
         keepAliveJobs.remove(busid)?.cancel()
         keepAliveJobs[busid] = scope.launch {
+            var consecutiveFailures = 0
             while (isActive) {
                 delay(KEEP_ALIVE_INTERVAL_MS)
                 if (!usbBroker.isOpen(deviceName)) break
-                runCatching {
+                val ok = runCatching {
                     usbBroker.controlTransfer(deviceName, GET_STATUS_REQUEST_TYPE, GET_STATUS_REQUEST, 0, 0, null, 2, 1000)
+                }.isSuccess
+                if (ok) {
+                    consecutiveFailures = 0
+                } else if (++consecutiveFailures >= KEEP_ALIVE_MAX_FAILURES) {
+                    // Stop poking a wedged/half-dead device every interval — the
+                    // transfers keep failing and only add contention.
+                    Log.w(TAG, "keepalive giving up on $deviceName after $consecutiveFailures failures")
+                    break
                 }
             }
         }
@@ -471,5 +495,8 @@ class UsbDriveVmManager @Inject constructor(
         // OTG autosuspend timeouts are typically a few seconds of idle; keep
         // comfortably under that without hammering the bus.
         private const val KEEP_ALIVE_INTERVAL_MS = 5_000L
+        // Stop the keepalive after this many consecutive failed pokes so a
+        // wedged/half-dead device isn't polled forever.
+        private const val KEEP_ALIVE_MAX_FAILURES = 3
     }
 }

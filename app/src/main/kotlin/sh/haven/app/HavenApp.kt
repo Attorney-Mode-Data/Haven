@@ -320,7 +320,13 @@ class HavenApp : Application(), Configuration.Provider {
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra(android.hardware.usb.UsbManager.EXTRA_DEVICE)
                 }
-            if (device != null && isMassStorageDevice(device)) postUsbDriveDetectedNotification(device)
+            if (device == null) return
+            // Off the main thread: the interface scan + notification post touch
+            // USB metadata and the NotificationManager binder, which a stalled
+            // USB stack can make block — never on the broadcast thread.
+            appScope.launch {
+                if (isMassStorageDevice(device)) postUsbDriveDetectedNotification(device)
+            }
         }
     }
 

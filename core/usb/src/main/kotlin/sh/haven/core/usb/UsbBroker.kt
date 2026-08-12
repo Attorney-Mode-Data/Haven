@@ -15,6 +15,12 @@ import android.os.Build
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -59,9 +65,25 @@ class UsbBroker @Inject constructor(
         val claimedInterfaces: MutableSet<Int> = ConcurrentHashMap.newKeySet(),
     )
 
-    // Concurrent: the detach receiver (main thread) closes handles while export
-    // lanes read/transfer on other threads.
+    // Concurrent: the detach receiver hands off to [ioScope] so the blocking
+    // connection.close() never runs on the main thread (a wedged device would
+    // otherwise ANR the UI); export lanes read/transfer on other threads.
     private val open = ConcurrentHashMap<String, OpenHandle>()
+
+    // Process-life scope for detach cleanup. closeDevice() blocks on native USB
+    // calls that a stalled device can hang indefinitely — keep them off the
+    // broadcast (main) thread.
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _detached = MutableSharedFlow<String>(extraBufferCapacity = 8)
+
+    /**
+     * Emits a device name after its handle is torn down on physical detach, so
+     * higher layers (e.g. the USB-drive VM manager) can unwind their own state
+     * without this module depending on them. Buffered + non-suspending so the
+     * detach path is never blocked by a slow collector.
+     */
+    val detached: SharedFlow<String> get() = _detached
 
     init {
         // A physical unplug — or an ESP32-S3 re-enumerating when esptool resets it —
@@ -79,7 +101,13 @@ class UsbBroker @Inject constructor(
                 val name = device?.deviceName ?: return
                 if (open.containsKey(name)) {
                     Log.d(TAG, "USB device $name detached — closing handle")
-                    closeDevice(name)
+                    // Off the main thread: connection.close() on a wedged device
+                    // blocks, and the broadcast is finished the instant onReceive
+                    // returns, so no slow-dispatch ANR can fire.
+                    ioScope.launch {
+                        closeDevice(name)
+                        _detached.tryEmit(name)
+                    }
                 }
             }
         }
@@ -227,12 +255,18 @@ class UsbBroker @Inject constructor(
 
     fun closeDevice(deviceName: String) {
         open.remove(deviceName)?.let { handle ->
-            handle.claimedInterfaces.forEach { id ->
-                runCatching {
-                    handle.connection.releaseInterface(handle.device.getInterface(indexOfInterfaceId(handle.device, id)))
+            // Serialize against in-flight transfers, which hold the same monitor
+            // (controlTransfer/bulkTransfer). Each transfer holds it only around
+            // one timeout-bounded native call, so this waits at most that long;
+            // removing from `open` first makes new transfers fail fast instead.
+            synchronized(handle.connection) {
+                handle.claimedInterfaces.forEach { id ->
+                    runCatching {
+                        handle.connection.releaseInterface(handle.device.getInterface(indexOfInterfaceId(handle.device, id)))
+                    }
                 }
+                runCatching { handle.connection.close() }
             }
-            runCatching { handle.connection.close() }
             Log.d(TAG, "Closed $deviceName")
         }
     }

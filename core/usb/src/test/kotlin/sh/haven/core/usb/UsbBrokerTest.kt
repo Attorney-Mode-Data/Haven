@@ -13,7 +13,13 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -146,8 +152,88 @@ class UsbBrokerTest {
         }
         recvSlot.captured.onReceive(context, intent)
 
+        // closeDevice now runs off the broadcast thread (on Dispatchers.IO) so a
+        // wedged device can't ANR the UI — await its completion before asserting.
+        repeat(200) { if (!broker.isOpen(dev.deviceName)) return@repeat; Thread.sleep(10) }
         assertFalse(broker.isOpen(dev.deviceName))
-        verify { conn.close() }
+        verify(timeout = 2000) { conn.close() }
+    }
+
+    @Test
+    fun `a USB detach emits the device name on the detached flow`() = runBlocking {
+        val dev = device("/dev/bus/usb/001/011", 0x1, 0x2, emptyList())
+        val conn = mockk<UsbDeviceConnection>(relaxed = true)
+        val usb: UsbManager = mockk {
+            every { deviceList } returns hashMapOf(dev.deviceName to dev)
+            every { hasPermission(dev) } returns true
+            every { openDevice(dev) } returns conn
+        }
+        val recvSlot = slot<BroadcastReceiver>()
+        val context: Context = mockk {
+            every { getSystemService(Context.USB_SERVICE) } returns usb
+            every { registerReceiver(capture(recvSlot), any()) } returns null
+            every { registerReceiver(any(), any(), any<Int>()) } returns null
+        }
+        val broker = UsbBroker(context, UsbAccessGate())
+        broker.openDevice(dev.deviceName)
+
+        val received = CompletableDeferred<String>()
+        val collector = launch(Dispatchers.Default) { received.complete(broker.detached.first()) }
+        delay(100) // let the collector subscribe (SharedFlow replay=0)
+
+        val intent: Intent = mockk {
+            every { action } returns UsbManager.ACTION_USB_DEVICE_DETACHED
+            every { getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE) } returns dev
+        }
+        recvSlot.captured.onReceive(context, intent)
+
+        assertEquals(dev.deviceName, withTimeout(2000) { received.await() })
+        collector.cancel()
+    }
+
+    @Test
+    fun `closeDevice serializes against in-flight transfers on the same connection`() = runBlocking {
+        // closeDevice's releaseInterface/close must hold the same connection
+        // monitor as the transfer paths, or a detach mid-export corrupts an
+        // in-flight transaction (and, off the main thread now, a raw close could
+        // race an export lane).
+        val epIn = endpoint(0x81, UsbConstants.USB_DIR_IN, UsbConstants.USB_ENDPOINT_XFER_BULK)
+        val dev = device(
+            "/dev/bus/usb/001/012", 0x1, 0x2,
+            listOf(iface(0, UsbConstants.USB_CLASS_MASS_STORAGE, listOf(epIn))),
+        )
+        val inCriticalSection = java.util.concurrent.atomic.AtomicBoolean(false)
+        val raceDetected = java.util.concurrent.atomic.AtomicBoolean(false)
+        fun <T> enterThenLeave(result: T): T {
+            if (!inCriticalSection.compareAndSet(false, true)) raceDetected.set(true)
+            Thread.sleep(15)
+            inCriticalSection.set(false)
+            return result
+        }
+        val conn: UsbDeviceConnection = mockk(relaxed = true) {
+            every { claimInterface(any(), any()) } returns true
+            every { bulkTransfer(any(), any(), any(), any()) } answers { enterThenLeave(8) }
+            every { close() } answers { enterThenLeave(Unit) }
+        }
+        val usb: UsbManager = mockk {
+            every { deviceList } returns hashMapOf(dev.deviceName to dev)
+            every { hasPermission(dev) } returns true
+            every { openDevice(dev) } returns conn
+        }
+        val broker = broker(usb)
+        broker.openDevice(dev.deviceName)
+
+        val transferThreads = (1..6).map {
+            Thread { repeat(8) { runCatching { broker.bulkTransfer(dev.deviceName, 0x81, null, 8, 1000) } } }
+        }
+        transferThreads.forEach { it.start() }
+        Thread.sleep(20) // let some transfers get in flight
+        val closeThread = Thread { broker.closeDevice(dev.deviceName) }
+        closeThread.start()
+        (transferThreads + closeThread).forEach { it.join() }
+
+        assertFalse("closeDevice overlapped a transfer on the same connection", raceDetected.get())
+        verify(exactly = 1) { conn.close() }
     }
 
     @Test
