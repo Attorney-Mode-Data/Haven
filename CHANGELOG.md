@@ -5,6 +5,14 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.17
+
+- Your saved SSH key works again after opening USB drives. Haven mints a private key for each drive it opens in a VM, and those keys wrongly joined the "try any saved key" pool — a handful of stale drive keys would burn through a server's auth-attempt limit ("Too many authentication failures") before your real key was ever offered. Drive keys now stay out of the pool, and ones minted by earlier versions are cleaned up automatically on launch.
+- FIDO2 security keys (`sk-ssh-ed25519@openssh.com`, e.g. YubiKey resident keys) can now be offered for connections like any other key (#531): the per-key "Offer for connections" menu entry appears for them, and the automatic key offer includes them alongside your software keys.
+- The Keys screen groups those per-drive VM keys under their own "USB drive keys" section, collapsed by default, instead of interleaving them with the keys you created.
+
+🔑 **Every key you offer costs an auth attempt.** An SSH server counts each offered-and-declined public key against its attempt limit (OpenSSH defaults to six), so what sits in the auto-offer pool matters. This release fixes both directions at once: keys that should never have been offered (the ephemeral per-drive VM keys, useful only to their own drive's loopback session) are out, and keys that should have been offerable but weren't (FIDO2 security keys, which sign on the token itself) are in. Software keys are offered first, and a security key's touch/PIN prompt only appears once a server has actually accepted that key's offer — so adding a YubiKey to the pool doesn't nag you on servers that don't know it.
+
 ## v5.87.16
 
 - A USB device that stops responding — a flaky card reader, or one drawing more power than the phone's port can supply — no longer freezes Haven when you plug it in or unplug it. The stuck device is now handled off the UI thread, so the app stays responsive even while the device itself has wedged.
