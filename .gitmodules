@@ -26,3 +26,7 @@
 [submodule "spice-kotlin"]
 	path = spice-kotlin
 	url = https://github.com/GlassOnTin/spice-kotlin.git
+[submodule "prns"]
+	path = prns
+	url = https://github.com/GlassOnTin/Prns.git
+	branch = trunk

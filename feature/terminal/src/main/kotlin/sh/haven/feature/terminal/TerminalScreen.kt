@@ -398,6 +398,7 @@ fun TerminalScreen(
     // bracket-paste so a runaway newline can't be mis-interpreted as Enter
     // by the remote app. Drains the StateFlow via consumeScanInjection so
     // a second result doesn't fire on recomposition.
+    val noActiveTabMessage = stringResource(R.string.terminal_paste_no_active_tab)
     val pendingScanInjection by viewModel.pendingScanInjection.collectAsState()
     LaunchedEffect(pendingScanInjection) {
         val text = pendingScanInjection ?: return@LaunchedEffect
@@ -410,7 +411,7 @@ fun TerminalScreen(
             }
             tab.sendInput(payload.toByteArray())
         } else {
-            viewModel.showNewTabMessage(context.getString(R.string.terminal_paste_no_active_tab))
+            viewModel.showNewTabMessage(noActiveTabMessage)
         }
         viewModel.consumeScanInjection()
     }
@@ -432,7 +433,7 @@ fun TerminalScreen(
             }
             tab.sendInput(payload.toByteArray())
         } else {
-            viewModel.showNewTabMessage(context.getString(R.string.terminal_paste_no_active_tab))
+            viewModel.showNewTabMessage(noActiveTabMessage)
         }
         viewModel.consumeAttachInjection()
     }
