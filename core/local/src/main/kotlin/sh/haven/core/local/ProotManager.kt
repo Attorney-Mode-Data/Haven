@@ -177,11 +177,15 @@ internal fun resolveTarLinkTarget(linkTarget: String, stripComponents: Int): Str
  * `name -> .l2s.nameNNNN [-> chain] -> payload`, where the symlink target is
  * an ABSOLUTE path of the build system (e.g. `/data/data/com.termux/...`).
  * Tar that tree and import it here and those links resolve to nothing — or
- * to another app's private storage. The payload always sits in the same
- * directory as the link (l2s construction), so: resolve by target basename,
- * follow `.l2s.` chains, and materialize a real copy in place of the link.
- * Dangling links (payload never made it into the archive) are left as-is —
- * dpkg unlinks and rewrites its `-old` backups, device-verified harmless.
+ * to another app's private storage. The payload sits either in the same
+ * directory as the link (sibling rule) or — for a rootfs built under a
+ * Haven guest with `PROOT_L2S_DIR` — in the rootfs-top `.l2s/` directory,
+ * so: resolve by target basename in both places, follow `.l2s.` chains, and
+ * materialize a real copy in place of the link. Dangling links (payload
+ * never made it into the archive) are left as-is — dpkg unlinks and
+ * rewrites its `-old` backups, device-verified harmless. A leftover
+ * top-level `.l2s/` is deleted afterwards so stale payloads don't ship
+ * into the fresh install (the runtime recreates it on demand).
  * Returns the number of links materialized. Pure-JVM so it unit-tests next
  * to [clearPathIfWrongType].
  */
@@ -200,23 +204,30 @@ internal fun flattenL2sLinks(root: File): Int {
             }
             if (targetName?.startsWith(".l2s.") == true) links.add(f)
         }
+    val l2sDir = File(root, ".l2s")
+    fun resolveChain(baseDir: File?, targetName: String): File? {
+        if (baseDir == null) return null
+        var candidate = File(baseDir, targetName)
+        var hops = 0
+        while (java.nio.file.Files.isSymbolicLink(candidate.toPath()) && hops++ < 8) {
+            val next = try {
+                java.nio.file.Files.readSymbolicLink(candidate.toPath()).fileName?.toString()
+            } catch (_: Exception) {
+                null
+            } ?: break
+            candidate = File(candidate.parentFile, next)
+        }
+        return candidate.takeIf { it.isFile && !java.nio.file.Files.isSymbolicLink(it.toPath()) }
+    }
     for (link in links) {
         val targetName = try {
             java.nio.file.Files.readSymbolicLink(link.toPath()).fileName?.toString()
         } catch (_: Exception) {
             null
         } ?: continue
-        var payload = File(link.parentFile, targetName)
-        var hops = 0
-        while (java.nio.file.Files.isSymbolicLink(payload.toPath()) && hops++ < 8) {
-            val next = try {
-                java.nio.file.Files.readSymbolicLink(payload.toPath()).fileName?.toString()
-            } catch (_: Exception) {
-                null
-            } ?: break
-            payload = File(payload.parentFile, next)
-        }
-        if (payload.isFile && !java.nio.file.Files.isSymbolicLink(payload.toPath())) {
+        val payload = resolveChain(link.parentFile, targetName)
+            ?: resolveChain(l2sDir, targetName)
+        if (payload != null) {
             val perms = try {
                 java.nio.file.Files.getPosixFilePermissions(payload.toPath())
             } catch (_: Exception) {
@@ -232,6 +243,7 @@ internal fun flattenL2sLinks(root: File): Int {
             fixed++
         }
     }
+    if (l2sDir.isDirectory) l2sDir.deleteRecursively()
     return fixed
 }
 
@@ -724,6 +736,36 @@ class ProotManager @Inject constructor(
         val loader = qemuLoaderFile(arch)
         if (!loader.canExecute()) return emptyList()
         return listOf("--qemu=${loader.absolutePath}")
+    }
+
+    /**
+     * Host directory where proot's link2symlink extension parks hard-link
+     * payloads for [distroId] — guest-visible as `/.l2s`.
+     *
+     * Without it the payload lands next to the link *source*, so deleting
+     * the source's directory (a temp dir, most famously Nix/libgit2's
+     * tarball-cache flow, discussion #536) destroys data other referents
+     * still need, leaving them dangling.
+     *
+     * Deliberately INSIDE the rootfs: chains must be reachable in both the
+     * guest and host namespaces, and the dir is deleted with the distro.
+     */
+    fun l2sDirFor(distroId: String): File =
+        File(rootfsDirFor(distroId), ".l2s").apply { mkdirs() }
+
+    /**
+     * The `PROOT_L2S_DIR` env value for [distroId]: the GUEST path of
+     * [l2sDirFor] (which this ensures exists host-side). A guest path —
+     * not the host path — because the extension writes it into chain
+     * symlink *content*, and only guest-absolute content can be
+     * dereferenced by proot's in-guest canonicalizer (device-verified:
+     * host-absolute symlink targets fail every open() through a stub
+     * with ENOENT on Android, while the extension's host-side walks
+     * translate guest content back via translate_path).
+     */
+    fun l2sEnvValue(distroId: String): String {
+        l2sDirFor(distroId)
+        return "/.l2s"
     }
 
     private fun qemuLoaderFile(arch: Arch): File =
@@ -2369,6 +2411,7 @@ class ProotManager @Inject constructor(
             environment().apply {
                 put("PROOT_TMP_DIR", context.cacheDir.absolutePath)
                 put("PROOT_LOADER", loaderPath)
+                put("PROOT_L2S_DIR", l2sEnvValue(activeDistroId))
             }
             redirectErrorStream(true)
         }.start()

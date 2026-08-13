@@ -78,6 +78,31 @@ jobs:
         working-directory: rdp-kotlin/rust
         run: cargo test
 
+  # Host-built proot exercising the link2symlink emulation: refcounts,
+  # PROOT_L2S_DIR payload relocation (the Nix/libgit2 tarball-cache
+  # durability fix, discussion #536), and broken-chain fail-soft. Runs on
+  # the host kernel — ptrace works on GitHub runners; no Android needed.
+  proot-l2s-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          submodules: false
+      - name: Checkout proot submodule
+        run: git submodule update --init build-proot/proot-termux
+      - name: Install talloc and busybox
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libtalloc-dev busybox
+      - name: Build host proot
+        run: make -C build-proot/proot-termux/src proot
+      - name: Run link2symlink tests
+        run: |
+          cd build-proot/proot-termux/tests
+          for t in test-l2s-refcount.sh test-l2s-dir.sh test-l2s-broken-chain.sh test-l2s-guest-dir.sh; do
+            echo "=== $t"
+            env PROOT="$PWD/../src/proot" sh -e "$t"
+          done
+
   # Three independent Gradle entry-points run as parallel jobs instead of
   # sequentially in one. Each restores the shared toolchain + caches from
   # the composite action; the second run of each job type reuses the cache

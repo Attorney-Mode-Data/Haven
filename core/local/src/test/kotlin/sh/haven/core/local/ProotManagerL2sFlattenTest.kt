@@ -87,6 +87,39 @@ class ProotManagerL2sFlattenTest {
     }
 
     @Test
+    fun `l2s-dir-style chain resolves through the rootfs-top payload store`() {
+        // A rootfs built inside a Haven guest with PROOT_L2S_DIR carries its
+        // payloads under /.l2s, not next to the link.
+        val root = tempDir()
+        val l2s = File(root, ".l2s").apply { mkdirs() }
+        val dpkg = File(root, "var/lib/dpkg").apply { mkdirs() }
+        File(l2s, ".l2s.status0001.0002").writeText("relocated payload")
+        symlink(File(l2s, ".l2s.status0001"), "/data/user/0/sh.haven.app/files/proot/rootfs/debian-trixie/.l2s/.l2s.status0001.0002")
+        symlink(File(dpkg, "status-old"), "/data/user/0/sh.haven.app/files/proot/rootfs/debian-trixie/.l2s/.l2s.status0001")
+
+        // Only the user-visible link is materialized (the chain lives in
+        // .l2s, which is dropped wholesale afterwards).
+        assertTrue(flattenL2sLinks(root) >= 1)
+
+        val fixed = File(dpkg, "status-old")
+        assertFalse(Files.isSymbolicLink(fixed.toPath()))
+        assertEquals("relocated payload", fixed.readText())
+        forceDeleteRecursively(root)
+    }
+
+    @Test
+    fun `leftover l2s dir is dropped after flattening`() {
+        val root = tempDir()
+        val l2s = File(root, ".l2s").apply { mkdirs() }
+        File(l2s, ".l2s.orphan0001.0001").writeText("orphan payload")
+
+        flattenL2sLinks(root)
+
+        assertFalse(l2s.exists())
+        forceDeleteRecursively(root)
+    }
+
+    @Test
     fun `payload mode is carried onto the materialized file`() {
         val root = tempDir()
         val bin = File(root, "usr/bin").apply { mkdirs() }

@@ -907,6 +907,7 @@ class DesktopManager @Inject constructor(
                 put("TMPDIR", "/tmp")
                 put("PROOT_TMP_DIR", context.cacheDir.absolutePath)
                 put("PROOT_LOADER", loaderPath)
+                put("PROOT_L2S_DIR", prootManager.l2sEnvValue(prootManager.activeDistroId))
             }
             redirectErrorStream(true)
         }.start()
@@ -1208,6 +1209,7 @@ class DesktopManager @Inject constructor(
                 put("TMPDIR", "/tmp")
                 put("PROOT_TMP_DIR", context.cacheDir.absolutePath)
                 put("PROOT_LOADER", loaderPath)
+                put("PROOT_L2S_DIR", prootManager.l2sEnvValue(prootManager.activeDistroId))
             }
             redirectErrorStream(true)
         }.start()
@@ -1763,6 +1765,7 @@ class DesktopManager @Inject constructor(
                     put("TMPDIR", "/tmp")
                     put("PROOT_TMP_DIR", context.cacheDir.absolutePath)
                     put("PROOT_LOADER", loaderPath)
+                    put("PROOT_L2S_DIR", prootManager.l2sEnvValue(prootManager.activeDistroId))
                     remove("FONTCONFIG_FILE")
                     remove("XKB_CONFIG_ROOT")
                 }

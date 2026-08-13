@@ -364,6 +364,7 @@ class LocalSessionManager @Inject constructor(
                 "XDG_CACHE_HOME=/root/.cache",
                 "PROOT_TMP_DIR=${context.cacheDir.absolutePath}",
                 "PROOT_LOADER=${java.io.File(context.applicationInfo.nativeLibraryDir, "libproot_loader.so").absolutePath}",
+                "PROOT_L2S_DIR=${prootManager.l2sEnvValue(targetDistro)}",
             )
             Triple(cmd, args, env)
         } else {
