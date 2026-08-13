@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">ইমপোর্ট ব্যর্থ: %1$s</string>
     <string name="keys_section_certificate_authorities">সার্টিফিকেট অথরিটি (%1$d)</string>
     <string name="keys_section_ssh">SSH কী (%1$d)</string>
+    <string name="keys_section_drive">USB ড্রাইভ কী (%1$d)</string>
     <string name="keys_section_passwords">সংরক্ষিত পাসওয়ার্ড (%1$d)</string>
     <string name="keys_chip_hardware_backed">হার্ডওয়্যার-সমর্থিত</string>
     <string name="keys_chip_passphrase">পাসফ্রেজ</string>

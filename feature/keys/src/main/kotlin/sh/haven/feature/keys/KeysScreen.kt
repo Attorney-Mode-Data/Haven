@@ -125,6 +125,16 @@ internal const val SECTION_AGE = "age"
 internal const val SECTION_IDENTITIES = "identities"
 
 /**
+ * USB drive VM keys. INVERTED persistence: presence in the collapsed set means
+ * EXPANDED. Every other section defaults to expanded once the user has toggled
+ * anything (the stored set replaces [DEFAULT_COLLAPSED_SECTIONS] wholesale), but
+ * this section holds infrastructure keys and must start collapsed for existing
+ * users too — whose stored set can't already contain it. Absent = collapsed
+ * gives that without a second preference; toggleSection works unchanged.
+ */
+internal const val SECTION_DRIVE = "drive"
+
+/**
  * Collapsed on first run — everything except TOTP. Applied only when the user has never
  * toggled a section; see [KeysViewModel.collapsedSections].
  */
@@ -163,6 +173,9 @@ fun KeysScreen(
     val collapsedSections by viewModel.collapsedSections.collectAsState()
     val keysInUse by viewModel.keysInUse.collectAsState()
     val sshExpanded = SECTION_SSH !in collapsedSections
+    // Inverted persistence — absent means collapsed; see SECTION_DRIVE.
+    val driveExpanded = SECTION_DRIVE in collapsedSections
+    val (userKeys, driveKeys) = partitionDriveKeys(keys)
     var pendingStorePassphrase by remember { mutableStateOf<SshKey?>(null) }
 
     var showAddKeyDialog by remember { mutableStateOf(false) }
@@ -319,6 +332,51 @@ fun KeysScreen(
         // are no keys, passwords, or CA configs yet.
         val nothingButCa = keys.isEmpty() && passwordEntries.isEmpty() &&
             stepCaSectionConfigs.isEmpty() && totpSecrets.isEmpty() && ageIdentities.isEmpty() && !generating
+        // One invocation shared by the user-keys and drive-keys sections — the
+        // row and its menu behave identically, only reorderability differs.
+        val sshKeyRow: @Composable (SshKey, Boolean, Boolean) -> Unit = { sshKey, canMoveUp, canMoveDown ->
+            SshKeyAuditRow(
+                sshKey = sshKey,
+                entry = keyEntries[sshKey.id],
+                hasCertificate = sshKey.certificateBytes != null,
+                verifyRequired = skVerifyRequired[sshKey.id] ?: false,
+                menuOpen = contextMenuKeyId == sshKey.id,
+                onMenuOpen = { contextMenuKeyId = sshKey.id },
+                onMenuDismiss = { contextMenuKeyId = null },
+                onCopyPublic = { copyPublicKey(context, sshKey) },
+                onRename = { renameTarget = sshKey },
+                onExportPrivate = { viewModel.requestExport(sshKey.id) },
+                onDelete = { viewModel.deleteKey(sshKey.id) },
+                onBiometricToggle = { protected ->
+                    viewModel.setBiometricProtected(sshKey.id, protected)
+                },
+                onEnabledForAuthToggle = { enabled ->
+                    viewModel.setKeyEnabledForAuth(sshKey.id, enabled)
+                },
+                onStorePassphraseToggle = { store ->
+                    if (store) pendingStorePassphrase = sshKey
+                    else viewModel.setKeyStoredPassphrase(sshKey.id, null)
+                },
+                onSetVerifyRequired = { required ->
+                    viewModel.setSkVerifyRequired(sshKey.id, required)
+                },
+                onAttachCertificate = { viewModel.requestAttachCertificate(sshKey.id) },
+                onRemoveCertificate = { viewModel.removeCertificate(sshKey.id) },
+                onExportCertificate = { viewModel.requestCertExport(sshKey.id) },
+                onRegenerateViaStepCa = { viewModel.regenerateViaStepCa(sshKey.id) },
+                canMoveUp = canMoveUp,
+                canMoveDown = canMoveDown,
+                onMoveUp = { viewModel.moveKey(sshKey.id, up = true) },
+                onMoveDown = { viewModel.moveKey(sshKey.id, up = false) },
+                selected = selection?.let { sshKey.id in it },
+                onStartSelection = { selection = setOf(sshKey.id) },
+                onToggleSelected = {
+                    selection = selection?.let {
+                        if (sshKey.id in it) it - sshKey.id else it + sshKey.id
+                    }
+                },
+            )
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -373,7 +431,7 @@ fun KeysScreen(
                             )
                         } else {
                             SectionHeader(
-                                label = stringResource(R.string.keys_section_ssh, keys.size),
+                                label = stringResource(R.string.keys_section_ssh, userKeys.size),
                                 expanded = sshExpanded,
                                 onToggle = { viewModel.toggleSection(SECTION_SSH) },
                                 trailing = {
@@ -386,53 +444,34 @@ fun KeysScreen(
                         }
                     }
                     itemsIndexed(
-                        if (sshExpanded) keys else emptyList(),
+                        if (sshExpanded) userKeys else emptyList(),
                         key = { _, k -> k.id },
                     ) { index, sshKey ->
-                        SshKeyAuditRow(
-                            sshKey = sshKey,
-                            entry = keyEntries[sshKey.id],
-                            hasCertificate = sshKey.certificateBytes != null,
-                            verifyRequired = skVerifyRequired[sshKey.id] ?: false,
-                            menuOpen = contextMenuKeyId == sshKey.id,
-                            onMenuOpen = { contextMenuKeyId = sshKey.id },
-                            onMenuDismiss = { contextMenuKeyId = null },
-                            onCopyPublic = { copyPublicKey(context, sshKey) },
-                            onRename = { renameTarget = sshKey },
-                            onExportPrivate = { viewModel.requestExport(sshKey.id) },
-                            onDelete = { viewModel.deleteKey(sshKey.id) },
-                            onBiometricToggle = { protected ->
-                                viewModel.setBiometricProtected(sshKey.id, protected)
-                            },
-                            onEnabledForAuthToggle = { enabled ->
-                                viewModel.setKeyEnabledForAuth(sshKey.id, enabled)
-                            },
-                            onStorePassphraseToggle = { store ->
-                                if (store) pendingStorePassphrase = sshKey
-                                else viewModel.setKeyStoredPassphrase(sshKey.id, null)
-                            },
-                            onSetVerifyRequired = { required ->
-                                viewModel.setSkVerifyRequired(sshKey.id, required)
-                            },
-                            onAttachCertificate = { viewModel.requestAttachCertificate(sshKey.id) },
-                            onRemoveCertificate = { viewModel.removeCertificate(sshKey.id) },
-                            onExportCertificate = { viewModel.requestCertExport(sshKey.id) },
-                            onRegenerateViaStepCa = { viewModel.regenerateViaStepCa(sshKey.id) },
+                        sshKeyRow(
+                            sshKey,
                             // Reordering only makes sense under the manual
                             // order — under a sort the move would be computed
                             // away, so the actions are hidden (#460).
-                            canMoveUp = sortMode == KeySort.MANUAL && index > 0,
-                            canMoveDown = sortMode == KeySort.MANUAL && index < keys.lastIndex,
-                            onMoveUp = { viewModel.moveKey(sshKey.id, up = true) },
-                            onMoveDown = { viewModel.moveKey(sshKey.id, up = false) },
-                            selected = selection?.let { sshKey.id in it },
-                            onStartSelection = { selection = setOf(sshKey.id) },
-                            onToggleSelected = {
-                                selection = selection?.let {
-                                    if (sshKey.id in it) it - sshKey.id else it + sshKey.id
-                                }
-                            },
+                            sortMode == KeySort.MANUAL && index > 0,
+                            sortMode == KeySort.MANUAL && index < userKeys.lastIndex,
                         )
+                        HorizontalDivider()
+                    }
+                }
+                if (driveKeys.isNotEmpty()) {
+                    item(key = "drive-header") {
+                        SectionHeader(
+                            label = stringResource(R.string.keys_section_drive, driveKeys.size),
+                            expanded = driveExpanded,
+                            onToggle = { viewModel.toggleSection(SECTION_DRIVE) },
+                        )
+                    }
+                    items(
+                        if (driveExpanded) driveKeys else emptyList(),
+                        key = { it.id },
+                    ) { sshKey ->
+                        // Grouped by kind — manual reorder has nothing to express.
+                        sshKeyRow(sshKey, false, false)
                         HorizontalDivider()
                     }
                 }

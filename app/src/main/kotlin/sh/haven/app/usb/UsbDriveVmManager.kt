@@ -110,7 +110,7 @@ class UsbDriveVmManager @Inject constructor(
     /** Take every previously-minted drive key out of the try-every-key pool. */
     internal suspend fun disableStaleDriveKeyOffers() {
         sshKeyRepository.getAll()
-            .filter { it.label == DRIVE_KEY_LABEL && it.enabledForAuth }
+            .filter { it.label == SshKey.USB_DRIVE_VM_LABEL && it.enabledForAuth }
             .forEach { key ->
                 Log.i(TAG, "Disabling offer-for-connections on stale drive key ${key.id}")
                 sshKeyRepository.setEnabledForAuth(key.id, false)
@@ -300,7 +300,7 @@ class UsbDriveVmManager @Inject constructor(
             usbIpServer.export(deviceName)
             val key = SshKeyGenerator.generate(SshKeyGenerator.KeyType.ED25519, "Haven USB drive")
             val keyEntity = SshKey(
-                label = DRIVE_KEY_LABEL,
+                label = SshKey.USB_DRIVE_VM_LABEL,
                 keyType = key.type.sshName,
                 privateKeyBytes = key.privateKeyBytes,
                 publicKeyOpenSsh = key.publicKeyOpenSsh,
@@ -509,12 +509,6 @@ class UsbDriveVmManager @Inject constructor(
     companion object {
         private const val TAG = "UsbDriveVmManager"
         const val USB_CLASS_MASS_STORAGE = 8
-
-        /**
-         * Label of every ephemeral VM key minted by [bootAndAttach] — unchanged
-         * since #287, so [disableStaleDriveKeyOffers] can match old rows by it.
-         */
-        internal const val DRIVE_KEY_LABEL = "USB drive VM (ephemeral)"
         // GET_STATUS(device): bmRequestType=IN|Standard|Device, bRequest=0.
         private const val GET_STATUS_REQUEST_TYPE = 0x80
         private const val GET_STATUS_REQUEST = 0x00

@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">インポートに失敗しました: %1$s</string>
     <string name="keys_section_certificate_authorities">証明機関 (%1$d)</string>
     <string name="keys_section_ssh">SSH鍵 (%1$d)</string>
+    <string name="keys_section_drive">USBドライブの鍵 (%1$d)</string>
     <string name="keys_section_passwords">保存済みパスワード (%1$d)</string>
     <string name="keys_chip_hardware_backed">ハードウェア保護</string>
     <string name="keys_chip_passphrase">パスフレーズ</string>

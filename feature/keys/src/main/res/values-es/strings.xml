@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">Error al importar: %1$s</string>
     <string name="keys_section_certificate_authorities">Autoridades de certificación (%1$d)</string>
     <string name="keys_section_ssh">Claves SSH (%1$d)</string>
+    <string name="keys_section_drive">Claves de unidad USB (%1$d)</string>
     <string name="keys_section_passwords">Contraseñas guardadas (%1$d)</string>
     <string name="keys_chip_hardware_backed">Respaldado por hardware</string>
     <string name="keys_chip_passphrase">Frase de contraseña</string>

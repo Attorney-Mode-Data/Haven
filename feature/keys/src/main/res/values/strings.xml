@@ -72,6 +72,7 @@
     <string name="keys_ssh_public_key_clip_label">SSH Public Key</string>
     <string name="keys_section_certificate_authorities">Certificate authorities (%1$d)</string>
     <string name="keys_section_ssh">SSH keys (%1$d)</string>
+    <string name="keys_section_drive">USB drive keys (%1$d)</string>
     <string name="keys_section_passwords">Stored passwords (%1$d)</string>
     <string name="keys_chip_hardware_backed">Hardware-backed</string>
     <string name="keys_chip_passphrase">Passphrase</string>

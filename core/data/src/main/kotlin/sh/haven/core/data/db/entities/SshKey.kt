@@ -107,4 +107,16 @@ data class SshKey(
         result = 31 * result + (passphraseEncrypted?.hashCode() ?: 0)
         return result
     }
+
+    companion object {
+        /**
+         * Label of every ephemeral key `UsbDriveVmManager` mints for an
+         * opened USB drive's VM (unchanged since #287). It is the marker
+         * both for keeping such keys out of the try-every-key auth pool
+         * and for the Keys screen grouping them into their own section —
+         * shared here because the minting (app) and grouping (feature:keys)
+         * modules can't see each other.
+         */
+        const val USB_DRIVE_VM_LABEL = "USB drive VM (ephemeral)"
+    }
 }

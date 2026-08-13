@@ -40,9 +40,9 @@ class UsbDriveVmManagerKeySweepTest {
     @Test
     fun `sweep disables offer only on still-enabled drive keys`() = runTest {
         coEvery { sshKeyRepository.getAll() } returns listOf(
-            key("stale1", UsbDriveVmManager.DRIVE_KEY_LABEL, enabledForAuth = true),
-            key("stale2", UsbDriveVmManager.DRIVE_KEY_LABEL, enabledForAuth = true),
-            key("done", UsbDriveVmManager.DRIVE_KEY_LABEL, enabledForAuth = false),
+            key("stale1", SshKey.USB_DRIVE_VM_LABEL, enabledForAuth = true),
+            key("stale2", SshKey.USB_DRIVE_VM_LABEL, enabledForAuth = true),
+            key("done", SshKey.USB_DRIVE_VM_LABEL, enabledForAuth = false),
             key("user", "my laptop key", enabledForAuth = true),
         )
 

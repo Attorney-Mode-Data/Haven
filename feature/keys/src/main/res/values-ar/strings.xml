@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">فشل الاستيراد: %1$s</string>
     <string name="keys_section_certificate_authorities">سلطات الشهادات (%1$d)</string>
     <string name="keys_section_ssh">مفاتيح SSH (%1$d)</string>
+    <string name="keys_section_drive">مفاتيح أقراص USB (%1$d)</string>
     <string name="keys_section_passwords">كلمات المرور المحفوظة (%1$d)</string>
     <string name="keys_chip_hardware_backed">محمي بالعتاد</string>
     <string name="keys_chip_passphrase">عبارة المرور</string>

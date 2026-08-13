@@ -18207,6 +18207,27 @@
      }
     },
     {
+     "name": "keys_section_drive",
+     "en": "USB drive keys (%1$d)",
+     "comment": "copyPublicKey",
+     "args": [
+      "%1$d"
+     ],
+     "t": {
+      "ar": "مفاتيح أقراص USB (%1$d)",
+      "bn": "USB ড্রাইভ কী (%1$d)",
+      "de": "USB-Laufwerksschlüssel (%1$d)",
+      "es": "Claves de unidad USB (%1$d)",
+      "fr": "Clés de disque USB (%1$d)",
+      "hi": "USB ड्राइव कुंजियाँ (%1$d)",
+      "ja": "USBドライブの鍵 (%1$d)",
+      "ko": "USB 드라이브 키(%1$d)",
+      "pt": "Chaves de unidade USB (%1$d)",
+      "ru": "Ключи USB-накопителей (%1$d)",
+      "zh": "USB 驱动器密钥（%1$d）"
+     }
+    },
+    {
      "name": "keys_section_passwords",
      "en": "Stored passwords (%1$d)",
      "comment": "copyPublicKey",

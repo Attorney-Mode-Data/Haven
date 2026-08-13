@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">आयात विफल: %1$s</string>
     <string name="keys_section_certificate_authorities">प्रमाणपत्र प्राधिकरण (%1$d)</string>
     <string name="keys_section_ssh">SSH कुंजियाँ (%1$d)</string>
+    <string name="keys_section_drive">USB ड्राइव कुंजियाँ (%1$d)</string>
     <string name="keys_section_passwords">सहेजे गए पासवर्ड (%1$d)</string>
     <string name="keys_chip_hardware_backed">हार्डवेयर-समर्थित</string>
     <string name="keys_chip_passphrase">पासफ़्रेज़</string>

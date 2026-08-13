@@ -66,6 +66,7 @@
     <string name="keys_ssh_public_key_clip_label">SSH 公钥</string>
     <string name="keys_section_certificate_authorities">证书颁发机构（%1$d）</string>
     <string name="keys_section_ssh">SSH 密钥（%1$d）</string>
+    <string name="keys_section_drive">USB 驱动器密钥（%1$d）</string>
     <string name="keys_section_passwords">已保存的密码（%1$d）</string>
     <string name="keys_chip_hardware_backed">硬件保护</string>
     <string name="keys_chip_passphrase">密码短语</string>

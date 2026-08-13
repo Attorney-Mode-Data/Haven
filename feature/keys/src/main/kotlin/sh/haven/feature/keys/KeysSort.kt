@@ -68,3 +68,16 @@ fun sortKeys(keys: List<SshKey>, sort: KeySort): List<SshKey> = when (sort) {
     KeySort.NEWEST_FIRST -> keys.sortedByDescending { it.createdAt }
     KeySort.OLDEST_FIRST -> keys.sortedBy { it.createdAt }
 }
+
+/**
+ * Split the stored keys into (user keys, USB-drive VM keys), preserving order.
+ * Drive keys are infrastructure — minted per opened drive, pinned by that
+ * drive's own profile — so the list groups them under their own collapsed
+ * section instead of interleaving them with keys the user created. Matched
+ * by the stable mint label; renaming one deliberately promotes it to the
+ * user section.
+ */
+fun partitionDriveKeys(keys: List<SshKey>): Pair<List<SshKey>, List<SshKey>> {
+    val (drive, user) = keys.partition { it.label == SshKey.USB_DRIVE_VM_LABEL }
+    return user to drive
+}

@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">Échec de l’import : %1$s</string>
     <string name="keys_section_certificate_authorities">Autorités de certification (%1$d)</string>
     <string name="keys_section_ssh">Clés SSH (%1$d)</string>
+    <string name="keys_section_drive">Clés de disque USB (%1$d)</string>
     <string name="keys_section_passwords">Mots de passe enregistrés (%1$d)</string>
     <string name="keys_chip_hardware_backed">Protégé par le matériel</string>
     <string name="keys_chip_passphrase">Phrase secrète</string>

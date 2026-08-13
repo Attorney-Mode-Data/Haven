@@ -118,6 +118,7 @@
     <string name="stepca_import_failed">Не удалось импортировать: %1$s</string>
     <string name="keys_section_certificate_authorities">Центры сертификации (%1$d)</string>
     <string name="keys_section_ssh">SSH-ключи (%1$d)</string>
+    <string name="keys_section_drive">Ключи USB-накопителей (%1$d)</string>
     <string name="keys_section_passwords">Сохранённые пароли (%1$d)</string>
     <string name="keys_chip_hardware_backed">Аппаратная защита</string>
     <string name="keys_chip_passphrase">Парольная фраза</string>
