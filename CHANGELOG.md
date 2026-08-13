@@ -5,6 +5,11 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.21
+
+- Attach → "Send a file" now reliably pastes the uploaded path at the terminal cursor (#535, thanks kanazawahere). The upload itself always worked, but the path injection raced the navigation back to the terminal screen and usually lost; it now rides the same injection channel the QR-scan paste uses, bracket-paste wrapped when the shell has it enabled.
+- If no terminal tab is active when a paste lands (file path or QR scan), Haven now says so in a toast instead of silently dropping the payload.
+
 ## v5.87.20
 
 - Fixed a crash on connect (#533): when a long output line soft-wraps and its first row scrolls into scrollback, any terminal resize could read memory from before the screen buffer and kill the app — on some devices reliably, on most silently. Reproduced under AddressSanitizer with the reporter's exact backtrace; the repro now runs as a permanent regression gate on every build.
