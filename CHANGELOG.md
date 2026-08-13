@@ -5,6 +5,13 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.19
+
+- Haven now reads its own death certificates (#494). When Android kills Haven in the background — a force stop, the app freezer, low memory — the next launch says so on the Connections screen: when, and by which mechanism, including the sneaky one where Developer options' "Select debug app" points at Haven and Android force-stops it. Agents get the same records via a new `get_process_exits` MCP verb; no entry at the disconnect time means the process survived and the network was cut instead.
+- If your battery-optimization exemption for Haven gets switched off behind your back — some ROMs quietly reset it when an app updates — Haven notices the change and re-offers the exemption with an explanation, instead of staying silent because you once tapped "Not now". A new "Don't ask again" makes the quiet permanent if that's what you want.
+
+🪦 **You can't fix what you can't attribute.** Every "my sessions disconnect in the background" report starts with the same three-way ambiguity: the process was killed, or the network was cut under a live process, or only a listener died. They look identical from the outside and need three different fixes. Android has handed apps their own exit records since Android 11; Haven read them only for native crash tombstones. Now it reads the kills too, tells you about the ones that took your sessions with them, and exposes the history to agents — turning the opening question of every such report into data the app answers itself.
+
 ## v5.87.18
 
 - The Swipe key's arrows now follow your finger literally: swipe up sends ↑ (walks command history back), swipe down sends ↓ — reversed from v5.87.14, where the mapping came from scrolling conventions and felt inverted (#524). The automatic swipe-to-arrows behaviour inside full-screen apps like vim and less is unchanged.
