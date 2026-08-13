@@ -87,6 +87,7 @@ jobs:
             reticulum-kt
             rnsh-kt
             build-proot/proot-termux
+            prns
       - uses: ./.github/actions/setup-toolchain
       - name: Run release unit tests
         run: ./gradlew testDebugUnitTest -PskipWaylandNatives=true -PskipFfmpegNatives=true

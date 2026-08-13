@@ -124,6 +124,11 @@
 }
 -keep class sh.haven.rdp.** { *; }
 
+# Keep the Prns JVM SDK (rs.reticulum.prns.**) — its JNA Library interface's
+# method names ARE the native symbol names (prns_host_*); a rename breaks
+# every call with UnsatisfiedLinkError in release only.
+-keep class rs.reticulum.prns.** { *; }
+
 # Keep Shizuku API — Haven calls Shizuku only via reflection
 # (Class.forName("rikka.shizuku.Shizuku").getMethod("pingBinder") etc).
 # Without this, R8 prunes pingBinder / addBinderReceivedListenerSticky /

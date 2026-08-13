@@ -168,6 +168,7 @@ silently (#469). Build them from source instead:
     core/wayland/src/main/jniLibs/ wayland-android/build_liblabwc_android.sh
                                    wayland-android/build-native-helpers.sh
     rdp-kotlin/jniLibs/            cargo-ndk (rdp-kotlin:buildRdpNative)
+    core/prns/src/main/jniLibs/    cargo-ndk (:core:prns:buildPrnsNative)
     rclone-android/build/          gomobile (buildRcloneNative)
 
 then add the output path to .gitignore. If a binary genuinely must be tracked,

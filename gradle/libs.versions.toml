@@ -15,7 +15,9 @@ smbj = "0.14.0"
 termlib = "0.0.22"
 sora-editor = "0.23.6"
 bouncycastle = "1.84"
-jna = "5.14.0"
+# 5.19.1 to match prns/prns-host/bindings/jvm (JNA enforces jar↔jnidispatch
+# version pairing at load, so the AAR's native must match the strictest jar).
+jna = "5.19.1"
 coroutines = "1.10.1"
 lifecycle = "2.11.0"
 navigation = "2.9.8"

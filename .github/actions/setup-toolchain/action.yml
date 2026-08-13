@@ -206,7 +206,8 @@ runs:
           ~/.cargo/registry
           ~/.cargo/git
           rdp-kotlin/rust/target
-        key: cargo-${{ runner.os }}-${{ hashFiles('rdp-kotlin/rust/Cargo.lock') }}
+          prns/prns-host/abi/c/target
+        key: cargo-${{ runner.os }}-${{ hashFiles('rdp-kotlin/rust/Cargo.lock', 'prns/prns-host/abi/c/Cargo.lock') }}
         restore-keys: cargo-${{ runner.os }}-
 
     - name: Grant execute permission for gradlew

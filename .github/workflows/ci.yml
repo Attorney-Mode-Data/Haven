@@ -78,6 +78,22 @@ jobs:
         working-directory: rdp-kotlin/rust
         run: cargo test
 
+  # Prns C-ABI capsule tests on the host toolchain. Scoped to the detached
+  # abi/c workspace (its own committed Cargo.lock) — the full upstream
+  # workspace carries embedded targets this runner can't build.
+  prns-rust-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          submodules: false
+      - name: Checkout prns submodule
+        run: git submodule update --init prns
+      - name: Run Prns capsule tests
+        working-directory: prns/prns-host/abi/c
+        run: cargo test
+
   # Host-built proot exercising the link2symlink emulation: refcounts,
   # PROOT_L2S_DIR payload relocation (the Nix/libgit2 tarball-cache
   # durability fix, discussion #536), and broken-chain fail-soft. Runs on

@@ -178,6 +178,58 @@ MSG
     fi
 fi
 
+# ---------------------------------------------------------------------------
+# core/prns/src/main/jniLibs — the Prns capsule, built from the prns submodule
+# by :core:prns:buildPrnsNative. Same two assertions as rdp: right ELF machine
+# per ABI directory, and the contract entry point actually exported (a capsule
+# built from the wrong source tree loads and then dies on the first call).
+
+PRNS_DIR="$REPO_ROOT/core/prns/src/main/jniLibs"
+PRNS_ENTRY_POINT='prns_host_attach_supplied_pipe'
+
+prns_status=0
+prns_checked=0
+
+if [ -d "$PRNS_DIR" ]; then
+    for abi_dir in "$PRNS_DIR"/*/; do
+        [ -d "$abi_dir" ] || continue
+        abi="$(basename "$abi_dir")"
+        so="$abi_dir/libprns_host.so"
+
+        if [ ! -f "$so" ]; then
+            echo "FAIL: core/prns/src/main/jniLibs/$abi has no libprns_host.so"
+            prns_status=1
+            continue
+        fi
+        prns_checked=$((prns_checked + 1))
+
+        want="$(rdp_expected_machine "$abi")"
+        got="$(readelf -h "$so" 2>/dev/null | sed -n 's/^[[:space:]]*Machine:[[:space:]]*//p')"
+        if [ -n "$want" ] && [ "$got" != "$want" ]; then
+            echo "FAIL: core/prns/src/main/jniLibs/$abi/libprns_host.so is a '$got' binary, expected '$want'"
+            prns_status=1
+        fi
+
+        if ! readelf --dyn-syms -W "$so" 2>/dev/null \
+            | awk -v want="$PRNS_ENTRY_POINT" '{ sub(/@.*/, "", $8); if ($8 == want) found = 1 } END { exit !found }'; then
+            echo "FAIL: core/prns/src/main/jniLibs/$abi/libprns_host.so does not export $PRNS_ENTRY_POINT"
+            prns_status=1
+        fi
+    done
+
+    if [ "$prns_status" -ne 0 ]; then
+        cat >&2 <<'MSG'
+
+Rebuild all three from source:
+    cd prns/prns-host/abi/c && cargo ndk -o ../../../../core/prns/src/main/jniLibs \
+        -t arm64-v8a -t armeabi-v7a -t x86_64 build --release
+MSG
+        exit 1
+    elif [ "$prns_checked" -gt 0 ]; then
+        echo "✓ $prns_checked prns native libraries match their ABI and export the contract entry point."
+    fi
+fi
+
 # The point of this block: for every run after #493 untracked the binaries, this
 # script printed "nothing to check" and exited 0. A gate that passes because it
 # found nothing to inspect is indistinguishable, in CI, from one that inspected

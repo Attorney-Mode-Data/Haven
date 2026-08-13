@@ -55,6 +55,8 @@ DEV.local.md
 core/local/src/main/jniLibs/
 # cargo-ndk via rdp-kotlin:buildRdpNative
 rdp-kotlin/jniLibs/
+# cargo-ndk via :core:prns:buildPrnsNative (source: prns submodule)
+core/prns/src/main/jniLibs/
 # Build outputs of wayland-android/build-native-helpers.sh (submodule-local,
 # but listed here too so a stray copy into the parent tree is never staged).
 wayland-android/jniLibs/
