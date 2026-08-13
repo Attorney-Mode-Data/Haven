@@ -5,7 +5,12 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
-## v5.87.21
+## v5.87.22
+
+- Hard links inside local Linux environments now survive and behave (#536 discussion). The emulation used to park a link's real data next to the *source* file, so when a program deleted its temp directory — the standard lockfile dance of git, dpkg, and Nix — the data vanished and the other name was left dangling. Payloads now live in a per-environment store that outlives any directory you delete, links are readable through every name (they previously failed with "No such file or directory" while `ls` looked fine), and failures report their real errno instead of a blanket "Operation not permitted" — the mystery behind years of intermittent dpkg errors (#324, #328, #329).
+- Concretely: Nix's flake commands now work out of the box on a fresh install — no more `could not find repository at ~/.cache/nix/tarball-cache`, no manual `git init` workaround. Verified on-device end to end, and guarded by a new emulation test suite that runs on every CI build.
+
+🔗 **An emulated hard link is a promise about durability.** Android denies apps real hard links, so Haven's proot emulates them with symlink chains — and a chain is only as durable as its weakest directory. Moving the real bytes into a stable per-environment store (guest path `/.l2s`) makes the promise hold: any name you keep is a name that still opens tomorrow.
 
 - Attach → "Send a file" now reliably pastes the uploaded path at the terminal cursor (#535, thanks kanazawahere). The upload itself always worked, but the path injection raced the navigation back to the terminal screen and usually lost; it now rides the same injection channel the QR-scan paste uses, bracket-paste wrapped when the shell has it enabled.
 - If no terminal tab is active when a paste lands (file path or QR scan), Haven now says so in a toast instead of silently dropping the payload.
