@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">复制上次输出</string>
     <string name="terminal_copied_output">已复制输出（%d 字符）</string>
     <string name="terminal_no_command_output">未找到命令输出（需要 Shell 集成）</string>
+    <string name="terminal_paste_no_active_tab">没有可粘贴的活动标签页</string>
     <string name="terminal_search">搜索</string>
 
     <!-- EmptyTerminalState -->

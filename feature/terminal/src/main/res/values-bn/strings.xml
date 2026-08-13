@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">শেষ আউটপুট কপি</string>
     <string name="terminal_copied_output">আউটপুট কপি হয়েছে (%d অক্ষর)</string>
     <string name="terminal_no_command_output">কমান্ড আউটপুট পাওয়া যায়নি (শেল ইন্টিগ্রেশন দরকার)</string>
+    <string name="terminal_paste_no_active_tab">পেস্ট করার জন্য কোনো সক্রিয় ট্যাব নেই</string>
     <string name="terminal_search">অনুসন্ধান</string>
 
     <!-- EmptyTerminalState -->

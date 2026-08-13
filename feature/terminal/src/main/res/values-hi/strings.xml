@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">पिछला आउटपुट कॉपी करें</string>
     <string name="terminal_copied_output">आउटपुट कॉपी हुआ (%d अक्षर)</string>
     <string name="terminal_no_command_output">कमांड आउटपुट नहीं मिला (Shell इंटीग्रेशन आवश्यक)</string>
+    <string name="terminal_paste_no_active_tab">पेस्ट करने के लिए कोई सक्रिय टैब नहीं</string>
     <string name="terminal_search">खोजें</string>
 
     <!-- EmptyTerminalState -->

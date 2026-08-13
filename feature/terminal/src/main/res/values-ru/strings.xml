@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">Копировать последний вывод</string>
     <string name="terminal_copied_output">Вывод скопирован (%d символов)</string>
     <string name="terminal_no_command_output">Вывод команды не найден (нужна интеграция с оболочкой)</string>
+    <string name="terminal_paste_no_active_tab">Нет активной вкладки для вставки</string>
     <string name="terminal_search">Поиск</string>
 
     <!-- EmptyTerminalState -->

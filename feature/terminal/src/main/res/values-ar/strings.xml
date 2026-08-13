@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">نسخ آخر مخرجات</string>
     <string name="terminal_copied_output">تم نسخ المخرجات (%d حرف)</string>
     <string name="terminal_no_command_output">لم يتم العثور على مخرجات الأمر (يتطلب تكامل Shell)</string>
+    <string name="terminal_paste_no_active_tab">لا توجد علامة تبويب نشطة للصق</string>
     <string name="terminal_search">بحث</string>
 
     <!-- EmptyTerminalState -->

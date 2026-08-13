@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">Copier la dernière sortie</string>
     <string name="terminal_copied_output">Sortie copiée (%d caractères)</string>
     <string name="terminal_no_command_output">Aucune sortie trouvée (nécessite l\'intégration shell)</string>
+    <string name="terminal_paste_no_active_tab">Aucun onglet actif où coller</string>
     <string name="terminal_search">Rechercher</string>
 
     <!-- EmptyTerminalState -->

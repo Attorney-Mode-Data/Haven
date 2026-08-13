@@ -38008,6 +38008,25 @@
      }
     },
     {
+     "name": "terminal_paste_no_active_tab",
+     "en": "No active tab to paste into",
+     "comment": "Tab bar",
+     "args": [],
+     "t": {
+      "ar": "لا توجد علامة تبويب نشطة للصق",
+      "bn": "পেস্ট করার জন্য কোনো সক্রিয় ট্যাব নেই",
+      "de": "Kein aktiver Tab zum Einfügen",
+      "es": "No hay pestaña activa donde pegar",
+      "fr": "Aucun onglet actif où coller",
+      "hi": "पेस्ट करने के लिए कोई सक्रिय टैब नहीं",
+      "ja": "貼り付け先のアクティブなタブがありません",
+      "ko": "붙여넣을 활성 탭이 없습니다",
+      "pt": "Nenhuma aba ativa para colar",
+      "ru": "Нет активной вкладки для вставки",
+      "zh": "没有可粘贴的活动标签页"
+     }
+    },
+    {
      "name": "terminal_link_open_failed",
      "en": "No app can open this link",
      "comment": "Tab bar",

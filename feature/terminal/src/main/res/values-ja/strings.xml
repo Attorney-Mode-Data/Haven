@@ -37,6 +37,7 @@
     <string name="terminal_copy_last_output">最後の出力をコピー</string>
     <string name="terminal_copied_output">出力をコピーしました（%d文字）</string>
     <string name="terminal_no_command_output">コマンド出力が見つかりません（シェル統合が必要）</string>
+    <string name="terminal_paste_no_active_tab">貼り付け先のアクティブなタブがありません</string>
     <string name="terminal_search">検索</string>
 
     <!-- EmptyTerminalState -->

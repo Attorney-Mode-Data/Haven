@@ -38,6 +38,7 @@
     <string name="terminal_copy_last_output">마지막 출력 복사</string>
     <string name="terminal_copied_output">출력 복사됨(%d자)</string>
     <string name="terminal_no_command_output">명령 출력이 없습니다(셸 통합 필요)</string>
+    <string name="terminal_paste_no_active_tab">붙여넣을 활성 탭이 없습니다</string>
     <string name="terminal_search">검색</string>
 
     <!-- New tab errors -->
