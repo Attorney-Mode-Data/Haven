@@ -5,6 +5,11 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.18
+
+- The Swipe key's arrows now follow your finger literally: swipe up sends ↑ (walks command history back), swipe down sends ↓ — reversed from v5.87.14, where the mapping came from scrolling conventions and felt inverted (#524). The automatic swipe-to-arrows behaviour inside full-screen apps like vim and less is unchanged.
+- Each arrow now takes a deliberate ~9mm of swipe travel in that mode (4× the scrolling quantum), so history steps one entry at a time instead of flashing past (#524).
+
 ## v5.87.17
 
 - Your saved SSH key works again after opening USB drives. Haven mints a private key for each drive it opens in a VM, and those keys wrongly joined the "try any saved key" pool — a handful of stale drive keys would burn through a server's auth-attempt limit ("Too many authentication failures") before your real key was ever offered. Drive keys now stay out of the pool, and ones minted by earlier versions are cleaned up automatically on launch.
