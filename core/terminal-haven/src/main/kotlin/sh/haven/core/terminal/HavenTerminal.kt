@@ -54,6 +54,8 @@ fun HavenTerminal(
     onComposeControllerAvailable: ((ComposeController) -> Unit)? = null,
     onFontSizeChanged: ((TextUnit) -> Unit)? = null,
     gestureCallback: TerminalGestureCallback? = null,
+    /** See Terminal's scrollQuantumMultiplier — >1 = coarser swipe-to-key steps (#524). */
+    scrollQuantumMultiplier: Float = 1f,
     onPasteShortcut: (() -> Unit)? = null,
     onPasteRequest: (() -> Unit)? = null,
     keyboardMode: HavenKeyboardMode = HavenKeyboardMode.Secure,
@@ -88,6 +90,7 @@ fun HavenTerminal(
         onComposeControllerAvailable = onComposeControllerAvailable,
         onFontSizeChanged = onFontSizeChanged,
         gestureCallback = gestureCallback,
+        scrollQuantumMultiplier = scrollQuantumMultiplier,
         mouseModeActive = mouseModeActive,
         allowStandardKeyboard = keyboardMode is HavenKeyboardMode.Standard,
         rawKeyboardMode = keyboardMode is HavenKeyboardMode.Raw,

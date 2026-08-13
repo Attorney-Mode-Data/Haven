@@ -1372,7 +1372,13 @@ fun TerminalScreen(
                                 // check only gates the automatic path.
                                 if (!swipeArrowsMode && !activeTab.emulator.isAltScreenActive()) return false
                                 activeTab.sendInput(
-                                    arrowKeyBytes(scrollUp, activeTab.cursorKeyAppMode.value),
+                                    arrowKeyBytes(
+                                        // Latched mode maps the finger literally (swipe up
+                                        // = ↑); the automatic path keeps natural-scroll
+                                        // direction — see swipeArrowIsUp. (#524)
+                                        swipeArrowIsUp(scrollUp, swipeArrowsMode),
+                                        activeTab.cursorKeyAppMode.value,
+                                    ),
                                 )
                                 return true
                             }
@@ -1558,6 +1564,12 @@ fun TerminalScreen(
                                     }
                                 },
                                 gestureCallback = gestureCallback,
+                                // Coarser per-arrow travel only while the latched
+                                // swipe-arrows callback is the active branch — a
+                                // mouse-tracking app keeps the fine wheel quantum
+                                // even with the latch on. (#524)
+                                scrollQuantumMultiplier =
+                                    if (swipeArrowsMode && !isMouseMode) SWIPE_ARROWS_SCROLL_QUANTUM else 1f,
                                 // The real DECSET mouse-tracking signal, not
                                 // "a gestureCallback exists" — one is installed
                                 // for alt-screen-only apps too, and those have
@@ -1977,6 +1989,25 @@ internal fun arrowKeyBytes(up: Boolean, appMode: Boolean): ByteArray {
     val prefix = if (appMode) "\u001bO" else "\u001b["
     return (prefix + if (up) "A" else "B").toByteArray()
 }
+
+/**
+ * Which arrow a swipe sends. The gesture layer reports [scrollUp] in
+ * content-scroll terms — a finger dragged DOWN reveals older content, so it
+ * arrives as scrollUp=true. The automatic alt-screen path (#255) keeps that
+ * mapping: dragging content down in a pager sends ↑, exactly like touch
+ * scrolling. The latched swipe-arrows mode (#524) is a different mental
+ * model — the swipe IS the key press — so the finger direction maps
+ * literally: swipe up = ↑ walks shell history back, swipe down = ↓.
+ */
+internal fun swipeArrowIsUp(scrollUp: Boolean, latchedSwipeArrows: Boolean): Boolean =
+    if (latchedSwipeArrows) !scrollUp else scrollUp
+
+/**
+ * Swipe-arrows quantum: each arrow takes 4x the content-scroll travel
+ * (9dp -> 36dp, ~9mm), so a deliberate swipe steps history one entry at a
+ * time instead of flashing through it (#524 reporter feedback).
+ */
+internal const val SWIPE_ARROWS_SCROLL_QUANTUM = 4f
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
