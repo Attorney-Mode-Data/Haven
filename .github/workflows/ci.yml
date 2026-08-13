@@ -91,10 +91,13 @@ jobs:
           submodules: false
       - name: Checkout proot submodule
         run: git submodule update --init build-proot/proot-termux
-      - name: Install talloc and busybox
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libtalloc-dev busybox
+      - name: Install talloc, busybox, and lld
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libtalloc-dev busybox-static clang lld
+      # clang+lld, not gcc+GNU-ld: the loader's hardcoded --rosegment is an
+      # LLD flag (the production NDK toolchain is clang+lld too) and older
+      # GNU ld rejects it.
       - name: Build host proot
-        run: make -C build-proot/proot-termux/src proot
+        run: make -C build-proot/proot-termux/src proot CC="clang -fuse-ld=lld"
       - name: Run link2symlink tests
         run: |
           cd build-proot/proot-termux/tests
