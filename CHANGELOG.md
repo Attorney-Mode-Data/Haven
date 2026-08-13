@@ -5,6 +5,10 @@ the corresponding GitHub Release; a release can't ship without its section
 (enforced by `scripts/check-changelog.sh` in CI). The GitHub "Full Changelog"
 compare link is appended automatically — don't add it here.
 
+## v5.87.20
+
+- Fixed a crash on connect (#533): when a long output line soft-wraps and its first row scrolls into scrollback, any terminal resize could read memory from before the screen buffer and kill the app — on some devices reliably, on most silently. Reproduced under AddressSanitizer with the reporter's exact backtrace; the repro now runs as a permanent regression gate on every build.
+
 ## v5.87.19
 
 - Haven now reads its own death certificates (#494). When Android kills Haven in the background — a force stop, the app freezer, low memory — the next launch says so on the Connections screen: when, and by which mechanism, including the sneaky one where Developer options' "Select debug app" points at Haven and Android force-stops it. Agents get the same records via a new `get_process_exits` MCP verb; no entry at the disconnect time means the process survived and the network was cut instead.
