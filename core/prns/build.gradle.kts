@@ -62,6 +62,14 @@ val buildPrnsNative by tasks.registering(Exec::class) {
         }
     if (ndkHome != null) environment("ANDROID_NDK_HOME", ndkHome)
 
+    // prns/rust-toolchain.toml pins floating `stable` (with only an embedded
+    // riscv target), which on CI resolves to a toolchain without the Android
+    // std libs → E0463 "can't find crate for core". Override with the repo's
+    // pinned Rust (the one setup-toolchain pre-installs Android targets for;
+    // keep in sync with .github/actions/setup-toolchain and the F-Droid
+    // recipe's rustup line). Also upgrades a ref-name "pin" to a real one.
+    environment("RUSTUP_TOOLCHAIN", "1.94.1")
+
     // Adding an ABI to the APK means adding it here in the same change —
     // a missing target ships a silently absent (or stale) library.
     commandLine(
