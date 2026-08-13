@@ -36,6 +36,7 @@ import sh.haven.core.reticulum.ReticulumTransport
 import sh.haven.core.reticulum.ReticulumSessionManager
 import sh.haven.core.smb.SmbSessionManager
 import sh.haven.core.rdp.RdpSessionManager
+import sh.haven.core.ssh.ConnectionConfig
 import sh.haven.core.ssh.HostKeyVerifier
 import sh.haven.core.ssh.SessionManagerRegistry
 import sh.haven.core.ssh.SshSessionManager
@@ -339,5 +340,70 @@ class ConnectionsViewModelSessionTest {
         coEvery { sshKeyRepository.getAllDecrypted() } returns emptyList()
 
         assertSame(jp, viewModel.jumpHostNeedsPasswordPrompt("jump"))
+    }
+
+    // #531: an offer-enabled sk-key is auto-offered like any software key now,
+    // so it suppresses the prompt even without an explicit "Any hardware key"
+    // spec — same contract as the unencrypted-software-key clause.
+    @Test
+    fun `enrolled sk-key suppresses jump password prompt without a spec`() = runTest {
+        every { sshSessionManager.getSessionsForProfile("jump") } returns emptyList()
+        coEvery { repository.getById("jump") } returns jumpProfile("")
+        coEvery { sshKeyRepository.getAllDecrypted() } returns listOf(skKey())
+
+        assertNull(viewModel.jumpHostNeedsPasswordPrompt("jump"))
+    }
+
+    // The Keys-screen "Offer for connections" toggle must keep its meaning for
+    // sk-keys: toggled off, the key is not auto-offered, so the prompt stays.
+    @Test
+    fun `offer-disabled sk-key does not suppress the jump password prompt`() = runTest {
+        every { sshSessionManager.getSessionsForProfile("jump") } returns emptyList()
+        val jp = jumpProfile("")
+        coEvery { repository.getById("jump") } returns jp
+        coEvery { sshKeyRepository.getAllDecrypted() } returns
+            listOf(skKey().copy(enabledForAuth = false))
+
+        assertSame(jp, viewModel.jumpHostNeedsPasswordPrompt("jump"))
+    }
+
+    // #531: with no password, the auto-offer bundle must contain BOTH the
+    // software-key pool and the FIDO pool — an offer-enabled sk-key alone
+    // used to fall through to (empty) password auth and never be offered.
+    @Test
+    fun `resolveAuthMethod offers software and sk-keys together`() = runTest {
+        coEvery { sshKeyRepository.getAllDecrypted() } returns listOf(
+            SshKey(
+                label = "laptop", keyType = "ssh-ed25519",
+                privateKeyBytes = ByteArray(64), publicKeyOpenSsh = "", fingerprintSha256 = "",
+            ),
+            skKey(),
+        )
+        val profile = ConnectionProfile(
+            id = "p", label = "p", host = "h", username = "u", connectionType = "SSH",
+        )
+
+        val auth = viewModel.resolveAuthMethod(profile, password = "")
+
+        val multi = auth as ConnectionConfig.AuthMethod.Multi
+        val software = multi.methods.filterIsInstance<ConnectionConfig.AuthMethod.PrivateKeys>().single()
+        org.junit.Assert.assertEquals(listOf("laptop"), software.keys.map { it.label })
+        val fido = multi.methods.filterIsInstance<ConnectionConfig.AuthMethod.FidoKey>().single()
+        org.junit.Assert.assertEquals("yk", fido.keyLabel)
+        org.junit.Assert.assertTrue(fido.anyOf)
+    }
+
+    // A FIDO-only keystore must still resolve to the FIDO pool, not password.
+    @Test
+    fun `resolveAuthMethod offers a lone sk-key`() = runTest {
+        coEvery { sshKeyRepository.getAllDecrypted() } returns listOf(skKey())
+        val profile = ConnectionProfile(
+            id = "p", label = "p", host = "h", username = "u", connectionType = "SSH",
+        )
+
+        val auth = viewModel.resolveAuthMethod(profile, password = "")
+
+        val fido = auth as ConnectionConfig.AuthMethod.FidoKey
+        org.junit.Assert.assertEquals("yk", fido.keyLabel)
     }
 }

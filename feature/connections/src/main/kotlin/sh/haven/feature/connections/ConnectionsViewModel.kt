@@ -1890,17 +1890,15 @@ class ConnectionsViewModel @Inject constructor(
             }
         ) return null
         val keys = sshKeyRepository.getAllDecrypted().filter { it.enabledForAuth }
-        // "Any hardware key": FIDO needs only a touch — usable iff an sk-key is
-        // actually enrolled. Without this the sk-exclusion below (which predates
-        // jump-host FIDO auth) shadowed FIDO with a password prompt (#286).
-        if (specs.any { it is ConnectionProfile.AuthMethodSpec.AnyHardwareKey } &&
-            keys.any { it.keyType.startsWith("sk-") }
-        ) return null
-        // A usable unencrypted software key also suppresses the prompt; FIDO/sk
-        // keys are handled above (they aren't loadable as auto-offered keys), and
-        // neither is a provider-held one — `resolveAnyUsableKeys` never offers
-        // either, so counting one here suppressed the prompt and then had nothing
-        // to connect with.
+        // An offer-enabled sk-key: FIDO needs only a touch, and since #531
+        // resolveAuthMethod auto-offers the FIDO pool with no spec needed —
+        // so an enrolled key suppresses the prompt unconditionally (#286
+        // covered only the explicit "Any hardware key" spec).
+        if (keys.any { it.keyType.startsWith("sk-") }) return null
+        // A usable unencrypted software key also suppresses the prompt; a
+        // provider-held key doesn't — `resolveAnyUsableKeys` never offers one,
+        // so counting it here suppressed the prompt and then had nothing to
+        // connect with.
         if (keys.any { !it.isEncrypted && holdsLoadablePrivateKey(it.keyType) }) return null
         return jp
     }
@@ -4689,7 +4687,8 @@ class ConnectionsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun resolveAuthMethod(
+    // internal for unit test (#531 sk-key auto-offer).
+    internal suspend fun resolveAuthMethod(
         profile: ConnectionProfile,
         password: String,
     ): ConnectionConfig.AuthMethod {
@@ -4707,9 +4706,19 @@ class ConnectionsViewModel @Inject constructor(
         }
 
         // No explicit key but keys are available — try every key the
-        // server might accept.
+        // server might accept. Software keys go first: SshClient's
+        // deferred any-hardware-key detection then skips the up-front
+        // token prompt, and the FIDO ceremony only runs for an sk-key
+        // the server actually accepts the offer of (#531).
         if (password.isEmpty()) {
-            resolveAnyUsableKeys()?.let { return it }
+            val software = resolveAnyUsableKeys()
+            val hardware = resolveAnyHardwareKeys()
+            when {
+                software != null && hardware != null ->
+                    return ConnectionConfig.AuthMethod.Multi(listOf(software, hardware))
+                software != null -> return software
+                hardware != null -> return hardware
+            }
         }
 
         return ConnectionConfig.AuthMethod.Password(password)

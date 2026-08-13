@@ -1799,8 +1799,10 @@ private fun SshKeyAuditRow(
 
         // Two kinds of key have no private half stored here: a FIDO2/SK key
         // lives on the token, and a provider key lives in another app (#487).
-        // Exporting, offering in the try-every-key pool, or attaching a
-        // certificate all assume material Haven does not have.
+        // Exporting or attaching a certificate assume material Haven does not
+        // have. Offering is different: an SK credential handle IS offerable —
+        // the token runs the ceremony — so only provider keys sit that one
+        // out (#531).
         val isProviderKey = sshKey.keyType == OpenKeychainKeyData.KEY_TYPE
         val havenHoldsPrivateKey = !sshKey.keyType.startsWith("sk-") && !isProviderKey
 
@@ -1862,7 +1864,7 @@ private fun SshKeyAuditRow(
                     },
                 )
             }
-            if (havenHoldsPrivateKey) {
+            if (!isProviderKey) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.keys_offer_for_connections)) },
                     onClick = { onEnabledForAuthToggle(!sshKey.enabledForAuth); onMenuDismiss() },
