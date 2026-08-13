@@ -101,6 +101,20 @@ class UsbDriveVmManager @Inject constructor(
                 runCatching { close(busidOf(deviceName)) }
             }
         }
+        // Drive keys minted before enabledForAuth=false landed are still in
+        // the try-every-key pool, burning sshd auth attempts on every
+        // connection. Idempotent, so it just runs on each construction.
+        scope.launch { runCatching { disableStaleDriveKeyOffers() } }
+    }
+
+    /** Take every previously-minted drive key out of the try-every-key pool. */
+    internal suspend fun disableStaleDriveKeyOffers() {
+        sshKeyRepository.getAll()
+            .filter { it.label == DRIVE_KEY_LABEL && it.enabledForAuth }
+            .forEach { key ->
+                Log.i(TAG, "Disabling offer-for-connections on stale drive key ${key.id}")
+                sshKeyRepository.setEnabledForAuth(key.id, false)
+            }
     }
 
     private fun updateStatus(busid: String, transform: (Status) -> Status) {
@@ -286,11 +300,17 @@ class UsbDriveVmManager @Inject constructor(
             usbIpServer.export(deviceName)
             val key = SshKeyGenerator.generate(SshKeyGenerator.KeyType.ED25519, "Haven USB drive")
             val keyEntity = SshKey(
-                label = "USB drive VM (ephemeral)",
+                label = DRIVE_KEY_LABEL,
                 keyType = key.type.sshName,
                 privateKeyBytes = key.privateKeyBytes,
                 publicKeyOpenSsh = key.publicKeyOpenSsh,
                 fingerprintSha256 = key.fingerprintSha256,
+                // Only valid for the VM's loopback root account, and the drive
+                // profile references it by id — never offer it in the
+                // try-every-key pool. Stale ones accumulate (one per drive
+                // bookmark) and each is a wasted auth attempt: five of them
+                // hit sshd's MaxAuthTries before the user's real key is tried.
+                enabledForAuth = false,
             )
             sshKeyRepository.save(keyEntity); keyId = keyEntity.id
 
@@ -489,6 +509,12 @@ class UsbDriveVmManager @Inject constructor(
     companion object {
         private const val TAG = "UsbDriveVmManager"
         const val USB_CLASS_MASS_STORAGE = 8
+
+        /**
+         * Label of every ephemeral VM key minted by [bootAndAttach] — unchanged
+         * since #287, so [disableStaleDriveKeyOffers] can match old rows by it.
+         */
+        internal const val DRIVE_KEY_LABEL = "USB drive VM (ephemeral)"
         // GET_STATUS(device): bmRequestType=IN|Standard|Device, bRequest=0.
         private const val GET_STATUS_REQUEST_TYPE = 0x80
         private const val GET_STATUS_REQUEST = 0x00
