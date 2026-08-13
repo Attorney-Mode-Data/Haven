@@ -434,7 +434,7 @@
     <string name="settings_terminal_locale_label">LANG</string>
     <string name="settings_terminal_opacity_title">Opacidade do fundo</string>
     <string name="settings_terminal_opacity_value">%1$d%%</string>
-    <string name="settings_terminal_opacity_hint">Abaixo de 100% o Haven fica translúcido e mostra o papel de parede do dispositivo atrás de todas as telas (terminal, listas, configurações). Uma substituição por conexão se aplica apenas àquele terminal.</string>
+    <string name="settings_terminal_opacity_hint" formatted="false">Abaixo de 100% o Haven fica translúcido e mostra o papel de parede do dispositivo atrás de todas as telas (terminal, listas, configurações). Uma substituição por conexão se aplica apenas àquele terminal.</string>
     <string name="settings_section_mcp">Agente de IA (MCP)</string>
     <string name="settings_audio_bridge_title">Áudio do proot (experimental)</string>
     <string name="settings_audio_bridge_subtitle">Reproduz o som de apps Linux no alto-falante do dispositivo por uma ponte PulseAudio dentro do convidado. Apenas saída. Transmite continuamente enquanto ativado — desative quando não estiver em uso.</string>

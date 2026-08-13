@@ -434,7 +434,7 @@
     <string name="settings_terminal_locale_label">LANG</string>
     <string name="settings_terminal_opacity_title">背景の不透明度</string>
     <string name="settings_terminal_opacity_value">%1$d%%</string>
-    <string name="settings_terminal_opacity_hint">100% 未満にすると Haven が半透明になり、すべての画面（ターミナル、リスト、設定）の背後にデバイスの壁紙が表示されます。接続ごとの上書きはそのターミナルにのみ適用されます。</string>
+    <string name="settings_terminal_opacity_hint" formatted="false">100% 未満にすると Haven が半透明になり、すべての画面（ターミナル、リスト、設定）の背後にデバイスの壁紙が表示されます。接続ごとの上書きはそのターミナルにのみ適用されます。</string>
     <string name="settings_section_mcp">AI エージェント (MCP)</string>
     <string name="settings_audio_bridge_title">Proot オーディオ（試験的）</string>
     <string name="settings_audio_bridge_subtitle">ゲスト内の PulseAudio ブリッジ経由で、Linux アプリの音をデバイスのスピーカーから再生します。出力のみ。オンの間は常時ストリーミングされるため、使わないときはオフにしてください。</string>
