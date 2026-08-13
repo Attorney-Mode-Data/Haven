@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">¿Mantener conexiones activas?</string>
     <string name="connections_battery_message">Android puede cerrar conexiones SSH en segundo plano para ahorrar batería. Desactivar la optimización de batería para Haven evita esto.</string>
+    <string name="connections_battery_redropped_message">La exención de batería de Haven se ha desactivado — a menudo un efecto secundario de una actualización. Sin ella, Android puede volver a cerrar conexiones SSH en segundo plano. ¿Permitirla de nuevo?</string>
+    <string name="connections_battery_dont_ask_again">No volver a preguntar</string>
+    <string name="connections_process_killed_banner">Android cerró Haven a las %1$s (%2$s) — las sesiones en segundo plano se perdieron.</string>
+    <string name="process_exit_cause_debug_app">la opción de desarrollador “Seleccionar aplicación de depuración”</string>
+    <string name="process_exit_cause_force_stop">detención forzada</string>
+    <string name="process_exit_cause_memory">memoria baja</string>
+    <string name="process_exit_cause_anr">aplicación sin respuesta</string>
+    <string name="process_exit_cause_system">política del sistema</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">Mosh no encontrado en el servidor</string>

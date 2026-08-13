@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">कनेक्शन सक्रिय रखें?</string>
     <string name="connections_battery_message">Android बैटरी बचाने के लिए बैकग्राउंड SSH कनेक्शन बंद कर सकता है। Haven के लिए बैटरी ऑप्टिमाइज़ेशन अक्षम करने से यह रुक जाएगा।</string>
+    <string name="connections_battery_redropped_message">Haven की बैटरी छूट बंद कर दी गई है — अक्सर ऐप अपडेट का दुष्प्रभाव। इसके बिना Android बैकग्राउंड SSH कनेक्शन फिर से बंद कर सकता है। फिर से अनुमति दें?</string>
+    <string name="connections_battery_dont_ask_again">फिर से न पूछें</string>
+    <string name="connections_process_killed_banner">Android ने %1$s पर Haven को बंद कर दिया (%2$s) — बैकग्राउंड सेशन भी समाप्त हो गए।</string>
+    <string name="process_exit_cause_debug_app">“डीबग ऐप चुनें” डेवलपर सेटिंग</string>
+    <string name="process_exit_cause_force_stop">जबरन बंद</string>
+    <string name="process_exit_cause_memory">कम मेमोरी</string>
+    <string name="process_exit_cause_anr">ऐप प्रतिक्रिया नहीं दे रहा</string>
+    <string name="process_exit_cause_system">सिस्टम नीति</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">सर्वर पर Mosh नहीं मिला</string>

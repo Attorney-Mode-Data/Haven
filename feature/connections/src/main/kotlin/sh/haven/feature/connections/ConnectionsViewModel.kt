@@ -519,6 +519,63 @@ class ConnectionsViewModel @Inject constructor(
         }
     }
 
+    /** Permanent opt-out — the prompt never returns, drops included (#494). */
+    fun neverAskBatteryPrompt() {
+        viewModelScope.launch {
+            preferencesRepository.setBatteryPromptNeverAsk()
+        }
+    }
+
+    /**
+     * Decide what the screen should do about the battery prompt for the
+     * current [exemptNow] observation, and record that observation. A drop
+     * (previously exempt, now not) clears the episodic dismissal so the
+     * offer returns with the it-was-switched-off wording (#494 — Realme UI
+     * resets the exemption on app update).
+     */
+    suspend fun batteryPromptCheck(exemptNow: Boolean): BatteryPromptAction {
+        val action = batteryPromptAction(
+            exemptNow = exemptNow,
+            lastKnownExempt = preferencesRepository.batteryLastKnownExempt.first(),
+            dismissed = preferencesRepository.batteryPromptDismissed.first(),
+            neverAsk = preferencesRepository.batteryPromptNeverAsk.first(),
+        )
+        if (action == BatteryPromptAction.OFFER_DROPPED) {
+            preferencesRepository.setBatteryPromptDismissed(false)
+        }
+        preferencesRepository.setBatteryLastKnownExempt(exemptNow)
+        return action
+    }
+
+    /**
+     * Tell the user, once per death, when the previous Haven process was
+     * killed by the system while it had visible work (#494) — the in-app
+     * version of `adb shell dumpsys activity exit-info`. Runs from the
+     * Connections screen so the root snackbar collector is already live.
+     */
+    fun announceRecentKills() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val fresh = try {
+                sh.haven.core.data.ProcessExitLog(appContext).consumeUnnotified()
+            } catch (e: Exception) {
+                Log.w(TAG, "process exit announce failed: ${e.message}")
+                return@launch
+            }
+            // Newest only: after a kill-loop the count is the story, not
+            // each entry.
+            val latest = fresh.maxByOrNull { it.timestampMs } ?: return@launch
+            val time = android.text.format.DateFormat.getTimeFormat(appContext)
+                .format(java.util.Date(latest.timestampMs))
+            val cause = appContext.getString(processExitCauseRes(latest.kind))
+            userMessageBus.emit(
+                sh.haven.core.data.message.UserMessage(
+                    appContext.getString(R.string.connections_process_killed_banner, time, cause),
+                    sh.haven.core.data.message.UserMessage.Severity.ERROR,
+                ),
+            )
+        }
+    }
+
     val sessions: StateFlow<Map<String, SshSessionManager.SessionState>> = sshSessionManager.sessions
 
     /**

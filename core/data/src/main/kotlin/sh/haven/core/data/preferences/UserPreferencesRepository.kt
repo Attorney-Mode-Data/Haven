@@ -120,6 +120,8 @@ class UserPreferencesRepository @Inject constructor(
     private val keysCollapsedSectionsKey = stringPreferencesKey("keys_collapsed_sections")
     private val waylandShellCommandKey = stringPreferencesKey("wayland_shell_command")
     private val batteryPromptDismissedKey = booleanPreferencesKey("battery_prompt_dismissed")
+    private val batteryPromptNeverAskKey = booleanPreferencesKey("battery_prompt_never_ask")
+    private val batteryLastKnownExemptKey = booleanPreferencesKey("battery_last_known_exempt")
     private val showLinuxVmCardKey = booleanPreferencesKey("show_linux_vm_card")
     private val showDesktopsCardKey = booleanPreferencesKey("show_desktops_card")
     private val mediaExtensionsKey = stringPreferencesKey("media_extensions")
@@ -840,14 +842,45 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    /** Whether the user has dismissed the battery optimization prompt. */
+    /**
+     * Whether the user has dismissed the battery optimization prompt.
+     * EPISODIC (#494): cleared again when a granted exemption is detected as
+     * dropped (ROMs reset it on app update), so the offer can return with an
+     * explanation. [batteryPromptNeverAsk] is the permanent opt-out.
+     */
     val batteryPromptDismissed: Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[batteryPromptDismissedKey] ?: false
     }
 
-    suspend fun setBatteryPromptDismissed() {
+    suspend fun setBatteryPromptDismissed(dismissed: Boolean = true) {
         dataStore.edit { prefs ->
-            prefs[batteryPromptDismissedKey] = true
+            prefs[batteryPromptDismissedKey] = dismissed
+        }
+    }
+
+    /** Permanent "don't ask again" for the battery prompt — survives drops (#494). */
+    val batteryPromptNeverAsk: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[batteryPromptNeverAskKey] ?: false
+    }
+
+    suspend fun setBatteryPromptNeverAsk() {
+        dataStore.edit { prefs ->
+            prefs[batteryPromptNeverAskKey] = true
+        }
+    }
+
+    /**
+     * Last observed `isIgnoringBatteryOptimizations` value; null until first
+     * observed. A stored true against a current false = the exemption was
+     * dropped out from under us (#494).
+     */
+    val batteryLastKnownExempt: Flow<Boolean?> = dataStore.data.map { prefs ->
+        prefs[batteryLastKnownExemptKey]
+    }
+
+    suspend fun setBatteryLastKnownExempt(exempt: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[batteryLastKnownExemptKey] = exempt
         }
     }
 

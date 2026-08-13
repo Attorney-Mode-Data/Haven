@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">保持连接？</string>
     <string name="connections_battery_message">Android 可能会为省电而关闭后台 SSH 连接。为 Haven 禁用电池优化可以防止此情况。</string>
+    <string name="connections_battery_redropped_message">Haven 的电池优化豁免已被关闭 — 这通常是应用更新的副作用。没有它，Android 可能会再次关闭后台 SSH 连接。重新允许？</string>
+    <string name="connections_battery_dont_ask_again">不再询问</string>
+    <string name="connections_process_killed_banner">Android 在 %1$s 终止了 Haven（%2$s）— 后台会话随之丢失。</string>
+    <string name="process_exit_cause_debug_app">“选择调试应用”开发者选项</string>
+    <string name="process_exit_cause_force_stop">强制停止</string>
+    <string name="process_exit_cause_memory">内存不足</string>
+    <string name="process_exit_cause_anr">应用无响应</string>
+    <string name="process_exit_cause_system">系统策略</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">服务器上未找到 Mosh</string>

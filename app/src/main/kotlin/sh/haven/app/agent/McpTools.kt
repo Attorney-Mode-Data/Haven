@@ -315,6 +315,11 @@ internal class McpTools(
             },
         ) { args -> getNativeCrashes(args) },
 
+        "get_process_exits" to ToolHandler(
+            description = "Return system-initiated kills of previous Haven processes, newest first — the in-app equivalent of `adb shell dumpsys activity exit-info` (#494). Each: timestampMs; kind (DEBUG_APP_FORCE_STOP = Developer options' 'Select debug app' points at Haven and Android force-stops it, FORCE_STOPPED, FROZEN, LOW_MEMORY, ANR, SIGNALED, EXCESSIVE_RESOURCE_USAGE, OTHER_KILL); importance at death (100 foreground / 125 foreground-service / 400 cached); tookActiveWork (importance ≤ 230 — the death took user-visible sessions with it); and the system's description. Use this FIRST when diagnosing 'sessions disconnect in the background': an entry at the disconnect time = the process was killed (who and why is right here); no entry = the process survived and something cut the network instead. Crashes are NOT here — native ones are in get_native_crashes. Requires Android 11 (API 30). Read-only.",
+            inputSchema = emptyObjectSchema(),
+        ) { _ -> getProcessExits() },
+
         "list_paired_clients" to ToolHandler(
             description = "List the MCP clients paired with Haven — the clientInfo.name values that passed the first-connect pairing prompt and may call tools. For each: `name`; `autoApprove` (true when the user has enabled 'Skip approval prompts' for it under Settings → Agent endpoint → Paired MCP clients, so its calls bypass per-call consent); and `isCaller` (true for the client making this request). Read-only.",
             inputSchema = emptyObjectSchema(),
@@ -1980,6 +1985,32 @@ internal class McpTools(
                         put("signal", r.signal)
                         put("hasTrace", r.trace != null)
                         if (includeTrace && r.trace != null) put("trace", r.trace)
+                    })
+                }
+            })
+        }
+    }
+
+    private fun getProcessExits(): JSONObject {
+        val log = sh.haven.core.data.ProcessExitLog(context)
+        return JSONObject().apply {
+            put("supported", log.supported)
+            if (!log.supported) {
+                put("note", "Requires Android 11 (API 30); this device reports API ${android.os.Build.VERSION.SDK_INT}.")
+            }
+            // Fold in anything new before reporting — an MCP-only client may
+            // ask before the Connections screen (or even the app UI) has run.
+            if (log.supported) log.refresh()
+            val records = log.records().sortedByDescending { it.timestampMs }
+            put("count", records.size)
+            put("exits", JSONArray().apply {
+                for (r in records) {
+                    put(JSONObject().apply {
+                        put("timestampMs", r.timestampMs)
+                        put("kind", r.kind.name)
+                        put("importance", r.importance)
+                        put("tookActiveWork", r.tookActiveWork)
+                        put("description", r.description ?: JSONObject.NULL)
                     })
                 }
             })

@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">Verbindungen aufrechterhalten?</string>
     <string name="connections_battery_message">Android kann SSH-Hintergrundverbindungen zur Akkuschonung beenden. Das Deaktivieren der Akkuoptimierung für Haven verhindert dies.</string>
+    <string name="connections_battery_redropped_message">Die Akku-Ausnahme für Haven wurde deaktiviert — oft eine Nebenwirkung eines App-Updates. Ohne sie kann Android SSH-Hintergrundverbindungen wieder beenden. Erneut erlauben?</string>
+    <string name="connections_battery_dont_ask_again">Nicht mehr fragen</string>
+    <string name="connections_process_killed_banner">Android hat Haven um %1$s beendet (%2$s) — Hintergrundsitzungen gingen damit verloren.</string>
+    <string name="process_exit_cause_debug_app">die Entwickleroption „Debug-App auswählen“</string>
+    <string name="process_exit_cause_force_stop">Beenden erzwungen</string>
+    <string name="process_exit_cause_memory">wenig Speicher</string>
+    <string name="process_exit_cause_anr">App reagiert nicht</string>
+    <string name="process_exit_cause_system">Systemrichtlinie</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">Mosh auf Server nicht gefunden</string>

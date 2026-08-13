@@ -43,7 +43,7 @@ consent level:
 
 - **asks every call** — side-effectful or sensitive; a consent sheet describing the specific action on every call (69 tools).
 - **asks once per session** — reversible actions and screen-reading; prompts the first time each session, then proceeds (50 tools).
-- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (85 tools).
+- **no per-call prompt** — read-only queries and tap-equivalent UI actions; still behind the endpoint being enabled and the client paired (86 tools).
 
 ## Sections
 
@@ -57,7 +57,7 @@ consent level:
 - [**USB & host-device brokers**](#sec-usb) — 17 tools
 - [**Security — SSH keys, host keys, TOTP & age**](#sec-security) — 15 tools
 - [**Agent ↔ you (attention & self-drive)**](#sec-agent-you) — 12 tools
-- [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 15 tools
+- [**Agent endpoint, device & diagnostics**](#sec-agent-endpoint) — 16 tools
 
 <a id="sec-connections"></a>
 
@@ -2095,7 +2095,7 @@ Inject a tap (or, with holdMs > 0, a press-and-hold) into HAVEN'S OWN UI at wind
 
 <a id="sec-agent-endpoint"></a>
 
-## Agent endpoint, device & diagnostics (15)
+## Agent endpoint, device & diagnostics (16)
 
 Pairing, standing policies, app info/update, preferences, and device diagnostics.
 
@@ -2141,6 +2141,13 @@ Return the consent/pairing prompts Haven is currently showing or holding, oldest
 Read a Haven user preference by key. Whitelisted keys: terminal_scrollback_rows, terminal_tap_to_position_cursor, terminal_font_size, terminal_color_scheme, terminal_auto_switch_scheme, terminal_light_color_scheme, terminal_dark_color_scheme, terminal_locale, mouse_input_enabled, terminal_right_click, mcp_tunnel_endpoint_profile_id, mcp_wireguard_enabled, mcp_lan_bind_enabled, mcp_wireguard_tunnel_config_id, usb_guest_exposure_enabled, connection_logging_enabled, verbose_logging_enabled, remap_low_ports (#300 proot launch toggle), share_storage_with_guest (#301 proot launch toggle), bind_android_system (#304 proot launch toggle), proot_dns_mode (#446 - system|public|custom), proot_dns_servers (custom nameservers), toolbar_layout (string — the terminal keyboard toolbar layout as JSON; see set_preference for the shape). Returns { key, value } where value's type follows the preference's type (int / boolean / string). Colour-scheme values are TerminalColorScheme enum names.
 
 - `key` (string, required) — Preference key (see whitelist in description).
+
+</details>
+
+<details markdown="1">
+<summary><code>get_process_exits</code> · no per-call prompt</summary>
+
+Return system-initiated kills of previous Haven processes, newest first — the in-app equivalent of `adb shell dumpsys activity exit-info` (#494). Each: timestampMs; kind (DEBUG_APP_FORCE_STOP = Developer options' 'Select debug app' points at Haven and Android force-stops it, FORCE_STOPPED, FROZEN, LOW_MEMORY, ANR, SIGNALED, EXCESSIVE_RESOURCE_USAGE, OTHER_KILL); importance at death (100 foreground / 125 foreground-service / 400 cached); tookActiveWork (importance ≤ 230 — the death took user-visible sessions with it); and the system's description. Use this FIRST when diagnosing 'sessions disconnect in the background': an entry at the disconnect time = the process was killed (who and why is right here); no entry = the process survived and something cut the network instead. Crashes are NOT here — native ones are in get_native_crashes. Requires Android 11 (API 30). Read-only.
 
 </details>
 

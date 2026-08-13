@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">إبقاء الاتصالات نشطة؟</string>
     <string name="connections_battery_message">قد يغلق Android اتصالات SSH في الخلفية لتوفير البطارية. تعطيل تحسين البطارية لـ Haven يمنع ذلك.</string>
+    <string name="connections_battery_redropped_message">تم إيقاف استثناء البطارية لـ Haven — غالبًا كأثر جانبي لتحديث التطبيق. بدونه قد يغلق Android اتصالات SSH في الخلفية مجددًا. هل تريد السماح به من جديد؟</string>
+    <string name="connections_battery_dont_ask_again">عدم السؤال مجددًا</string>
+    <string name="connections_process_killed_banner">أنهى Android تطبيق Haven في %1$s ‏(%2$s) — وفُقدت الجلسات في الخلفية معه.</string>
+    <string name="process_exit_cause_debug_app">خيار المطوّر «اختيار تطبيق التصحيح»</string>
+    <string name="process_exit_cause_force_stop">إيقاف قسري</string>
+    <string name="process_exit_cause_memory">ذاكرة منخفضة</string>
+    <string name="process_exit_cause_anr">التطبيق لا يستجيب</string>
+    <string name="process_exit_cause_system">سياسة النظام</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">لم يتم العثور على Mosh على الخادم</string>

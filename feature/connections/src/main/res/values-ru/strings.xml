@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">Поддерживать соединения?</string>
     <string name="connections_battery_message">Android может закрывать фоновые SSH-подключения для экономии батареи. Отключение оптимизации батареи для Haven предотвращает это.</string>
+    <string name="connections_battery_redropped_message">Исключение Haven из оптимизации батареи было отключено — часто это побочный эффект обновления приложения. Без него Android может снова закрывать фоновые SSH-подключения. Разрешить снова?</string>
+    <string name="connections_battery_dont_ask_again">Больше не спрашивать</string>
+    <string name="connections_process_killed_banner">Android завершил Haven в %1$s (%2$s) — фоновые сессии были потеряны.</string>
+    <string name="process_exit_cause_debug_app">параметр разработчика «Выбрать приложение для отладки»</string>
+    <string name="process_exit_cause_force_stop">принудительная остановка</string>
+    <string name="process_exit_cause_memory">нехватка памяти</string>
+    <string name="process_exit_cause_anr">приложение не отвечает</string>
+    <string name="process_exit_cause_system">политика системы</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">Mosh не найден на сервере</string>

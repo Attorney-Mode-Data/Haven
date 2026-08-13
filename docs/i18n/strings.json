@@ -7999,6 +7999,161 @@
      }
     },
     {
+     "name": "connections_battery_redropped_message",
+     "en": "Haven\\'s battery exemption has been switched off — often a side effect of an app update. Without it, Android may close background SSH connections again. Re-allow it?",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "تم إيقاف استثناء البطارية لـ Haven — غالبًا كأثر جانبي لتحديث التطبيق. بدونه قد يغلق Android اتصالات SSH في الخلفية مجددًا. هل تريد السماح به من جديد؟",
+      "bn": "Haven-এর ব্যাটারি ছাড় বন্ধ হয়ে গেছে — প্রায়ই অ্যাপ আপডেটের পার্শ্বপ্রতিক্রিয়া। এটি ছাড়া Android আবার ব্যাকগ্রাউন্ড SSH সংযোগ বন্ধ করতে পারে। আবার অনুমতি দেবেন?",
+      "de": "Die Akku-Ausnahme für Haven wurde deaktiviert — oft eine Nebenwirkung eines App-Updates. Ohne sie kann Android SSH-Hintergrundverbindungen wieder beenden. Erneut erlauben?",
+      "es": "La exención de batería de Haven se ha desactivado — a menudo un efecto secundario de una actualización. Sin ella, Android puede volver a cerrar conexiones SSH en segundo plano. ¿Permitirla de nuevo?",
+      "fr": "L\\'exemption de batterie de Haven a été désactivée — souvent un effet secondaire d\\'une mise à jour. Sans elle, Android peut de nouveau fermer les connexions SSH en arrière-plan. La réactiver ?",
+      "hi": "Haven की बैटरी छूट बंद कर दी गई है — अक्सर ऐप अपडेट का दुष्प्रभाव। इसके बिना Android बैकग्राउंड SSH कनेक्शन फिर से बंद कर सकता है। फिर से अनुमति दें?",
+      "ja": "Havenのバッテリー最適化の除外が解除されました — アプリ更新の副作用でよく起こります。除外がないと、Androidは再びバックグラウンドのSSH接続を切断することがあります。再度許可しますか？",
+      "ko": "Haven의 배터리 최적화 예외가 해제되었습니다 — 앱 업데이트의 부작용으로 자주 발생합니다. 예외가 없으면 Android가 백그라운드 SSH 연결을 다시 종료할 수 있습니다. 다시 허용하시겠습니까?",
+      "pt": "A isenção de bateria do Haven foi desativada — muitas vezes um efeito colateral de uma atualização. Sem ela, o Android pode voltar a encerrar conexões SSH em segundo plano. Permitir novamente?",
+      "ru": "Исключение Haven из оптимизации батареи было отключено — часто это побочный эффект обновления приложения. Без него Android может снова закрывать фоновые SSH-подключения. Разрешить снова?",
+      "zh": "Haven 的电池优化豁免已被关闭 — 这通常是应用更新的副作用。没有它，Android 可能会再次关闭后台 SSH 连接。重新允许？"
+     }
+    },
+    {
+     "name": "connections_battery_dont_ask_again",
+     "en": "Don\\'t ask again",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "عدم السؤال مجددًا",
+      "bn": "আর জিজ্ঞাসা করবেন না",
+      "de": "Nicht mehr fragen",
+      "es": "No volver a preguntar",
+      "fr": "Ne plus demander",
+      "hi": "फिर से न पूछें",
+      "ja": "今後表示しない",
+      "ko": "다시 묻지 않기",
+      "pt": "Não perguntar novamente",
+      "ru": "Больше не спрашивать",
+      "zh": "不再询问"
+     }
+    },
+    {
+     "name": "connections_process_killed_banner",
+     "en": "Android killed Haven at %1$s (%2$s) — background sessions died with it.",
+     "comment": "Battery optimization dialog",
+     "args": [
+      "%1$s",
+      "%2$s"
+     ],
+     "t": {
+      "ar": "أنهى Android تطبيق Haven في %1$s ‏(%2$s) — وفُقدت الجلسات في الخلفية معه.",
+      "bn": "Android %1$s-এ Haven বন্ধ করে দিয়েছে (%2$s) — ব্যাকগ্রাউন্ড সেশনও হারিয়ে গেছে।",
+      "de": "Android hat Haven um %1$s beendet (%2$s) — Hintergrundsitzungen gingen damit verloren.",
+      "es": "Android cerró Haven a las %1$s (%2$s) — las sesiones en segundo plano se perdieron.",
+      "fr": "Android a tué Haven à %1$s (%2$s) — les sessions en arrière-plan ont été perdues.",
+      "hi": "Android ने %1$s पर Haven को बंद कर दिया (%2$s) — बैकग्राउंड सेशन भी समाप्त हो गए।",
+      "ja": "Androidが%1$sにHavenを終了しました（%2$s）— バックグラウンドのセッションも失われました。",
+      "ko": "Android가 %1$s에 Haven을 종료했습니다(%2$s) — 백그라운드 세션도 함께 종료되었습니다.",
+      "pt": "O Android encerrou o Haven às %1$s (%2$s) — as sessões em segundo plano foram perdidas.",
+      "ru": "Android завершил Haven в %1$s (%2$s) — фоновые сессии были потеряны.",
+      "zh": "Android 在 %1$s 终止了 Haven（%2$s）— 后台会话随之丢失。"
+     }
+    },
+    {
+     "name": "process_exit_cause_debug_app",
+     "en": "the “Select debug app” developer setting",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "خيار المطوّر «اختيار تطبيق التصحيح»",
+      "bn": "“ডিবাগ অ্যাপ নির্বাচন” ডেভেলপার সেটিং",
+      "de": "die Entwickleroption „Debug-App auswählen“",
+      "es": "la opción de desarrollador “Seleccionar aplicación de depuración”",
+      "fr": "l’option développeur « Sélectionner l’application à déboguer »",
+      "hi": "“डीबग ऐप चुनें” डेवलपर सेटिंग",
+      "ja": "開発者向けオプション「デバッグアプリを選択」",
+      "ko": "개발자 옵션 “디버그 앱 선택”",
+      "pt": "a opção de desenvolvedor “Selecionar app de depuração”",
+      "ru": "параметр разработчика «Выбрать приложение для отладки»",
+      "zh": "“选择调试应用”开发者选项"
+     }
+    },
+    {
+     "name": "process_exit_cause_force_stop",
+     "en": "force stop",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "إيقاف قسري",
+      "bn": "জোরপূর্বক বন্ধ",
+      "de": "Beenden erzwungen",
+      "es": "detención forzada",
+      "fr": "arrêt forcé",
+      "hi": "जबरन बंद",
+      "ja": "強制停止",
+      "ko": "강제 종료",
+      "pt": "parada forçada",
+      "ru": "принудительная остановка",
+      "zh": "强制停止"
+     }
+    },
+    {
+     "name": "process_exit_cause_memory",
+     "en": "low memory",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "ذاكرة منخفضة",
+      "bn": "কম মেমরি",
+      "de": "wenig Speicher",
+      "es": "memoria baja",
+      "fr": "mémoire insuffisante",
+      "hi": "कम मेमोरी",
+      "ja": "メモリ不足",
+      "ko": "메모리 부족",
+      "pt": "pouca memória",
+      "ru": "нехватка памяти",
+      "zh": "内存不足"
+     }
+    },
+    {
+     "name": "process_exit_cause_anr",
+     "en": "app not responding",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "التطبيق لا يستجيب",
+      "bn": "অ্যাপ সাড়া দিচ্ছে না",
+      "de": "App reagiert nicht",
+      "es": "aplicación sin respuesta",
+      "fr": "application ne répond pas",
+      "hi": "ऐप प्रतिक्रिया नहीं दे रहा",
+      "ja": "アプリが応答しない",
+      "ko": "앱이 응답하지 않음",
+      "pt": "app sem resposta",
+      "ru": "приложение не отвечает",
+      "zh": "应用无响应"
+     }
+    },
+    {
+     "name": "process_exit_cause_system",
+     "en": "system policy",
+     "comment": "Battery optimization dialog",
+     "args": [],
+     "t": {
+      "ar": "سياسة النظام",
+      "bn": "সিস্টেম নীতি",
+      "de": "Systemrichtlinie",
+      "es": "política del sistema",
+      "fr": "politique du système",
+      "hi": "सिस्टम नीति",
+      "ja": "システムポリシー",
+      "ko": "시스템 정책",
+      "pt": "política do sistema",
+      "ru": "политика системы",
+      "zh": "系统策略"
+     }
+    },
+    {
      "name": "connections_mosh_not_found_title",
      "en": "Mosh not found on server",
      "comment": "Mosh setup guide dialog",

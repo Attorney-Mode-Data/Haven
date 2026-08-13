@@ -407,21 +407,30 @@ fun ConnectionsScreen(
     }
 
     // Gently offer to disable battery optimization so the foreground service
-    // (and SSH connections) survive when the app is backgrounded.
-    val batteryPromptDismissed by viewModel.batteryPromptDismissed.collectAsState()
+    // (and SSH connections) survive when the app is backgrounded. The check
+    // runs once per screen entry: the ViewModel compares the current state
+    // against the last observed one, so a ROM quietly re-enabling
+    // optimisation (Realme UI does, on app update) re-opens the offer with
+    // an explanation instead of staying silent forever (#494).
     var showBatteryDialog by rememberSaveable { mutableStateOf(false) }
+    var batteryDropDetected by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(batteryPromptDismissed) {
-        if (!batteryPromptDismissed) {
-            val pm = context.getSystemService(PowerManager::class.java)
-            if (pm != null && !pm.isIgnoringBatteryOptimizations(context.packageName)) {
-                // If Shizuku is available, silently whitelist without bothering the user
-                if (sh.haven.core.local.WaylandSocketHelper.tryDisableBatteryOptimization(context.packageName)) {
-                    viewModel.dismissBatteryPrompt()
-                } else {
-                    showBatteryDialog = true
-                }
+    LaunchedEffect(Unit) {
+        // Death certificates first (#494): if the last process was killed by
+        // the system, say so — the battery dialog below then lands with its
+        // context already on screen.
+        viewModel.announceRecentKills()
+        val pm = context.getSystemService(PowerManager::class.java)
+        val exempt = pm?.isIgnoringBatteryOptimizations(context.packageName) ?: true
+        val action = viewModel.batteryPromptCheck(exempt)
+        if (action != BatteryPromptAction.NONE) {
+            // If Shizuku is available, silently whitelist without bothering the user
+            if (sh.haven.core.local.WaylandSocketHelper.tryDisableBatteryOptimization(context.packageName)) {
+                viewModel.dismissBatteryPrompt()
+            } else {
+                batteryDropDetected = action == BatteryPromptAction.OFFER_DROPPED
+                showBatteryDialog = true
             }
         }
     }
@@ -434,7 +443,12 @@ fun ConnectionsScreen(
             },
             title = { Text(stringResource(R.string.connections_battery_title)) },
             text = {
-                Text(stringResource(R.string.connections_battery_message))
+                Text(
+                    stringResource(
+                        if (batteryDropDetected) R.string.connections_battery_redropped_message
+                        else R.string.connections_battery_message,
+                    ),
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -450,11 +464,19 @@ fun ConnectionsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showBatteryDialog = false
-                    viewModel.dismissBatteryPrompt()
-                }) {
-                    Text(stringResource(R.string.common_not_now))
+                Row {
+                    TextButton(onClick = {
+                        showBatteryDialog = false
+                        viewModel.neverAskBatteryPrompt()
+                    }) {
+                        Text(stringResource(R.string.connections_battery_dont_ask_again))
+                    }
+                    TextButton(onClick = {
+                        showBatteryDialog = false
+                        viewModel.dismissBatteryPrompt()
+                    }) {
+                        Text(stringResource(R.string.common_not_now))
+                    }
                 }
             },
         )

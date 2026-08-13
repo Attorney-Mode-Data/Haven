@@ -71,6 +71,14 @@
     <!-- Battery optimization dialog -->
     <string name="connections_battery_title">接続を維持しますか？</string>
     <string name="connections_battery_message">Androidはバッテリー節約のためにバックグラウンドのSSH接続を切断することがあります。Havenのバッテリー最適化を無効にするとこれを防げます。</string>
+    <string name="connections_battery_redropped_message">Havenのバッテリー最適化の除外が解除されました — アプリ更新の副作用でよく起こります。除外がないと、Androidは再びバックグラウンドのSSH接続を切断することがあります。再度許可しますか？</string>
+    <string name="connections_battery_dont_ask_again">今後表示しない</string>
+    <string name="connections_process_killed_banner">Androidが%1$sにHavenを終了しました（%2$s）— バックグラウンドのセッションも失われました。</string>
+    <string name="process_exit_cause_debug_app">開発者向けオプション「デバッグアプリを選択」</string>
+    <string name="process_exit_cause_force_stop">強制停止</string>
+    <string name="process_exit_cause_memory">メモリ不足</string>
+    <string name="process_exit_cause_anr">アプリが応答しない</string>
+    <string name="process_exit_cause_system">システムポリシー</string>
 
     <!-- Mosh setup guide dialog -->
     <string name="connections_mosh_not_found_title">サーバーにMoshが見つかりません</string>

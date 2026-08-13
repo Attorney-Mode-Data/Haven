@@ -108,6 +108,16 @@ class HavenApp : Application(), Configuration.Provider {
             } catch (e: Exception) {
                 android.util.Log.w("HavenApp", "native crash sweep failed: ${e.message}")
             }
+            // Same next-launch pattern for non-crash deaths (#494): fold the
+            // system's kill records (force-stop, freezer, low memory, ANR)
+            // into the process-exit log, so the Connections screen and the
+            // get_process_exits MCP verb can say who killed the last process
+            // instead of a reporter needing adb.
+            try {
+                sh.haven.core.data.ProcessExitLog(this@HavenApp).refresh()
+            } catch (e: Exception) {
+                android.util.Log.w("HavenApp", "process exit sweep failed: ${e.message}")
+            }
         }
 
         // Mirror saved workspaces into Android launcher long-press
