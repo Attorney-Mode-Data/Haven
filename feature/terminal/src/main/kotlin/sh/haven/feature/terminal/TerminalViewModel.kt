@@ -350,8 +350,7 @@ class TerminalViewModel @Inject constructor(
                 fileSize = fileSize,
                 initialProfileId = initialProfileId,
             ) ?: return@launch
-            val tab = _tabs.value.getOrNull(_activeTabIndex.value) ?: return@launch
-            tab.sendInput(payload.toByteArray())
+            _pendingAttachInjection.value = payload
         }
     }
 
@@ -368,6 +367,11 @@ class TerminalViewModel @Inject constructor(
     private val _pendingScanInjection = MutableStateFlow<String?>(null)
     val pendingScanInjection: StateFlow<String?> = _pendingScanInjection.asStateFlow()
     fun consumeScanInjection() { _pendingScanInjection.value = null }
+
+    /** Same as [pendingScanInjection], but for the Attach → "Send a file" flow. */
+    private val _pendingAttachInjection = MutableStateFlow<String?>(null)
+    val pendingAttachInjection: StateFlow<String?> = _pendingAttachInjection.asStateFlow()
+    fun consumeAttachInjection() { _pendingAttachInjection.value = null }
 
     /**
      * Decode [sourceUri] into a bitmap, hand it to the appropriate scan
@@ -2326,6 +2330,7 @@ class TerminalViewModel @Inject constructor(
     private val _newTabMessage = MutableStateFlow<String?>(null)
     val newTabMessage: StateFlow<String?> = _newTabMessage.asStateFlow()
     fun dismissNewTabMessage() { _newTabMessage.value = null }
+    fun showNewTabMessage(message: String) { _newTabMessage.value = message }
 
     /**
      * FIDO2/security-key touch/PIN prompt, surfaced so the terminal screen can

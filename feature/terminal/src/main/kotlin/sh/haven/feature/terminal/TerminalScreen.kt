@@ -409,8 +409,32 @@ fun TerminalScreen(
                 text
             }
             tab.sendInput(payload.toByteArray())
+        } else {
+            viewModel.showNewTabMessage(context.getString(R.string.terminal_paste_no_active_tab))
         }
         viewModel.consumeScanInjection()
+    }
+
+    // Inject the uploaded file's remote path at the cursor on the active
+    // tab once the Attach → "Send a file" flow finishes, honouring
+    // bracket-paste the same way pendingScanInjection does above. Drains
+    // the StateFlow via consumeAttachInjection so a second attach doesn't
+    // fire on recomposition.
+    val pendingAttachInjection by viewModel.pendingAttachInjection.collectAsState()
+    LaunchedEffect(pendingAttachInjection) {
+        val text = pendingAttachInjection ?: return@LaunchedEffect
+        val tab = viewModel.tabs.value.getOrNull(viewModel.activeTabIndex.value)
+        if (tab != null) {
+            val payload = if (tab.bracketPasteMode.value) {
+                "[200~$text[201~"
+            } else {
+                text
+            }
+            tab.sendInput(payload.toByteArray())
+        } else {
+            viewModel.showNewTabMessage(context.getString(R.string.terminal_paste_no_active_tab))
+        }
+        viewModel.consumeAttachInjection()
     }
 
     // Read at composition time — stringResource is @Composable and so
